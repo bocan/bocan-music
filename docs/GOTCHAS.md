@@ -128,6 +128,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 ---
 
+### A sidebar section header is one accessibility element
+
+**Problem:** a control in a sidebar section header answers to VoiceOver with another control's label. The Playlists "+" said "Collapse Playlists", and the collapse button beside it did not exist for VoiceOver at all.
+
+**Rule:** apply `.sidebarHeaderAccessibility(title:isExpanded:toggle:)` to every sidebar section header, and offer each extra control in it (the "+", its menu items) as `.accessibilityAction(named:)`. Do not switch the sections to `Section(isExpanded:)`: its chevron appears on hover at the trailing edge and pushes the "+" out from under the mouse, which the maintainer rejected.
+
+**Why:** a `List` in the sidebar style turns each section header into a single element and merges every control in it: titles joined, the first control's value, the help texts joined, the identifiers joined with a dash. `.accessibilityElement(children: .contain)` on the header or on each control does not separate them; it leaves an empty heading. Making the merge deliberate (one heading with the section's name, its state, and named actions) gives VoiceOver every control without changing the look. Checked on macOS 27 in 2026-10 (#596).
+
+**Canonical file:** `Modules/UI/Sources/UI/AppRoot/SidebarHeaderAccessibility.swift`
+
 ## Audio engine and playback
 
 ### Transport operations stay behind the async-mutex gate
@@ -330,7 +340,7 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/ToastBanner.swift`
 
-A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label (the AX description) is the label image's own accessibility description. For `Image(systemName:)` that is the symbol's name ("do not disturb" for `moon.fill`). No SwiftUI modifier changes it: a label on the `Menu`, on the label view, or on the image, an icon-only `Label`, and a hidden image were all tried in 2026-09. What works is an AppKit symbol image that carries the text, `Image(nsImage: NSImage(systemSymbolName:accessibilityDescription:))`, sized with `NSImage.SymbolConfiguration` because `.font` does not reach it. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. A borderless `Menu` also ignores `.foregroundStyle` on its label image: AppKit draws the symbol in its own colour.
+A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label (the AX description) is the label image's own accessibility description. For `Image(systemName:)` that is the symbol's name ("do not disturb" for `moon.fill`). No SwiftUI modifier changes it: a label on the `Menu`, on the label view, or on the image, an icon-only `Label`, and a hidden image were all tried in 2026-09. What works is an AppKit symbol image that carries the text, `Image(nsImage: NSImage(systemSymbolName:accessibilityDescription:))`, sized with `NSImage.SymbolConfiguration` because `.font` does not reach it. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. A borderless `Menu` also ignores `.foregroundStyle` on its label image and draws it in the environment's tint, which in Bòcan is the accent chosen in Appearance. A probe app that leaves out the root `.tint` draws it grey and suggests a bug that the app does not have (#594).
 
 **Canonical file for the `Menu` case:** `Modules/UI/Sources/UI/Transport/SleepTimerMenu.swift` (`moonImage`)
 
@@ -577,6 +587,10 @@ Tried in June 2026 and reverted. See the keychain entry above for what stays tru
 ### A `NavigationStack` in the detail column
 
 See the content navigation entry above. The destination-history model is deliberate.
+
+### Isolating E2E runs from the developer's debug preferences
+
+E2E launches use the debug bundle ID, so they read the developer's saved debug preferences (DSP state, view modes, table columns, window frames). Closed as not a real problem on 2026-10-01 (#587). Do not propose snapshot and restore, a domain wipe or a broad reset list. If one saved key demonstrably breaks a journey, add that key to the reset list in `App/E2ESeeder.swift`.
 
 ### The Android companion's stack
 
