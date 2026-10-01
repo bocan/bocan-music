@@ -1,3 +1,4 @@
+import AudioEngineKernels
 import AudioToolbox
 @preconcurrency import AVFoundation
 import Foundation
@@ -16,15 +17,10 @@ import Foundation
 /// At `width = 0.0` the output is mono (L == R == M).
 /// At `width = 2.0` the stereo image is doubled.
 ///
-/// **Real-time safety**: same constraints as `CrossfeedAudioUnit` — only raw pointer
-/// captured; no allocations or locks in the render block.
-final class StereoExpanderAudioUnit: AUAudioUnit {
-    // MARK: - Types
-
-    struct State {
-        var width: Float = 1.0 // 0.5…2.0 stereo width
-    }
-
+/// **Real-time safety**: the render block and its state (`renderState`) live in the
+/// Objective-C superclass, `BocanStereoExpanderKernelUnit`. Do not override
+/// `internalRenderBlock` here: a Swift render block allocates on the audio thread.
+final class StereoExpanderAudioUnit: BocanStereoExpanderKernelUnit {
     // MARK: - Registration
 
     static let componentDescription = AudioComponentDescription(
@@ -46,7 +42,6 @@ final class StereoExpanderAudioUnit: AUAudioUnit {
 
     // MARK: - State
 
-    let statePtr = UnsafeMutablePointer<State>.allocate(capacity: 1)
     private var inputBusArray: AUAudioUnitBusArray!
     private var outputBusArray: AUAudioUnitBusArray!
 
@@ -57,14 +52,8 @@ final class StereoExpanderAudioUnit: AUAudioUnit {
         options: AudioComponentInstantiationOptions = []
     ) throws {
         try super.init(componentDescription: componentDescription, options: options)
-        self.statePtr.initialize(to: State())
         try self.setupBuses()
         self.setupParameterTree()
-    }
-
-    deinit {
-        statePtr.deinitialize(count: 1)
-        statePtr.deallocate()
     }
 
     override var inputBusses: AUAudioUnitBusArray {
@@ -73,50 +62,6 @@ final class StereoExpanderAudioUnit: AUAudioUnit {
 
     override var outputBusses: AUAudioUnitBusArray {
         self.outputBusArray
-    }
-
-    override var internalRenderBlock: AUInternalRenderBlock {
-        let st = self.statePtr
-        return { _, timestamp, frameCount, _, outputData, eventList, pullInput in
-            // Process parameter events
-            var evt = eventList
-            while let event = evt {
-                if event.pointee.head.eventType == .parameter ||
-                    event.pointee.head.eventType == .parameterRamp {
-                    if event.pointee.parameter.parameterAddress == 0 {
-                        st.pointee.width = event.pointee.parameter.value
-                    }
-                }
-                evt = UnsafePointer(event.pointee.head.next)
-            }
-
-            guard let pull = pullInput else { return kAudioUnitErr_NoConnection }
-            var flags: AudioUnitRenderActionFlags = []
-            let status = pull(&flags, timestamp, frameCount, 0, outputData)
-            guard status == noErr else { return status }
-
-            let width = st.pointee.width
-            // At unity width the M/S transform is an identity — skip per-sample math.
-            guard abs(width - 1.0) > 1e-4 else { return noErr }
-
-            let abl = UnsafeMutableAudioBufferListPointer(outputData)
-            guard abl.count >= 2,
-                  let lPtr = abl[0].mData?.assumingMemoryBound(to: Float.self),
-                  let rPtr = abl[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
-
-            let n = Int(frameCount)
-
-            for i in 0 ..< n {
-                let l = lPtr[i]
-                let r = rPtr[i]
-                let mid = 0.5 * (l + r)
-                let side = 0.5 * (l - r) * width // scale side by width
-                lPtr[i] = mid + side
-                rPtr[i] = mid - side
-            }
-
-            return noErr
-        }
     }
 
     // MARK: - Private setup
@@ -150,11 +95,11 @@ final class StereoExpanderAudioUnit: AUAudioUnit {
 
         parameterTree?.implementorValueObserver = { [weak self] param, value in
             guard let self, param.address == 0 else { return }
-            self.statePtr.pointee.width = value
+            self.renderState.pointee.width = value
         }
         parameterTree?.implementorValueProvider = { [weak self] param in
             guard let self, param.address == 0 else { return 1.0 }
-            return self.statePtr.pointee.width
+            return self.renderState.pointee.width
         }
     }
 }
@@ -178,7 +123,7 @@ public final class StereoExpanderUnit: @unchecked Sendable {
     public func setWidth(_ width: Double) {
         let clamped = Float(max(0.5, min(2.0, width)))
         self.node.auAudioUnit.parameterTree?.parameter(withAddress: 0)?.setValue(clamped, originator: nil)
-        (self.node.auAudioUnit as? StereoExpanderAudioUnit)?.statePtr.pointee.width = clamped
+        (self.node.auAudioUnit as? StereoExpanderAudioUnit)?.renderState.pointee.width = clamped
     }
 
     public var bypass: Bool {
