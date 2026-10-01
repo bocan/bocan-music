@@ -33,7 +33,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 
 ### 📻 It plays everything
 
-- Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
+- Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, M4A**.
 - The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD, DTS, Dolby Digital and Dolby Digital Plus (AC-3, E-AC-3), and Matroska with whatever is inside it, TrueHD included**. No plug-ins, no extra installs. A file in an MP4 container that the system decoder opens but cannot play, such as Opus in MP4, falls back to the same bridge rather than stopping.
 - **Surround mixes play folded to stereo.** A 5.1 file in ALAC, AAC, FLAC, Dolby Digital Plus, TrueHD or Matroska plays with every channel audible in the stereo fold, through the same mixer whichever engine decoded it. Dolby Atmos objects are not rendered; the bed plays as stereo.
 - **CUE sheets as chapter markers.** A single-file album rip keeps its track list: Previous and Next jump between cue points, the progress bar shows a tick at each boundary, and the player bar names the current cue's title and performer. Sheets attach automatically during scans, and a Markers tab in Get Info lists every cue point.
@@ -42,7 +42,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 ### 📚 It respects your library
 
 - **Folder-based, non-destructive.** Point it at your music directory and it indexes without touching a single file.
-- **Live FSEvents watcher** picks up new or changed files automatically; **mtime + fingerprint deduplication** keeps your library clean.
+- **Live FSEvents watcher** picks up new or changed files automatically; a file is re-read only when its modification time or size changes, so a rescan does not make duplicates.
 - **AcoustID fingerprinting** against MusicBrainz. Identify any track, preview every proposed tag change side-by-side with what you have now, tick the fields you want to update, and apply. Pick the exact release you own (original pressing, reissue, territory variant) from everything MusicBrainz knows, and optionally write the deep identifiers too: ISRC, track totals, and Picard-compatible MusicBrainz IDs.
 - **Deep Dive** (off by default; Settings > Library). Get Info on an artist (new: right-click any artist), an album or a track gains a Deep Dive tab: a concise report from MusicBrainz and Wikipedia with the artist's bio, current and past members with their years and instruments, a discography by year with the albums you own ticked, and external links; for an album the pressing's label, catalogue number, format, country, barcode, track count against what you own, and the artist's other releases from around the same time; for a track the recording's writers, ISRC, first release, every release it appears on, and its AcoustID. Reports are cached on disk for a week and shown stale when offline; an artist without a MusicBrainz id in its tags is matched by name and flagged as a guess. When the tags carry no artist id, the report is matched by name and one click stores that match, which any later tagged id replaces. If MusicBrainz asks us to slow down, the report retries three times before giving up. While the one-off artist lookup pass runs (one request every 1.5 s, so an hour or more for a big library), a line in the scan banner area shows how far it has got. Nothing is sent to MusicBrainz or Wikipedia until you turn it on; the Deep Dive tabs explain the feature and link to the setting until then.
 - **In-app tag editor** with multi-track batch editing, embedded cover-art drag-and-drop, and undo. Artwork comes in as JPEG, PNG, HEIC, or AVIF, and scans automatically pick up sidecar art (cover.jpg, folder.png, and friends) sitting next to the music. Right-click an album's cover in Albums or on the album's page and choose Show Original Cover to open it at full size.
@@ -61,7 +61,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Immersive Mode (experimental)**: `⌘⇧I`, or the three-column toolbar button, opens a full-screen window with nothing but the music on it: the oscilloscope edge to edge in the Drift palette, and three cards over it for the artwork and player controls, the next ten songs in the queue, and synced lyrics. Esc brings you back. Experimental because the full-window visualizer costs more than the side pane; it may change shape or go if it proves too heavy.
 - **Mac-native feel**: gentle trackpad haptics when you love, rate, seek, or release the volume slider, and a soft window cross-fade when swapping between the Mini Player and the main window. The system Now Playing controls (Control Center and the media-key overlay) show the current track with its album artwork. Respects Reduce Motion and the system trackpad haptics setting.
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
-- **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to jump straight to a server, and drag a streamed song straight into Up Next.
+- **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server that opts in, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to expand or collapse a server in the sidebar, and drag a streamed song straight into Up Next.
 - **Podcasts** - subscribe by URL or search across Podcast Index and Apple iTunes; RSS and Atom feeds; per-episode resume; download episodes individually or in bulk, plus optional per-show auto-download of new episodes; show notes (with safe HTML rendering) reachable from the player bar; Podcasting 2.0 chapters (jump-to and read), transcripts, host/guest credits (`podcast:person`), and recommended-show shelves (`podcast:podroll`); variable speed and skip intervals. A compact **Continue Listening** rail tops the Podcasts view with every episode you've started but not finished, across all your shows; one click resumes right where you left off.
 - **Internet radio** - a first-class station catalog in the sidebar. Add stations by hand, paste a `.pls`/`.m3u` playlist URL into Add Station's "Stream or Playlist URL" field and every stream inside it is offered as a station, or import/drop a playlist file and its stream URLs become stations instead of missing tracks. While a station plays, the ICY now-playing title takes the player's title line (the station moves to the artist line, and the system Now Playing widget follows), and the player's info button opens the station sheet with the live stream facts: container, codec and profile (LC vs HE-AAC), sample rate, channels, claimed bitrate, and whether the station sends titles at all. Those facts, plus the station's own name, genre, and homepage from its ICY headers, are remembered per station so the info sheet works offline too. Live streams play through the FFmpeg decoder with automatic reconnect, the scrubber stays honest about live audio having no timeline, and station idents never pollute your scrobbles or play history.
 - **Library Summary** : open **Tools -> Library Summary** (`⌘⇧Y`) for six tabs of answers about your collection, all computed locally from data the app already keeps:
@@ -94,7 +94,7 @@ I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
 - **Dynamic Type** throughout : every label, badge, and table cell scales with your macOS text size setting.
 - Album cells, artist rows, and genre chips are grouped with `.combine` so VoiceOver reads them as single logical elements.
 - Transport controls carry state via `accessibilityValue` (e.g. *"Shuffle, on, button"*) so you always know what you're toggling.
-- EQ band sliders report their gain in the format *"80 Hz, +3.0 dB"* rather than a raw number.
+- EQ band sliders report their gain in the format *"63 Hz EQ band, +3.0 dB"* rather than a raw number.
 
 ### 🏗️ It's engineered properly
 
@@ -122,7 +122,7 @@ Bòcan curates your music library while you sleep. The short version is that com
 
 | Property | Value |
 |----------|-------|
-| Display name | Bòcan |
+| Display name | Bòcan Music |
 | Binary / package name | `bocan` |
 | Bundle ID | `io.cloudcauldron.bocan` |
 | Log subsystem | `io.cloudcauldron.bocan` |

@@ -13,7 +13,7 @@
   },
   {
     "title": "Plays the awkward stuff.",
-    "body": "FLAC, ALAC, MP3, AAC, OGG, Opus, WavPack, Monkey's Audio, DSD, WMA, AC-3, E-AC-3, DTS, and more. Bit-perfect output to whatever DAC you've got plugged in. The play bar tells you which one you are hearing: a row of small coloured boxes under the title for the codec, bitrate, sample rate, bit depth and channels, each with hover text explaining the fact, and the codec read from the decoder rather than guessed from the file name. See the <a href=\"/formats/\">full formats list</a>."
+    "body": "FLAC, ALAC, MP3, AAC, OGG, Opus, WavPack, Monkey's Audio, DSD, WMA, AC-3, E-AC-3, DTS, and more. The play bar tells you which one you are hearing: a row of small coloured boxes under the title for the codec, bitrate, sample rate, bit depth and channels, each with hover text explaining the fact, and the codec read from the decoder rather than guessed from the file name. See the <a href=\"/formats/\">full formats list</a>."
   },
   {
     "title": "Loudness that behaves.",
@@ -41,19 +41,19 @@
   },
   {
     "title": "Lyrics, scrolling, synced.",
-    "body": "LRC files, embedded lyrics, or fetched from Last.fm. Karaoke-style line highlight. Toggle a translucent lyrics pane next to the queue."
+    "body": "LRC files, embedded lyrics, or fetched from LRCLIB if you turn that on. Karaoke-style line highlight. Toggle a translucent lyrics pane next to the queue."
   },
   {
     "title": "Cross-fade the mood.",
-    "body": "Per-genre fade durations. Equal-power curves. The dance set blends, the classical doesn't. You set the rules once."
+    "body": "Fade one song into the next, anywhere from 0 to 10 seconds, on equal-power curves. Albums can stay gapless while everything else blends. You set it once."
   },
   {
     "title": "Scrobbles only when you say so.",
-    "body": "Last.fm and ListenBrainz, opt-in, batched, signed. No background telemetry, no \"anonymous usage stats\". Bòcan never phones home."
+    "body": "Last.fm, ListenBrainz and Rocksky, opt-in, batched, signed. No background telemetry, no \"anonymous usage stats\". Bòcan never phones home."
   },
   {
     "title": "Plays your other library too.",
-    "body": "Subsonic, Navidrome, Airsonic. Up to nine servers, federated search across all of them, per-server status dots, offline banners with one-tap retry, and <kbd>⌘⇧1</kbd>–<kbd>⌘⇧9</kbd> to jump straight to a server. Streams through the same gapless engine as your local files."
+    "body": "Subsonic, Navidrome, Airsonic. As many servers as you like, federated search across the ones you include, per-server status dots, offline banners with one-tap retry, and <kbd>⌘⇧1</kbd>–<kbd>⌘⇧9</kbd> to expand or collapse a server in the sidebar. Plays through the same gapless engine as your local files."
   },
   {
     "title": "Podcasts that keep up.",
