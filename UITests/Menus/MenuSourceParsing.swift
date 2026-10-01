@@ -4,7 +4,7 @@ import Foundation
 
 /// Source-level extraction for the phase 30 shortcut parity test: reads
 /// `KeyBindings.swift`, the `BocanCommands*.swift` menu definitions, and
-/// the help book HTML, all relative to the repo root (`#filePath`), so the
+/// the in-app Help window's text, all relative to the repo root (`#filePath`), so the
 /// manifest, the bindings, the menus, and the shipped shortcut table can
 /// be compared without launching the app.
 enum MenuSourceParsing {
@@ -127,32 +127,27 @@ enum MenuSourceParsing {
         return out
     }
 
-    // MARK: Help book
+    // MARK: Help window
 
-    static var helpBookURL: URL {
-        self.repoRoot.appendingPathComponent(
-            "HelpBook/Bocan.help/Contents/Resources/en.lproj/index.html"
-        )
+    /// The two source files that hold all the text of the in-app Help window.
+    private static func helpSource(_ file: String) throws -> String {
+        let url = self.repoRoot.appendingPathComponent("Modules/UI/Sources/UI/Help/\(file)")
+        return try String(contentsOf: url, encoding: .utf8)
     }
 
     /// The Keyboard Shortcuts table: action name to display string.
-    static func helpBookTableRows() throws -> [(action: String, display: String)] {
-        let html = try String(contentsOf: self.helpBookURL, encoding: .utf8)
-        return html.matches(of: /<tr><td>([^<]+)<\/td><td>([^<]+)<\/td><\/tr>/)
-            .map { (action: Self.unescape(String($0.1)), display: Self.unescape(String($0.2))) }
+    static func helpTableRows() throws -> [(action: String, display: String)] {
+        try self.helpSource("HelpShortcuts.swift")
+            .matches(of: /HelpShortcut\(action: "([^"]+)", key: "([^"]+)"\)/)
+            .map { (action: String($0.1), display: String($0.2)) }
     }
 
-    /// The entities the help book's hand-written table actually uses.
-    private static func unescape(_ html: String) -> String {
-        html.replacingOccurrences(of: "&amp;", with: "&")
-    }
-
-    /// Every shortcut-looking token anywhere in the help book, prose
+    /// Every shortcut-looking token anywhere in the Help window's text, prose
     /// included, so a wrong shortcut in running text is caught too (the
     /// phase 27 bug class).
-    static func helpBookShortcutTokens() throws -> [String] {
-        let html = try String(contentsOf: self.helpBookURL, encoding: .utf8)
-        return html.matches(of: /[⌘⇧⌥⌃]+(?:→|←|↑|↓|↩|⌫|[A-Z0-9?.,])/)
+    static func helpShortcutTokens() throws -> [String] {
+        let source = try self.helpSource("HelpContent.swift") + self.helpSource("HelpShortcuts.swift")
+        return source.matches(of: /[⌘⇧⌥⌃]+(?:→|←|↑|↓|↩|⌫|[A-Z0-9?.,])/)
             .map { String($0.output) }
     }
 }
