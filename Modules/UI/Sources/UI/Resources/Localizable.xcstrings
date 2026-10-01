@@ -13789,12 +13789,12 @@
         }
       }
     },
-    "Love current track (⌘L)" : {
+    "Love current track" : {
       "localizations" : {
-        "en-XA" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ĺóvé çúŕŕéñţ ţŕáçķ (⌘Ĺ) one two"
+            "value" : "Love current track"
           }
         }
       }
@@ -25690,12 +25690,12 @@
         }
       }
     },
-    "Unlove current track (⌘L)" : {
+    "Unlove current track" : {
       "localizations" : {
-        "en-XA" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Úñĺóvé çúŕŕéñţ ţŕáçķ (⌘Ĺ) one two"
+            "value" : "Unlove current track"
           }
         }
       }

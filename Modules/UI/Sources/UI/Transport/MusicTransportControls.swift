@@ -37,7 +37,7 @@ struct MusicTransportControls: View {
                     : (self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
             )
             .disabled(self.vm.nowPlayingTrackID == nil)
-            .help(self.vm.nowPlayingIsLoved ? L10n.string("Unlove current track (⌘L)") : L10n.string("Love current track (⌘L)"))
+            .help(self.vm.nowPlayingIsLoved ? L10n.string("Unlove current track") : L10n.string("Love current track"))
             .accessibilityLabel(self.vm.nowPlayingIsLoved ? L10n.string("Loved") : L10n.string("Not Loved"))
             .accessibilityHint(self.vm.nowPlayingIsLoved ? L10n.string("Activate to unlove") : L10n.string("Activate to love"))
             .accessibilityAddTraits(.isToggle)
