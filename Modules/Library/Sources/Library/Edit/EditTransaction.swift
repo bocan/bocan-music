@@ -497,90 +497,90 @@ actor EditTransaction {
     }
 
     private static func applyPatch(_ patch: TrackTagPatch, to tags: inout TrackTags) {
-        if let v = patch.title {
-            tags.title = v
+        if let title = patch.title {
+            tags.title = title
         }
-        if let v = patch.artist {
-            tags.artist = v
+        if let artist = patch.artist {
+            tags.artist = artist
         }
-        if let v = patch.albumArtist {
-            tags.albumArtist = v
+        if let albumArtist = patch.albumArtist {
+            tags.albumArtist = albumArtist
         }
-        if let v = patch.album {
-            tags.album = v
+        if let album = patch.album {
+            tags.album = album
         }
-        if let v = patch.genre {
-            tags.genre = v
+        if let genre = patch.genre {
+            tags.genre = genre
         }
-        if let v = patch.composer {
-            tags.composer = v
+        if let composer = patch.composer {
+            tags.composer = composer
         }
-        if let v = patch.comment {
-            tags.comment = v
+        if let comment = patch.comment {
+            tags.comment = comment
         }
-        if let v = patch.trackNumber {
-            tags.trackNumber = v
+        if let trackNumber = patch.trackNumber {
+            tags.trackNumber = trackNumber
         }
-        if let v = patch.trackTotal {
-            tags.trackTotal = v
+        if let trackTotal = patch.trackTotal {
+            tags.trackTotal = trackTotal
         }
-        if let v = patch.discNumber {
-            tags.discNumber = v
+        if let discNumber = patch.discNumber {
+            tags.discNumber = discNumber
         }
-        if let v = patch.discTotal {
-            tags.discTotal = v
+        if let discTotal = patch.discTotal {
+            tags.discTotal = discTotal
         }
-        if let v = patch.year {
-            tags.year = v
+        if let year = patch.year {
+            tags.year = year
         }
-        if let v = patch.bpm {
-            tags.bpm = v
+        if let bpm = patch.bpm {
+            tags.bpm = bpm
         }
-        if let v = patch.key {
-            tags.key = v
+        if let key = patch.key {
+            tags.key = key
         }
-        if let v = patch.isrc {
-            tags.isrc = v
+        if let isrc = patch.isrc {
+            tags.isrc = isrc
         }
-        if let v = patch.musicbrainzTrackID {
-            tags.musicbrainzTrackID = v
+        if let musicbrainzTrackID = patch.musicbrainzTrackID {
+            tags.musicbrainzTrackID = musicbrainzTrackID
         }
-        if let v = patch.musicbrainzRecordingID {
-            tags.musicbrainzRecordingID = v
+        if let musicbrainzRecordingID = patch.musicbrainzRecordingID {
+            tags.musicbrainzRecordingID = musicbrainzRecordingID
         }
-        if let v = patch.musicbrainzReleaseID {
-            tags.musicbrainzReleaseID = v
+        if let musicbrainzReleaseID = patch.musicbrainzReleaseID {
+            tags.musicbrainzReleaseID = musicbrainzReleaseID
         }
-        if let v = patch.musicbrainzReleaseGroupID {
-            tags.musicbrainzReleaseGroupID = v
+        if let musicbrainzReleaseGroupID = patch.musicbrainzReleaseGroupID {
+            tags.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
         }
-        if let v = patch.musicbrainzArtistID {
-            tags.musicbrainzArtistID = v
+        if let musicbrainzArtistID = patch.musicbrainzArtistID {
+            tags.musicbrainzArtistID = musicbrainzArtistID
         }
-        if let v = patch.musicbrainzAlbumArtistID {
-            tags.musicbrainzAlbumArtistID = v
+        if let musicbrainzAlbumArtistID = patch.musicbrainzAlbumArtistID {
+            tags.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         }
-        if let v = patch.lyrics {
-            tags.lyrics = v
+        if let lyrics = patch.lyrics {
+            tags.lyrics = lyrics
         }
         // syncedLyrics writes to the same audio-file tag as plain lyrics;
         // the isSynced distinction is maintained in the lyrics DB table only.
-        if let v = patch.syncedLyrics {
-            tags.lyrics = v
+        if let syncedLyrics = patch.syncedLyrics {
+            tags.lyrics = syncedLyrics
         }
-        if let v = patch.sortArtist {
-            tags.sortArtist = v
+        if let sortArtist = patch.sortArtist {
+            tags.sortArtist = sortArtist
         }
-        if let v = patch.sortAlbumArtist {
-            tags.sortAlbumArtist = v
+        if let sortAlbumArtist = patch.sortAlbumArtist {
+            tags.sortAlbumArtist = sortAlbumArtist
         }
-        if let v = patch.sortAlbum {
-            tags.sortAlbum = v
+        if let sortAlbum = patch.sortAlbum {
+            tags.sortAlbum = sortAlbum
         }
-        if let v = patch.replaygainTrackGain {
+        if let trackGain = patch.replaygainTrackGain {
             let rg = tags.replayGain
             tags.replayGain = ReplayGain(
-                trackGain: v,
+                trackGain: trackGain,
                 trackPeak: rg.trackPeak,
                 albumGain: rg.albumGain,
                 albumPeak: rg.albumPeak

@@ -283,8 +283,8 @@ struct ScrobbleServiceTests {
         await service.kickAll()
         await service.stop()
 
-        let p = await service.provider(id: "alpha")
-        #expect(p != nil)
+        let found = await service.provider(id: "alpha")
+        #expect(found != nil)
         let missing = await service.provider(id: "missing")
         #expect(missing == nil)
         #expect(service.queueRepository === repo)

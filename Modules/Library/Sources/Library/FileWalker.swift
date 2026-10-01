@@ -165,7 +165,7 @@ public enum FileWalker {
     /// cancellation regression test observe `enumerate`'s cooperative bail
     /// directly, without the `AsyncStream` consumer's own cancellation masking
     /// it. See #265.
-    static func _collectForTesting(_ url: URL, extensions: Set<String>) -> [URL] {
+    static func collectForTesting(_ url: URL, extensions: Set<String>) -> [URL] {
         var out: [URL] = []
         self.enumerate(url, extensions: extensions, iCloudDownload: false) { out.append($0) }
         return out

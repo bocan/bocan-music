@@ -61,17 +61,17 @@ struct SmartPlaylistServiceTests {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "LikedTracks", criteria: criteria)
+        let playlist = try await svc.create(name: "LikedTracks", criteria: criteria)
         let all = try await svc.listAll()
-        #expect(all.contains { $0.id == p.id })
+        #expect(all.contains { $0.id == playlist.id })
     }
 
     @Test func createWithPresetKey() async throws {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "Loved", criteria: criteria, presetKey: "loved")
-        #expect(p.smartPresetKey == "loved")
+        let playlist = try await svc.create(name: "Loved", criteria: criteria, presetKey: "loved")
+        #expect(playlist.smartPresetKey == "loved")
     }
 
     // MARK: - CRUD: update
@@ -80,8 +80,8 @@ struct SmartPlaylistServiceTests {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)
         let original = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "Test", criteria: original)
-        guard let id = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Test", criteria: original)
+        guard let id = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -106,8 +106,8 @@ struct SmartPlaylistServiceTests {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "ToDelete", criteria: criteria)
-        guard let id = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "ToDelete", criteria: criteria)
+        guard let id = playlist.id else { Issue.record("no id")
             return
         }
         try await svc.delete(id: id)
@@ -126,8 +126,8 @@ struct SmartPlaylistServiceTests {
         _ = id2 // not expected in results
 
         let criteria = SmartCriterion.rule(.init(field: .rating, comparator: .greaterThanOrEqual, value: .int(80)))
-        let p = try await svc.create(name: "HighRating", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "HighRating", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -145,8 +145,8 @@ struct SmartPlaylistServiceTests {
         let unloved = try await insertTrack(in: db, fileURL: "file:///unloved.mp3", loved: false)
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "Loved", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Loved", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -163,8 +163,8 @@ struct SmartPlaylistServiceTests {
         let unplayed = try await insertTrack(in: db, fileURL: "file:///unplayed.mp3", playCount: 0)
 
         let criteria = SmartCriterion.rule(.init(field: .playCount, comparator: .greaterThan, value: .int(0)))
-        let p = try await svc.create(name: "Played", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Played", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -181,8 +181,8 @@ struct SmartPlaylistServiceTests {
         let rock = try await insertTrack(in: db, fileURL: "file:///rock.mp3", title: "Rock Anthem")
 
         let criteria = SmartCriterion.rule(.init(field: .title, comparator: .contains, value: .text("Jazz")))
-        let p = try await svc.create(name: "Jazz", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Jazz", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -204,8 +204,8 @@ struct SmartPlaylistServiceTests {
             .rule(.init(field: .rating, comparator: .greaterThanOrEqual, value: .int(80))),
             .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
         ])
-        let p = try await svc.create(name: "Best Loved", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Best Loved", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -229,8 +229,8 @@ struct SmartPlaylistServiceTests {
             comparator: .contains,
             value: .text("' OR 1=1 --")
         ))
-        let p = try await svc.create(name: "Injection", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Injection", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -249,8 +249,8 @@ struct SmartPlaylistServiceTests {
         }
         let criteria = SmartCriterion.rule(.init(field: .rating, comparator: .equalTo, value: .int(100)))
         let ls = LimitSort(sortBy: .addedAt, ascending: false, limit: 3, liveUpdate: true)
-        let p = try await svc.create(name: "Top3", criteria: criteria, limitSort: ls)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Top3", criteria: criteria, limitSort: ls)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -265,8 +265,8 @@ struct SmartPlaylistServiceTests {
         let svc = self.makeService(db: db)
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
         let ls = LimitSort(sortBy: .rating, ascending: false, limit: 10, liveUpdate: true)
-        let p = try await svc.create(name: "Resolved", criteria: criteria, limitSort: ls)
-        guard let id = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Resolved", criteria: criteria, limitSort: ls)
+        guard let id = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -291,11 +291,11 @@ struct SmartPlaylistServiceTests {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)
         // Smart playlist A
-        let a = try await svc.create(
+        let playlistA = try await svc.create(
             name: "A",
             criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null))
         )
-        guard let aid = a.id else {
+        guard let aid = playlistA.id else {
             Issue.record("missing id")
             return
         }
@@ -373,8 +373,8 @@ struct SmartPlaylistServiceTests {
         let loved = try await insertTrack(in: db, fileURL: "file:///loved.mp3", loved: true)
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(name: "Loved", criteria: criteria)
-        guard let pid = p.id else { Issue.record("no id")
+        let playlist = try await svc.create(name: "Loved", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
             return
         }
 
@@ -462,8 +462,8 @@ struct SmartPlaylistServiceTests {
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
         let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
-        let p = try await svc.create(name: "Loved Snapshot", criteria: criteria, limitSort: ls)
-        guard let pid = p.id else {
+        let playlist = try await svc.create(name: "Loved Snapshot", criteria: criteria, limitSort: ls)
+        guard let pid = playlist.id else {
             Issue.record("no id")
             return
         }
@@ -496,8 +496,8 @@ struct SmartPlaylistServiceTests {
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
         let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
-        let p = try await svc.create(name: "Stable Snapshot", criteria: criteria, limitSort: ls)
-        guard let pid = p.id else {
+        let playlist = try await svc.create(name: "Stable Snapshot", criteria: criteria, limitSort: ls)
+        guard let pid = playlist.id else {
             Issue.record("no id")
             return
         }
@@ -526,8 +526,8 @@ struct SmartPlaylistServiceTests {
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
         let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
-        let p = try await svc.create(name: "Timestamped", criteria: criteria, limitSort: ls)
-        guard let pid = p.id else {
+        let playlist = try await svc.create(name: "Timestamped", criteria: criteria, limitSort: ls)
+        guard let pid = playlist.id else {
             Issue.record("no id")
             return
         }
@@ -548,8 +548,8 @@ struct SmartPlaylistServiceTests {
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
         let live = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: true)
-        let p = try await svc.create(name: "Loved", criteria: criteria, limitSort: live)
-        guard let pid = p.id else {
+        let playlist = try await svc.create(name: "Loved", criteria: criteria, limitSort: live)
+        guard let pid = playlist.id else {
             Issue.record("no id")
             return
         }
@@ -582,12 +582,12 @@ struct SmartPlaylistServiceTests {
         let svc = self.makeService(db: db)
 
         let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
-        let p = try await svc.create(
+        let playlist = try await svc.create(
             name: "Randomized",
             criteria: criteria,
             limitSort: LimitSort(sortBy: .random, ascending: true, limit: nil, liveUpdate: true)
         )
-        guard let pid = p.id else {
+        guard let pid = playlist.id else {
             Issue.record("no id")
             return
         }

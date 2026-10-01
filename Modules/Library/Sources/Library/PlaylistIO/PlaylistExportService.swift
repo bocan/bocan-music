@@ -99,8 +99,8 @@ public actor PlaylistExportService {
 
     private static func makeEntry(track: Track, db: GRDB.Database) -> PlaylistPayload.Entry {
         let absolute: URL? = {
-            if let u = URL(string: track.fileURL), u.scheme != nil {
-                return u
+            if let url = URL(string: track.fileURL), url.scheme != nil {
+                return url
             }
             return URL(fileURLWithPath: track.fileURL)
         }()

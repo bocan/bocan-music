@@ -55,7 +55,7 @@ private func makeService() async throws -> (SubsonicService, UUID, ReadStubTrans
         retryPolicy: RetryPolicy(maxAttempts: 1, baseDelay: 0)
     )
     let service = SubsonicService(store: store)
-    await service._registerClientForTesting(client, serverID: id)
+    await service.registerClientForTesting(client, serverID: id)
     return (service, id, transport)
 }
 

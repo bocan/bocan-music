@@ -107,8 +107,8 @@ struct SubsonicServiceTests {
         do {
             try await client.ping()
             Issue.record("Expected error not thrown")
-        } catch let e as SwiftSonicError {
-            #expect(e.isTransient)
+        } catch let sonicError as SwiftSonicError {
+            #expect(sonicError.isTransient)
         }
     }
 
@@ -125,8 +125,8 @@ struct SubsonicServiceTests {
         do {
             try await client.ping()
             Issue.record("Expected auth error not thrown")
-        } catch let e as SwiftSonicError {
-            #expect(e.isAuthenticationFailure)
+        } catch let sonicError as SwiftSonicError {
+            #expect(sonicError.isAuthenticationFailure)
         }
     }
 
@@ -323,8 +323,8 @@ struct SubsonicServerModelTests {
             case (.original, .original):
                 break
 
-            case let (.kbps(a), .kbps(b)):
-                #expect(a == b)
+            case let (.kbps(original), .kbps(restored)):
+                #expect(original == restored)
 
             default:
                 Issue.record("Round-trip mismatch for \(stored)")

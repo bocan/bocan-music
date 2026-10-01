@@ -102,17 +102,17 @@ public enum Validator {
     /// Returns `true` when `low` is strictly greater than `high` for ordered types.
     private static func isDescending(_ low: Value, _ high: Value) -> Bool {
         switch (low, high) {
-        case let (.int(a), .int(b)):
-            a > b
+        case let (.int(lhs), .int(rhs)):
+            lhs > rhs
 
-        case let (.double(a), .double(b)):
-            a > b
+        case let (.double(lhs), .double(rhs)):
+            lhs > rhs
 
-        case let (.duration(a), .duration(b)):
-            a > b
+        case let (.duration(lhs), .duration(rhs)):
+            lhs > rhs
 
-        case let (.date(a), .date(b)):
-            a > b
+        case let (.date(lhs), .date(rhs)):
+            lhs > rhs
 
         default:
             false

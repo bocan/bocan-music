@@ -39,13 +39,13 @@ public struct CueMarkerService: Sendable {
         guard !cues.isEmpty else { return 0 }
 
         // Prefer complete sheets: all FILE targets present on disk.
-        let ranked = cues.sorted { a, b in
-            let aComplete = Self.allTargetsExist(inCueAt: a)
-            let bComplete = Self.allTargetsExist(inCueAt: b)
-            if aComplete != bComplete {
-                return aComplete
+        let ranked = cues.sorted { lhs, rhs in
+            let lhsComplete = Self.allTargetsExist(inCueAt: lhs)
+            let rhsComplete = Self.allTargetsExist(inCueAt: rhs)
+            if lhsComplete != rhsComplete {
+                return lhsComplete
             }
-            return a.lastPathComponent < b.lastPathComponent
+            return lhs.lastPathComponent < rhs.lastPathComponent
         }
 
         var claimed: Set<Int64> = []

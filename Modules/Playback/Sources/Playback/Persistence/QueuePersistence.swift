@@ -222,7 +222,7 @@ public actor QueuePersistence {
         /// Awaits the in-flight debounced save, if any. Test-only seam so suites can
         /// deterministically wait for `scheduleSave` to complete (through its
         /// debounce and flush) instead of sleeping past a guessed window (#323).
-        func _awaitPendingSaveForTesting() async {
+        func awaitPendingSaveForTesting() async {
             await self.pendingSave?.value
         }
     #endif

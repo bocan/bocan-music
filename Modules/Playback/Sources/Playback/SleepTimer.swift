@@ -37,8 +37,8 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
         case .minutes120:
             "2 hr"
 
-        case let .custom(m):
-            "\(m) min"
+        case let .custom(customMinutes):
+            "\(customMinutes) min"
         }
     }
 
@@ -65,8 +65,8 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
         case .minutes120:
             120
 
-        case let .custom(m):
-            m
+        case let .custom(customMinutes):
+            customMinutes
         }
     }
 

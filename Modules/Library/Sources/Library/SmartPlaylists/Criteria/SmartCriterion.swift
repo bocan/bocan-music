@@ -33,8 +33,8 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     // MARK: - Codable (manual, format-compatible with auto-synthesised form)
 
     private enum TopKey: String, CodingKey { case rule, group, invalid }
-    private enum RuleAssoc: String, CodingKey { case _0 }
-    private enum GroupAssoc: String, CodingKey { case _0, _1 }
+    private enum RuleAssoc: String, CodingKey { case rule = "_0" }
+    private enum GroupAssoc: String, CodingKey { case logicalOp = "_0", children = "_1" }
     private enum InvalidAssoc: String, CodingKey { case reason }
     private static let log = AppLogger.make(.library)
     public static let newerVersionRuleMessage = "This rule was created in a newer version of Bòcan."
@@ -50,7 +50,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         if container.contains(.rule) {
             let inner = try container.nestedContainer(keyedBy: RuleAssoc.self, forKey: .rule)
             do {
-                let rule = try inner.decode(Rule.self, forKey: ._0)
+                let rule = try inner.decode(Rule.self, forKey: .rule)
                 if let warning = Self.unknownRuleWarning(for: rule) {
                     Self.log.warning("smart.criteria.decode.unknownRule", ["warning": warning])
                     self = .invalid(reason: Self.newerVersionRuleMessage)
@@ -72,8 +72,8 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         }
         if container.contains(.group) {
             let inner = try container.nestedContainer(keyedBy: GroupAssoc.self, forKey: .group)
-            let op = try inner.decode(LogicalOp.self, forKey: ._0)
-            let children = try inner.decode([Self].self, forKey: ._1)
+            let op = try inner.decode(LogicalOp.self, forKey: .logicalOp)
+            let children = try inner.decode([Self].self, forKey: .children)
             self = .group(op, children)
             return
         }
@@ -89,12 +89,12 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         switch self {
         case let .rule(rule):
             var inner = container.nestedContainer(keyedBy: RuleAssoc.self, forKey: .rule)
-            try inner.encode(rule, forKey: ._0)
+            try inner.encode(rule, forKey: .rule)
 
         case let .group(op, children):
             var inner = container.nestedContainer(keyedBy: GroupAssoc.self, forKey: .group)
-            try inner.encode(op, forKey: ._0)
-            try inner.encode(children, forKey: ._1)
+            try inner.encode(op, forKey: .logicalOp)
+            try inner.encode(children, forKey: .children)
 
         case let .invalid(reason):
             var inner = container.nestedContainer(keyedBy: InvalidAssoc.self, forKey: .invalid)
@@ -116,7 +116,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
                 self.field = try? c.decode(String.self, forKey: .field)
             }
         }
-        guard let lenient = try? container.decode(LenientRule.self, forKey: ._0),
+        guard let lenient = try? container.decode(LenientRule.self, forKey: .rule),
               let field = lenient.field else { return nil }
         return "Unknown field \"\(field)\""
     }

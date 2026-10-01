@@ -30,16 +30,16 @@ extension SubsonicService {
 
         var updated = caps
         if !updated.supportsInternetRadio,
-           let v = await Self.classifyProbe({ _ = try await client.getInternetRadioStations() }) {
-            updated.supportsInternetRadio = v
+           let supported = await Self.classifyProbe({ _ = try await client.getInternetRadioStations() }) {
+            updated.supportsInternetRadio = supported
         }
         if !updated.supportsPodcasts,
-           let v = await Self.classifyProbe({ _ = try await client.getPodcasts(includeEpisodes: false) }) {
-            updated.supportsPodcasts = v
+           let supported = await Self.classifyProbe({ _ = try await client.getPodcasts(includeEpisodes: false) }) {
+            updated.supportsPodcasts = supported
         }
         if !updated.supportsBookmarks,
-           let v = await Self.classifyProbe({ _ = try await client.getBookmarks() }) {
-            updated.supportsBookmarks = v
+           let supported = await Self.classifyProbe({ _ = try await client.getBookmarks() }) {
+            updated.supportsBookmarks = supported
         }
         return updated
     }
@@ -50,7 +50,7 @@ extension SubsonicService {
         do {
             try await call()
             return true
-        } catch let e as SwiftSonicError where isCapabilityLie(e) {
+        } catch let sonicError as SwiftSonicError where isCapabilityLie(sonicError) {
             return false
         } catch {
             return nil

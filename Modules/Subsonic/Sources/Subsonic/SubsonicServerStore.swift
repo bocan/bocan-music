@@ -9,11 +9,19 @@ import Security
 /// Never stored on disk; JSON is only ever written to the Keychain data blob.
 struct SubsonicCredential: Codable {
     /// Schema version, for forward-compatible migration.
-    var v = 1
+    var version = 1
     /// Auth kind: "tokenSalt" or "apiKey".
     var kind: String
     /// The actual secret: password (tokenSalt) or API key (apiKey).
     var secret: String
+
+    /// The stored blob spells the schema version `v`; the key must not change,
+    /// or credentials already in the Keychain stop decoding.
+    private enum CodingKeys: String, CodingKey {
+        case version = "v"
+        case kind
+        case secret
+    }
 }
 
 // MARK: - SubsonicServerStore

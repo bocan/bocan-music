@@ -378,8 +378,8 @@ public struct FeedParser: Sendable {
     private static func sortedNewestFirst(_ episodes: [ParsedEpisode]) -> [ParsedEpisode] {
         episodes.sorted { lhs, rhs in
             switch (lhs.publishedAt, rhs.publishedAt) {
-            case let (a?, b?):
-                a > b
+            case let (lhsDate?, rhsDate?):
+                lhsDate > rhsDate
 
             case (nil, _):
                 false
@@ -391,8 +391,8 @@ public struct FeedParser: Sendable {
     }
 
     private static func parseExplicit(_ value: String?) -> Bool {
-        guard let v = value?.lowercased().trimmingCharacters(in: .whitespaces) else { return false }
-        return v == "yes" || v == "true" || v == "explicit"
+        guard let flag = value?.lowercased().trimmingCharacters(in: .whitespaces) else { return false }
+        return flag == "yes" || flag == "true" || flag == "explicit"
     }
 
     private static func parseITunesCategories(_ cats: [iTunesCategory]?) -> [String] {

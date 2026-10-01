@@ -143,7 +143,7 @@ struct PlaybackQueueAdditionalTests {
 struct QueueItemAPITests {
     @Test("resolvedURL parses fileURL when bookmark is nil")
     func resolvedURL() throws {
-        let q = QueueItem(
+        let queueItem = QueueItem(
             trackID: 1,
             bookmark: nil,
             fileURL: "file:///tmp/foo.flac",
@@ -156,13 +156,13 @@ struct QueueItemAPITests {
                 codec: "flac"
             )
         )
-        let url = try q.resolvedURL()
+        let url = try queueItem.resolvedURL()
         #expect(url.absoluteString == "file:///tmp/foo.flac")
     }
 
     @Test("resolvedURL throws when fileURL is unparseable")
     func resolvedURLThrows() throws {
-        let q = QueueItem(
+        let queueItem = QueueItem(
             trackID: 2,
             bookmark: nil,
             // URL(string:) returns nil for a string containing a percent-encoded NUL
@@ -176,16 +176,16 @@ struct QueueItemAPITests {
                 codec: "flac"
             )
         )
-        #expect(throws: (any Error).self) { _ = try q.resolvedURL() }
+        #expect(throws: (any Error).self) { _ = try queueItem.resolvedURL() }
     }
 
     @Test("Equatable + Hashable use id only")
     func equatableHashable() {
-        let a = item(1)
-        let b = a
-        #expect(a == b)
-        #expect(a.hashValue == b.hashValue)
-        #expect(a != item(1))
+        let original = item(1)
+        let copy = original
+        #expect(original == copy)
+        #expect(original.hashValue == copy.hashValue)
+        #expect(original != item(1))
     }
 }
 

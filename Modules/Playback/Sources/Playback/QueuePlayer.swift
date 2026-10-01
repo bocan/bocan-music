@@ -1766,9 +1766,9 @@ public actor QueuePlayer: Transport {
         }
         var artistNames: [Int64: String] = [:]
         artistNames.reserveCapacity(artists.count)
-        for a in artists {
-            if let aid = a.id {
-                artistNames[aid] = a.name
+        for artist in artists {
+            if let aid = artist.id {
+                artistNames[aid] = artist.name
             }
         }
         var items: [QueueItem] = []

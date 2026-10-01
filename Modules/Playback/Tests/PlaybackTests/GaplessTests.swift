@@ -17,25 +17,25 @@ struct GaplessTests {
     @Test("same rate + same channels = compatible")
     func sameRateChannels() {
         let bridge = FormatBridge()
-        let a = self.makeFmt(sampleRate: 44100, channels: 2)
-        let b = self.makeFmt(sampleRate: 44100, channels: 2)
-        #expect(bridge.isCompatible(a, b))
+        let lhs = self.makeFmt(sampleRate: 44100, channels: 2)
+        let rhs = self.makeFmt(sampleRate: 44100, channels: 2)
+        #expect(bridge.isCompatible(lhs, rhs))
     }
 
     @Test("different sample rates = incompatible")
     func differentSampleRates() {
         let bridge = FormatBridge()
-        let a = self.makeFmt(sampleRate: 44100, channels: 2)
-        let b = self.makeFmt(sampleRate: 48000, channels: 2)
-        #expect(!bridge.isCompatible(a, b))
+        let lhs = self.makeFmt(sampleRate: 44100, channels: 2)
+        let rhs = self.makeFmt(sampleRate: 48000, channels: 2)
+        #expect(!bridge.isCompatible(lhs, rhs))
     }
 
     @Test("different channel counts = incompatible")
     func differentChannelCounts() {
         let bridge = FormatBridge()
-        let a = self.makeFmt(sampleRate: 44100, channels: 2)
-        let b = self.makeFmt(sampleRate: 44100, channels: 1)
-        #expect(!bridge.isCompatible(a, b))
+        let stereo = self.makeFmt(sampleRate: 44100, channels: 2)
+        let mono = self.makeFmt(sampleRate: 44100, channels: 1)
+        #expect(!bridge.isCompatible(stereo, mono))
     }
 
     @Test("AudioSourceFormat compatibility is symmetric")
@@ -60,9 +60,9 @@ struct GaplessTests {
 
     @Test("isGaplessCompatible returns true for same rate+channels")
     func isGaplessCompatible() {
-        let a = AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "mp3")
-        let b = AudioSourceFormat(sampleRate: 44100, bitDepth: 320, channelCount: 2, isInterleaved: false, codec: "mp3")
-        #expect(a.isGaplessCompatible(with: b))
+        let lhs = AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "mp3")
+        let rhs = AudioSourceFormat(sampleRate: 44100, bitDepth: 320, channelCount: 2, isInterleaved: false, codec: "mp3")
+        #expect(lhs.isGaplessCompatible(with: rhs))
     }
 
     @Test("isGaplessCompatible returns false for mono vs stereo")

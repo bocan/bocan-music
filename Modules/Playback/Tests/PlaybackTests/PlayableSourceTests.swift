@@ -241,7 +241,7 @@ struct QueuePersistenceMigrationTests {
             repeatMode: .all,
             shuffleState: .off
         )
-        await persistence._awaitPendingSaveForTesting()
+        await persistence.awaitPendingSaveForTesting()
 
         let restored = await persistence.restore()
         let restoredItems = try #require(restored?.items)
@@ -274,7 +274,7 @@ struct QueuePersistenceMigrationTests {
             repeatMode: .off,
             shuffleState: .off
         )
-        await persistence._awaitPendingSaveForTesting()
+        await persistence.awaitPendingSaveForTesting()
 
         let restored = await persistence.restore()
         let restoredItems = try #require(restored?.items)

@@ -27,8 +27,8 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
         let (data, status): (Data, Int)
         if !self.responses.isEmpty {
             (data, status) = self.responses.removeFirst()
-        } else if let p = self.perpetual {
-            (data, status) = p
+        } else if let fallback = self.perpetual {
+            (data, status) = fallback
         } else {
             throw URLError(.badServerResponse)
         }
@@ -76,7 +76,7 @@ private func makeService() async throws -> (SubsonicService, UUID, MonitorStubTr
         retryPolicy: RetryPolicy(maxAttempts: 1, baseDelay: 0)
     )
     let service = SubsonicService(store: store)
-    await service._registerClientForTesting(client, serverID: id)
+    await service.registerClientForTesting(client, serverID: id)
     return (service, id, transport)
 }
 

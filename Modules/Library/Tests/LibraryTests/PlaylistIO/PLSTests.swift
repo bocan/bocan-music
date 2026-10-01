@@ -17,11 +17,11 @@ struct PLSTests {
         NumberOfEntries=2
         Version=2
         """
-        let p = try PLSReader.parse(data: Data(body.utf8))
-        #expect(p.entries.count == 2)
-        #expect(p.entries[0].path == "/Music/a.mp3")
-        #expect(p.entries[0].titleHint == "Alpha")
-        #expect(p.entries[0].durationHint == 120)
+        let parsed = try PLSReader.parse(data: Data(body.utf8))
+        #expect(parsed.entries.count == 2)
+        #expect(parsed.entries[0].path == "/Music/a.mp3")
+        #expect(parsed.entries[0].titleHint == "Alpha")
+        #expect(parsed.entries[0].durationHint == 120)
     }
 
     @Test("Recovers from missing NumberOfEntries")
@@ -33,10 +33,10 @@ struct PLSTests {
         File3=/y.mp3
         Title3=Bar
         """
-        let p = try PLSReader.parse(data: Data(body.utf8))
-        #expect(p.entries.count == 2)
-        #expect(p.entries[0].titleHint == "Foo")
-        #expect(p.entries[1].titleHint == "Bar")
+        let parsed = try PLSReader.parse(data: Data(body.utf8))
+        #expect(parsed.entries.count == 2)
+        #expect(parsed.entries[0].titleHint == "Foo")
+        #expect(parsed.entries[1].titleHint == "Bar")
     }
 
     @Test("Throws on garbage input")

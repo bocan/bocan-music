@@ -29,10 +29,10 @@ public actor ScrobbleService: ScrobbleSink {
     ) {
         var providerMap: [String: any ScrobbleProvider] = [:]
         var workerMap: [String: ScrobbleQueueWorker] = [:]
-        for p in providers {
-            providerMap[p.id] = p
-            workerMap[p.id] = ScrobbleQueueWorker(
-                provider: p,
+        for provider in providers {
+            providerMap[provider.id] = provider
+            workerMap[provider.id] = ScrobbleQueueWorker(
+                provider: provider,
                 repository: repository,
                 policy: policy,
                 reachability: reachability
@@ -301,8 +301,8 @@ public actor ScrobbleService: ScrobbleSink {
 
     private func activeProviderIDs() async -> [String] {
         var out: [String] = []
-        for (pid, p) in self.providers {
-            if await p.isAuthenticated() {
+        for (pid, provider) in self.providers {
+            if await provider.isAuthenticated() {
                 out.append(pid)
             }
         }

@@ -165,8 +165,8 @@ public actor FSWatcher {
             info: selfPtr,
             retain: nil,
             release: { ptr in
-                if let p = ptr {
-                    Unmanaged<FSWatcher>.fromOpaque(p).release()
+                if let pointer = ptr {
+                    Unmanaged<FSWatcher>.fromOpaque(pointer).release()
                 }
             },
             copyDescription: nil
@@ -197,7 +197,7 @@ public actor FSWatcher {
     /// with an empty paths array) and reports whether it failed, without exposing
     /// the non-Sendable stream handle across the actor boundary. Used by the
     /// retain-balance regression test for #264.
-    func _forceStreamCreateFailureForTesting() -> Bool {
+    func forceStreamCreateFailureForTesting() -> Bool {
         guard let stream = self.makeStream(forPaths: []) else { return true }
         // Defensive: should not happen, but never leak a real stream.
         FSEventStreamInvalidate(stream)

@@ -646,10 +646,10 @@ struct SmartCriteriaCompilerTests {
             .enumeration("mp3"),
             .null,
         ]
-        for v in values {
-            let data = try JSONEncoder().encode(v)
+        for value in values {
+            let data = try JSONEncoder().encode(value)
             let decoded = try JSONDecoder().decode(Value.self, from: data)
-            #expect(v == decoded)
+            #expect(value == decoded)
         }
     }
 

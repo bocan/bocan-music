@@ -255,10 +255,10 @@ public enum CUESheetReader {
     static func parseMSF(_ s: String) -> Int64? {
         let parts = s.split(separator: ":", omittingEmptySubsequences: false)
         guard parts.count == 3,
-              let m = Int64(parts[0]),
+              let minutes = Int64(parts[0]),
               let sec = Int64(parts[1]),
               let f = Int64(parts[2]) else { return nil }
-        let totalFrames = (m * 60 + sec) * 75 + f
+        let totalFrames = (minutes * 60 + sec) * 75 + f
         // 1 frame = 1/75 s = 13.333... ms; multiply then divide for integer arithmetic.
         return (totalFrames * 1000) / 75
     }

@@ -199,12 +199,12 @@ actor ScanCoordinator {
 
                     inFlight += 1
                     let url = fileURL
-                    let mode_ = mode
+                    let scanMode = mode
                     // ADR-004 audit M4: scan import work runs at `.utility` so it
                     // doesn't steal CPU priority from playback (engine + queue
                     // operate at higher default priorities).
                     group.addTask(priority: .utility) {
-                        let result = await self.importOne(url: url, mode: mode_, emit: emit)
+                        let result = await self.importOne(url: url, mode: scanMode, emit: emit)
                         return (url, result)
                     }
                 }
@@ -481,8 +481,8 @@ actor ScanCoordinator {
     /// branch so we only raise `needsConflictReview` when something actually
     /// changed — not just the file's modification timestamp.
     private static func tagsDiffer(dbTrack: Track, diskTags: TrackTags) -> Bool {
-        func ne<T: Equatable>(_ a: T?, _ b: T?) -> Bool {
-            a != b
+        func ne<T: Equatable>(_ lhs: T?, _ rhs: T?) -> Bool {
+            lhs != rhs
         }
         return ne(dbTrack.title, diskTags.title) ||
             ne(dbTrack.genre, diskTags.genre) ||

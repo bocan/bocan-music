@@ -223,15 +223,15 @@ public actor FingerprintService {
     /// straight album over compilations/live/soundtracks. Ties break on MBID so
     /// the order is deterministic (`sorted` is not guaranteed stable).
     private static func rankReleases(_ releases: [Acoustics.MBRelease]) -> [Acoustics.MBRelease] {
-        releases.sorted { a, b in
-            let aOfficial = a.status == "Official"
-            let bOfficial = b.status == "Official"
-            if aOfficial != bOfficial {
-                return aOfficial
+        releases.sorted { lhs, rhs in
+            let lhsOfficial = lhs.status == "Official"
+            let rhsOfficial = rhs.status == "Official"
+            if lhsOfficial != rhsOfficial {
+                return lhsOfficial
             }
 
             // Partial-ISO date strings compare correctly lexicographically.
-            switch (a.date, b.date) {
+            switch (lhs.date, rhs.date) {
             case let (x?, y?) where x != y:
                 return x < y
 
@@ -245,13 +245,13 @@ public actor FingerprintService {
                 break
             }
 
-            let aAlbum = Self.isStraightAlbum(a)
-            let bAlbum = Self.isStraightAlbum(b)
-            if aAlbum != bAlbum {
-                return aAlbum
+            let lhsAlbum = Self.isStraightAlbum(lhs)
+            let rhsAlbum = Self.isStraightAlbum(rhs)
+            if lhsAlbum != rhsAlbum {
+                return lhsAlbum
             }
 
-            return a.id < b.id
+            return lhs.id < rhs.id
         }
     }
 

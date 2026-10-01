@@ -200,78 +200,78 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         var out = track
         let now = Int64(Date().timeIntervalSince1970)
 
-        if let v = title {
-            out.title = v
+        if let title = self.title {
+            out.title = title
         }
-        if let v = genre {
-            out.genre = v
+        if let genre = self.genre {
+            out.genre = genre
         }
-        if let v = composer {
-            out.composer = v
+        if let composer = self.composer {
+            out.composer = composer
         }
-        if let v = trackNumber {
-            out.trackNumber = v
+        if let trackNumber = self.trackNumber {
+            out.trackNumber = trackNumber
         }
-        if let v = trackTotal {
-            out.trackTotal = v
+        if let trackTotal = self.trackTotal {
+            out.trackTotal = trackTotal
         }
-        if let v = discNumber {
-            out.discNumber = v
+        if let discNumber = self.discNumber {
+            out.discNumber = discNumber
         }
-        if let v = discTotal {
-            out.discTotal = v
+        if let discTotal = self.discTotal {
+            out.discTotal = discTotal
         }
-        if let v = year {
-            out.year = v
-            out.yearText = v.map { String($0) }
+        if let year = self.year {
+            out.year = year
+            out.yearText = year.map { String($0) }
         }
-        if let v = bpm {
-            out.bpm = v
+        if let bpm = self.bpm {
+            out.bpm = bpm
         }
-        if let v = key {
-            out.key = v
+        if let key = self.key {
+            out.key = key
         }
-        if let v = isrc {
-            out.isrc = v
+        if let isrc = self.isrc {
+            out.isrc = isrc
         }
-        if let v = musicbrainzTrackID {
-            out.musicbrainzTrackID = v
+        if let musicbrainzTrackID = self.musicbrainzTrackID {
+            out.musicbrainzTrackID = musicbrainzTrackID
         }
-        if let v = musicbrainzRecordingID {
-            out.musicbrainzRecordingID = v
+        if let musicbrainzRecordingID = self.musicbrainzRecordingID {
+            out.musicbrainzRecordingID = musicbrainzRecordingID
         }
-        if let v = musicbrainzReleaseID {
-            out.musicbrainzReleaseID = v
+        if let musicbrainzReleaseID = self.musicbrainzReleaseID {
+            out.musicbrainzReleaseID = musicbrainzReleaseID
         }
-        if let v = musicbrainzReleaseGroupID {
-            out.musicbrainzReleaseGroupID = v
+        if let musicbrainzReleaseGroupID = self.musicbrainzReleaseGroupID {
+            out.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
         }
-        if let v = musicbrainzArtistID {
-            out.musicbrainzArtistID = v
+        if let musicbrainzArtistID = self.musicbrainzArtistID {
+            out.musicbrainzArtistID = musicbrainzArtistID
         }
-        if let v = musicbrainzAlbumArtistID {
-            out.musicbrainzAlbumArtistID = v
+        if let musicbrainzAlbumArtistID = self.musicbrainzAlbumArtistID {
+            out.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         }
-        if let v = rating {
-            out.rating = v ?? 0
+        if let rating = self.rating {
+            out.rating = rating ?? 0
         }
-        if let v = loved {
-            out.loved = v
+        if let loved = self.loved {
+            out.loved = loved
         }
-        if let v = excludedFromShuffle {
-            out.excludedFromShuffle = v
+        if let excludedFromShuffle = self.excludedFromShuffle {
+            out.excludedFromShuffle = excludedFromShuffle
         }
-        if let v = replaygainTrackGain {
-            out.replaygainTrackGain = v
+        if let replaygainTrackGain = self.replaygainTrackGain {
+            out.replaygainTrackGain = replaygainTrackGain
         }
-        if let v = replaygainTrackPeak {
-            out.replaygainTrackPeak = v
+        if let replaygainTrackPeak = self.replaygainTrackPeak {
+            out.replaygainTrackPeak = replaygainTrackPeak
         }
-        if let v = replaygainAlbumGain {
-            out.replaygainAlbumGain = v
+        if let replaygainAlbumGain = self.replaygainAlbumGain {
+            out.replaygainAlbumGain = replaygainAlbumGain
         }
-        if let v = replaygainAlbumPeak {
-            out.replaygainAlbumPeak = v
+        if let replaygainAlbumPeak = self.replaygainAlbumPeak {
+            out.replaygainAlbumPeak = replaygainAlbumPeak
         }
 
         out.userEdited = true

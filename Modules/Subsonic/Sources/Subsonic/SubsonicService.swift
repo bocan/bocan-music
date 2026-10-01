@@ -249,8 +249,8 @@ public actor SubsonicService {
                 ]
             )
             return caps
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -284,8 +284,8 @@ public actor SubsonicService {
                 ["id": serverID.uuidString, "type": caps.serverType ?? "unknown"]
             )
             return caps
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -504,8 +504,8 @@ public actor SubsonicService {
         let client = try self.requireClient(serverID)
         do {
             return try await body(client)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -520,11 +520,11 @@ public actor SubsonicService {
         let client = try self.requireClient(serverID)
         do {
             return try await body(client)
-        } catch let e as SwiftSonicError {
-            if isCapabilityLie(e) {
+        } catch let sonicError as SwiftSonicError {
+            if isCapabilityLie(sonicError) {
                 await self.markCapabilityUnsupported(feature, for: serverID)
             }
-            throw SubsonicError.transport(e)
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -644,14 +644,14 @@ public actor SubsonicService {
     /// Test-only seam: register a preconstructed `SwiftSonicClient` for a
     /// server without going through Keychain-backed `buildClient`. Production
     /// code must continue to use `reloadClients` / `refreshClient`.
-    func _registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
+    func registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
         self.clients[serverID] = ClientEntry(client: client, capabilities: nil)
     }
 
     /// Test-only: read the in-memory capability snapshot without going through
     /// the staleness check. Production code should always use
     /// `loadCapabilities(serverID:)` instead.
-    func _capabilitiesForTesting(serverID: UUID) -> SubsonicCapabilities? {
+    func capabilitiesForTesting(serverID: UUID) -> SubsonicCapabilities? {
         self.clients[serverID]?.capabilities
     }
 }

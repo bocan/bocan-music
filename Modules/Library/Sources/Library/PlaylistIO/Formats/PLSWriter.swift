@@ -20,8 +20,8 @@ public enum PLSWriter {
             lines.append("File\(n)=\(M3UWriter.renderPath(for: entry, mode: options.pathMode))")
             if let t = entry.titleHint, !t.isEmpty {
                 lines.append("Title\(n)=\(t)")
-            } else if let a = entry.artistHint, !a.isEmpty {
-                lines.append("Title\(n)=\(a)")
+            } else if let artist = entry.artistHint, !artist.isEmpty {
+                lines.append("Title\(n)=\(artist)")
             }
             let dur = entry.durationHint.map { Int($0.rounded()) } ?? -1
             lines.append("Length\(n)=\(dur)")

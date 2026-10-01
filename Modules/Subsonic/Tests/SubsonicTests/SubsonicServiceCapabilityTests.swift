@@ -145,7 +145,7 @@ private func makeCapabilityFence(
     transport.enqueue(json: pingEnvelope())
     transport.enqueue(json: extensionsEnvelope([]))
     enqueueProbeFailures(transport, for: [.internetRadio, .podcasts, .bookmarks])
-    await service._registerClientForTesting(makeClient(transport), serverID: fenceID)
+    await service.registerClientForTesting(makeClient(transport), serverID: fenceID)
     return CapabilityFence(id: fenceID) {
         _ = try? await service.loadCapabilities(serverID: fenceID)
     }
@@ -157,7 +157,7 @@ private func makeCapabilityFence(
 struct SubsonicCapabilitiesFlagComparisonTests {
     @Test("hasSameCapabilityFlags ignores fetchedAt")
     func ignoresFetchedAt() {
-        let a = SubsonicCapabilities(
+        let earlier = SubsonicCapabilities(
             serverType: "navidrome",
             serverVersion: "0.50.2",
             apiVersion: "1.16.1",
@@ -165,7 +165,7 @@ struct SubsonicCapabilitiesFlagComparisonTests {
             supportsPodcasts: true,
             fetchedAt: Date(timeIntervalSince1970: 1)
         )
-        let b = SubsonicCapabilities(
+        let later = SubsonicCapabilities(
             serverType: "navidrome",
             serverVersion: "0.50.2",
             apiVersion: "1.16.1",
@@ -173,21 +173,21 @@ struct SubsonicCapabilitiesFlagComparisonTests {
             supportsPodcasts: true,
             fetchedAt: Date(timeIntervalSince1970: 999_999)
         )
-        #expect(a.hasSameCapabilityFlags(as: b))
+        #expect(earlier.hasSameCapabilityFlags(as: later))
     }
 
     @Test("detects podcasts flag change")
     func detectsPodcastsChange() {
-        let a = SubsonicCapabilities(supportsPodcasts: false)
-        let b = SubsonicCapabilities(supportsPodcasts: true)
-        #expect(!a.hasSameCapabilityFlags(as: b))
+        let withoutPodcasts = SubsonicCapabilities(supportsPodcasts: false)
+        let withPodcasts = SubsonicCapabilities(supportsPodcasts: true)
+        #expect(!withoutPodcasts.hasSameCapabilityFlags(as: withPodcasts))
     }
 
     @Test("detects server version change")
     func detectsVersionChange() {
-        let a = SubsonicCapabilities(serverVersion: "0.50.2")
-        let b = SubsonicCapabilities(serverVersion: "0.51.0")
-        #expect(!a.hasSameCapabilityFlags(as: b))
+        let older = SubsonicCapabilities(serverVersion: "0.50.2")
+        let newer = SubsonicCapabilities(serverVersion: "0.51.0")
+        #expect(!older.hasSameCapabilityFlags(as: newer))
     }
 
     @Test("detects each feature flag independently")
@@ -254,7 +254,7 @@ struct SubsonicServiceCapabilityStreamTests {
         enqueueProbeFailures(transport, for: [.bookmarks])
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         // Subscribe BEFORE triggering work — the stream buffers until consumed.
         let stream = await service.capabilityUpdates
@@ -306,7 +306,7 @@ struct SubsonicServiceCapabilityStreamTests {
         }
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
         let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         // Collect every emission up to the fence — deterministic, no sleep.
@@ -344,7 +344,7 @@ struct SubsonicServiceCapabilityStreamTests {
         enqueueProbeFailures(transport, for: [.internetRadio])
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let stream = await service.capabilityUpdates
         let collector = Task { () -> [UUID] in
@@ -391,7 +391,7 @@ struct SubsonicServiceCapabilityStreamTests {
         enqueueProbeFailures(transport, for: [.podcasts, .bookmarks])
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let caps = try await service.loadCapabilities(serverID: id)
         #expect(caps.supportsInternetRadio, "200 from getInternetRadioStations should set the flag")
@@ -409,7 +409,7 @@ struct SubsonicServiceCapabilityStreamTests {
         transport.enqueue(json: extensionsEnvelope(["internetRadio", "podcasts", "bookmarks"]))
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let caps = try await service.loadCapabilities(serverID: id)
         #expect(caps.supportsInternetRadio)
@@ -432,7 +432,7 @@ struct SubsonicServiceCapabilityStreamTests {
         // No more responses → podcasts + bookmarks probes throw URLError → no override.
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let caps = try await service.loadCapabilities(serverID: id)
         // The lie response on radio set it explicitly false; podcasts + bookmarks
@@ -453,7 +453,7 @@ struct SubsonicServiceCapabilityStreamTests {
         enqueueProbeFailures(transport, for: [.internetRadio, .podcasts, .bookmarks])
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
         let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
@@ -524,7 +524,7 @@ struct SubsonicServiceCapabilityLieTests {
         transport.enqueue(json: "", statusCode: 404)
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let stream = await service.capabilityUpdates
         let collector = Task { () -> [UUID] in
@@ -552,7 +552,7 @@ struct SubsonicServiceCapabilityLieTests {
         #expect(await collector.value == [id, id], "Expect 2 emissions: initial load + revocation")
 
         // In-memory capability is now false.
-        let updated = await service._capabilitiesForTesting(serverID: id)
+        let updated = await service.capabilitiesForTesting(serverID: id)
         #expect(updated?.supportsPodcasts == false)
 
         // Persisted snapshot also reflects revocation.
@@ -574,7 +574,7 @@ struct SubsonicServiceCapabilityLieTests {
         transport.enqueue(json: apiErrorEnvelope(code: 70, message: "Data not found"))
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
 
         let stream = await service.capabilityUpdates
         let collector = Task { () -> [UUID] in
@@ -599,7 +599,7 @@ struct SubsonicServiceCapabilityLieTests {
         // The collector self-terminates after the two expected emissions (#322).
         #expect(await collector.value == [id, id])
 
-        let updated = await service._capabilitiesForTesting(serverID: id)
+        let updated = await service.capabilitiesForTesting(serverID: id)
         #expect(updated?.supportsBookmarks == false)
     }
 
@@ -617,7 +617,7 @@ struct SubsonicServiceCapabilityLieTests {
 
         let service = SubsonicService(store: store)
         // No-retry so the 501 isn't retried (5xx is "transient" in the default policy).
-        await service._registerClientForTesting(makeClientNoRetry(transport), serverID: id)
+        await service.registerClientForTesting(makeClientNoRetry(transport), serverID: id)
 
         let stream = await service.capabilityUpdates
         let collector = Task { () -> [UUID] in
@@ -642,7 +642,7 @@ struct SubsonicServiceCapabilityLieTests {
         // The collector self-terminates after the two expected emissions (#322).
         #expect(await collector.value == [id, id])
 
-        let updated = await service._capabilitiesForTesting(serverID: id)
+        let updated = await service.capabilitiesForTesting(serverID: id)
         #expect(updated?.supportsInternetRadio == false)
     }
 
@@ -656,7 +656,7 @@ struct SubsonicServiceCapabilityLieTests {
         // No response queued for getPodcasts → throws URLError (treated as network error).
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClientNoRetry(transport), serverID: id)
+        await service.registerClientForTesting(makeClientNoRetry(transport), serverID: id)
         let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
@@ -683,7 +683,7 @@ struct SubsonicServiceCapabilityLieTests {
         // Only the initial capability load should have emitted; no revocation.
         #expect(await collector.value == [id], "Network error must not trigger a revocation emission")
 
-        let updated = await service._capabilitiesForTesting(serverID: id)
+        let updated = await service.capabilitiesForTesting(serverID: id)
         #expect(updated?.supportsPodcasts == true, "Network error must not revoke podcasts capability")
     }
 
@@ -698,7 +698,7 @@ struct SubsonicServiceCapabilityLieTests {
         transport.enqueue(json: "", statusCode: 404)
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
         let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
@@ -732,7 +732,7 @@ struct SubsonicServiceCapabilityLieTests {
         transport.enqueue(json: "", statusCode: 404)
 
         let service = SubsonicService(store: store)
-        await service._registerClientForTesting(makeClient(transport), serverID: id)
+        await service.registerClientForTesting(makeClient(transport), serverID: id)
         let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates

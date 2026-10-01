@@ -76,42 +76,42 @@ extension Value: Codable {
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .text(v):
+        case let .text(payload):
             try container.encode(Tag.text, forKey: .tag)
-            try container.encode(v, forKey: .text)
+            try container.encode(payload, forKey: .text)
 
-        case let .int(v):
+        case let .int(payload):
             try container.encode(Tag.int, forKey: .tag)
-            try container.encode(v, forKey: .int)
+            try container.encode(payload, forKey: .int)
 
-        case let .double(v):
+        case let .double(payload):
             try container.encode(Tag.double, forKey: .tag)
-            try container.encode(v, forKey: .double)
+            try container.encode(payload, forKey: .double)
 
-        case let .bool(v):
+        case let .bool(payload):
             try container.encode(Tag.bool, forKey: .tag)
-            try container.encode(v, forKey: .bool)
+            try container.encode(payload, forKey: .bool)
 
-        case let .date(v):
+        case let .date(payload):
             try container.encode(Tag.date, forKey: .tag)
-            try container.encode(v, forKey: .date)
+            try container.encode(payload, forKey: .date)
 
-        case let .duration(v):
+        case let .duration(payload):
             try container.encode(Tag.duration, forKey: .tag)
-            try container.encode(v, forKey: .duration)
+            try container.encode(payload, forKey: .duration)
 
         case let .range(low, high):
             try container.encode(Tag.range, forKey: .tag)
             try container.encode(low, forKey: .low)
             try container.encode(high, forKey: .high)
 
-        case let .playlistRef(v):
+        case let .playlistRef(payload):
             try container.encode(Tag.playlistRef, forKey: .tag)
-            try container.encode(v, forKey: .playlistRef)
+            try container.encode(payload, forKey: .playlistRef)
 
-        case let .enumeration(v):
+        case let .enumeration(payload):
             try container.encode(Tag.enumeration, forKey: .tag)
-            try container.encode(v, forKey: .enumeration)
+            try container.encode(payload, forKey: .enumeration)
 
         case .null:
             try container.encode(Tag.null, forKey: .tag)

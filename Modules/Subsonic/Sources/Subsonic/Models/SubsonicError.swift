@@ -22,8 +22,8 @@ public enum SubsonicError: Error, Sendable {
     /// `true` if the error is transient and the caller may retry.
     public var isTransient: Bool {
         switch self {
-        case let .transport(e):
-            e.isTransient
+        case let .transport(underlying):
+            underlying.isTransient
 
         case .keychain:
             false
@@ -53,8 +53,8 @@ public enum SubsonicError: Error, Sendable {
     /// `true` if the error indicates an authentication failure.
     public var isAuthenticationFailure: Bool {
         switch self {
-        case let .transport(e):
-            e.isAuthenticationFailure
+        case let .transport(underlying):
+            underlying.isAuthenticationFailure
 
         case let .apiError(code, _):
             code == 40 || code == 41
@@ -70,8 +70,8 @@ public enum SubsonicError: Error, Sendable {
 extension SubsonicError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case let .transport(e):
-            e.localizedDescription
+        case let .transport(underlying):
+            underlying.localizedDescription
 
         case let .keychain(status, op):
             "Keychain \(op) failed (OSStatus \(status))"

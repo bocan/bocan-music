@@ -82,8 +82,8 @@ public struct MBRelease: Decodable, Sendable {
     }
 
     public var year: Int? {
-        guard let d = self.date, d.count >= 4 else { return nil }
-        return Int(d.prefix(4))
+        guard let date = self.date, date.count >= 4 else { return nil }
+        return Int(date.prefix(4))
     }
 
     public var albumArtistName: String? {
@@ -156,8 +156,8 @@ public struct MBReleaseGroup: Decodable, Sendable {
     }
 
     public var year: Int? {
-        guard let d = self.firstReleaseDate, d.count >= 4 else { return nil }
-        return Int(d.prefix(4))
+        guard let date = self.firstReleaseDate, date.count >= 4 else { return nil }
+        return Int(date.prefix(4))
     }
 }
 

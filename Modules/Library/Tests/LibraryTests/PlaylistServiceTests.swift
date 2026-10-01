@@ -46,11 +46,11 @@ struct PlaylistServiceTests {
     func createManual() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Favourites")
-        #expect(p.id != nil)
-        #expect(p.kind == .manual)
+        let playlist = try await service.create(name: "Favourites")
+        #expect(playlist.id != nil)
+        #expect(playlist.kind == .manual)
         let list = try await service.list()
-        #expect(list.contains { $0.id == p.id })
+        #expect(list.contains { $0.id == playlist.id })
     }
 
     @Test("create rejects empty name")
@@ -85,8 +85,8 @@ struct PlaylistServiceTests {
     func rename() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Old")
-        guard let id = p.id else { return }
+        let playlist = try await service.create(name: "Old")
+        guard let id = playlist.id else { return }
         try await service.rename(id, to: "New")
         let repo = PlaylistRepository(database: db)
         let updated = try await repo.fetch(id: id)
@@ -126,8 +126,8 @@ struct PlaylistServiceTests {
     func deletePlaylistKeepsTracks() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let trackIDs = try await self.tracks(3, in: db)
         try await service.addTracks(trackIDs, to: pid)
         try await service.delete(pid)
@@ -170,8 +170,8 @@ struct PlaylistServiceTests {
     func addAndCount() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let trackIDs = try await self.tracks(4, in: db)
         try await service.addTracks(trackIDs, to: pid)
         let nodes = try await service.list()
@@ -184,8 +184,8 @@ struct PlaylistServiceTests {
     func addTracksIncreasing() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(3, in: db)
         try await service.addTracks(ids, to: pid)
         let repo = PlaylistRepository(database: db)
@@ -200,8 +200,8 @@ struct PlaylistServiceTests {
     func addTracksMiddle() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let firstA = try await self.makeTrack(in: db, fileURL: "file:///tmp/midA.mp3")
         let firstB = try await self.makeTrack(in: db, fileURL: "file:///tmp/midB.mp3")
         try await service.addTracks([firstA, firstB], to: pid)
@@ -217,8 +217,8 @@ struct PlaylistServiceTests {
     func repackOnCollision() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         // Manually seed tight positions to force a repack path.
         let trackIDs = try await self.tracks(3, in: db)
         let repo = PlaylistRepository(database: db)
@@ -244,8 +244,8 @@ struct PlaylistServiceTests {
     func removeTracks() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(4, in: db)
         try await service.addTracks(ids, to: pid)
         try await service.removeTracks(at: IndexSet([1, 3]), from: pid)
@@ -257,8 +257,8 @@ struct PlaylistServiceTests {
     func moveTracksMirrorsSwiftUI() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(5, in: db)
         try await service.addTracks(ids, to: pid)
         // Move element at offset 1 to offset 4 -> expected order [0, 2, 3, 1, 4]
@@ -271,8 +271,8 @@ struct PlaylistServiceTests {
     func duplicate() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Original")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "Original")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(3, in: db)
         try await service.addTracks(ids, to: pid)
         let copy = try await service.duplicate(pid)
@@ -298,8 +298,8 @@ struct PlaylistServiceTests {
     func accentColor() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let id = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let id = playlist.id else { return }
         try await service.setAccentColor(id, hex: "#FF9500")
         try await service.setAccentColor(id, hex: nil)
         await #expect(throws: PlaylistError.self) {
@@ -313,8 +313,8 @@ struct PlaylistServiceTests {
     func oracleParity() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
 
         var oracle: [Int64] = []
         var pool: [Int64] = []
@@ -373,8 +373,8 @@ struct PlaylistServiceTests {
     func sortByTitle() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let charlie = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_c.mp3", title: "Charlie")
         let alpha = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_a.mp3", title: "Alpha")
         let bravo = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_b.mp3", title: "Bravo")
@@ -389,8 +389,8 @@ struct PlaylistServiceTests {
     func sortByTitleCaseInsensitive() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let lower = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_a.mp3", title: "alpha")
         let mixed = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_b.mp3", title: "Bravo")
         let caps = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_c.mp3", title: "AARDVARK")
@@ -405,8 +405,8 @@ struct PlaylistServiceTests {
     func sortByDateAdded() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let repo = TrackRepository(database: db)
         let old = Track(
             fileURL: "file:///tmp/da_old.mp3",
@@ -446,8 +446,8 @@ struct PlaylistServiceTests {
     func sortByArtist() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let artistRepo = ArtistRepository(database: db)
         let trackRepo = TrackRepository(database: db)
         let now = Int64(Date().timeIntervalSince1970)
@@ -497,8 +497,8 @@ struct PlaylistServiceTests {
     func sortEmpty() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Empty")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "Empty")
+        guard let pid = playlist.id else { return }
         try await service.sortContents(pid, by: .title)
         let tracks = try await service.tracks(in: pid)
         #expect(tracks.isEmpty)
@@ -508,8 +508,8 @@ struct PlaylistServiceTests {
     func sortProducesCleanPositions() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(5, in: db)
         try await service.addTracks(ids, to: pid)
         try await service.sortContents(pid, by: .title)

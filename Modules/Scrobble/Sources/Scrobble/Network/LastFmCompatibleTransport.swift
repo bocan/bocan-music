@@ -39,11 +39,11 @@ struct LastFmCompatibleTransport {
         sharedSecret: String,
         providerID: String
     ) async throws -> [String: Any] {
-        var p = params
-        p["api_sig"] = LastFmSignature.sign(p, secret: sharedSecret)
-        p["format"] = "json"
+        var signedParams = params
+        signedParams["api_sig"] = LastFmSignature.sign(signedParams, secret: sharedSecret)
+        signedParams["format"] = "json"
 
-        let request = try self.makeRequest(params: p, method: method, providerID: providerID)
+        let request = try self.makeRequest(params: signedParams, method: method, providerID: providerID)
         let (data, response) = try await self.http.data(for: request)
         let http = response as? HTTPURLResponse
         let status = http?.statusCode ?? 0

@@ -39,11 +39,11 @@ public enum M3UWriter {
                 let display = Self.displayString(for: entry)
                 lines.append("#EXTINF:\(dur),\(display)")
             }
-            if options.includeExtArt, let a = entry.artistHint, !a.isEmpty {
-                lines.append("#EXTART:" + a)
+            if options.includeExtArt, let artist = entry.artistHint, !artist.isEmpty {
+                lines.append("#EXTART:" + artist)
             }
-            if options.includeExtAlb, let a = entry.albumHint, !a.isEmpty {
-                lines.append("#EXTALB:" + a)
+            if options.includeExtAlb, let album = entry.albumHint, !album.isEmpty {
+                lines.append("#EXTALB:" + album)
             }
             lines.append(Self.renderPath(for: entry, mode: options.pathMode))
         }

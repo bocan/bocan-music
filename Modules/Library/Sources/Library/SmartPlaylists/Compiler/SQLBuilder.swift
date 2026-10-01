@@ -103,33 +103,33 @@ public enum SQLBuilder {
         switch rule.comparator {
         // ── Text ─────────────────────────────────────────────────────────────
         case .is:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v.lowercased())
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(text.lowercased())
             return "LOWER(\(col)) = LOWER(?)"
 
         case .isNot:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v.lowercased())
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(text.lowercased())
             return "(\(col) IS NULL OR LOWER(\(col)) != LOWER(?))"
 
         case .contains:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()) + "%")
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .doesNotContain:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()) + "%")
             return "(\(col) IS NULL OR LOWER(\(col)) NOT LIKE LOWER(?) ESCAPE '\\')"
 
         case .startsWith:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(Self.escapeLike(text.lowercased()) + "%")
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .endsWith:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()))
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()))
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .matchesRegex:
@@ -182,17 +182,17 @@ public enum SQLBuilder {
 
         // ── Date ─────────────────────────────────────────────────────────────
         case .beforeDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
-            args.append(Int64(d.timeIntervalSince1970))
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
+            args.append(Int64(date.timeIntervalSince1970))
             return "\(col) < ?"
 
         case .afterDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
-            args.append(Int64(d.timeIntervalSince1970))
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
+            args.append(Int64(date.timeIntervalSince1970))
             return "\(col) > ?"
 
         case .onDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
             // Match entire day: [start of day, start of next day).
             // Pin the Gregorian calendar to the device's current timezone so the
             // day boundary matches the user's local clock; Calendar.current can
@@ -200,7 +200,7 @@ public enum SQLBuilder {
             // incorrect year-based arithmetic.
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = TimeZone.current
-            let start = cal.startOfDay(for: d)
+            let start = cal.startOfDay(for: date)
             let end = cal.date(byAdding: .day, value: 1, to: start)!
             args.append(Int64(start.timeIntervalSince1970))
             args.append(Int64(end.timeIntervalSince1970))
@@ -347,22 +347,22 @@ public enum SQLBuilder {
 
     private static func numericArg(_ rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch rule.value {
-        case let .int(v):
-            return v
+        case let .int(number):
+            return number
 
-        case let .double(v):
-            return v
+        case let .double(number):
+            return number
 
-        case let .duration(v):
-            return v
+        case let .duration(number):
+            return number
 
         default:
             throw self.valueError(rule)
         }
     }
 
-    private static func scalarArg(_ v: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
-        switch v {
+    private static func scalarArg(_ value: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
+        switch value {
         case let .int(x):
             return x
 

@@ -8,8 +8,8 @@ struct FSWatcherTests {
     func onChangeReceivesURLs() async throws {
         actor Collector {
             var urls: [URL] = []
-            func append(_ u: [URL]) {
-                self.urls.append(contentsOf: u)
+            func append(_ newURLs: [URL]) {
+                self.urls.append(contentsOf: newURLs)
             }
         }
         let collector = Collector()
@@ -51,7 +51,7 @@ struct FSWatcherTests {
         do {
             let watcher = FSWatcher { _ in }
             weakWatcher = watcher
-            let failed = await watcher._forceStreamCreateFailureForTesting()
+            let failed = await watcher.forceStreamCreateFailureForTesting()
             #expect(failed, "precondition: an empty paths array must fail FSEventStreamCreate")
         }
         #expect(weakWatcher == nil, "FSWatcher leaked a retain on the stream-create failure path")
