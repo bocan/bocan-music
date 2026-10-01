@@ -689,7 +689,7 @@ public actor QueuePlayer: Transport {
         // We go directly to the root scope when the per-file bookmark is absent (nil)
         // because the raw file:// URL is inaccessible in the sandbox without a scope.
         var resolvedFromPerFileBookmark = false
-        var rootScope: RootScopeHandle? = nil
+        var rootScope: RootScopeHandle?
         let url: URL
 
         if case let .internetRadio(streamURL) = item.playableSource {
@@ -1241,7 +1241,7 @@ public actor QueuePlayer: Transport {
     private func performGaplessPrefetch(item: QueueItem, transition: BoundaryTransition) async throws {
         // Resolve the URL the same way we would for a normal load.
         var resolvedFromPerFileBookmark = false
-        var rootScope: RootScopeHandle? = nil
+        var rootScope: RootScopeHandle?
         let url: URL
 
         if item.bookmark != nil {

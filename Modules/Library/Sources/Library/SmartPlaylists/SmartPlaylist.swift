@@ -124,7 +124,7 @@ public struct LimitSort: Sendable, Codable, Hashable {
             let asc = try container.decodeIfPresent(Bool.self, forKey: .ascending) ?? false
             self.sortDescriptors = [SmartSortDescriptor(key: key, ascending: asc)]
         }
-        self.limit = try container.decodeIfPresent(Int.self, forKey: .limit) ?? nil
+        self.limit = try container.decodeIfPresent(Int.self, forKey: .limit)
         self.liveUpdate = try container.decodeIfPresent(Bool.self, forKey: .liveUpdate) ?? true
     }
 

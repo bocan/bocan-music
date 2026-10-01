@@ -276,7 +276,8 @@ struct SubsonicServiceCapabilityStreamTests {
                 try await Task.sleep(nanoseconds: 1_500_000_000)
                 return nil
             }
-            let first = try await group.next() ?? nil
+            // `next()` wraps the child's optional result in a second optional.
+            let first = try await group.next().flatMap(\.self)
             group.cancelAll()
             return first
         }

@@ -159,7 +159,8 @@ public actor SyncListener {
                     let alreadyResumed = was
                     was = true
                     return !alreadyResumed
-                } }
+                }
+                }
                 switch state {
                 case .ready:
                     if claim() {

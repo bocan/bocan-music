@@ -62,8 +62,8 @@ public actor SubsonicServerStore {
             // Roll back the Keychain item to keep them in sync.
             do {
                 try self.keychainDelete(account: server.keychainAccount)
-            } catch let keychainError {
-                self.log.warning("subsonic.store.rollback.keychain.failed", ["error": String(reflecting: keychainError)])
+            } catch {
+                self.log.warning("subsonic.store.rollback.keychain.failed", ["error": String(reflecting: error)])
             }
             throw error
         }

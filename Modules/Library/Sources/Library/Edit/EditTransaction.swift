@@ -275,7 +275,7 @@ actor EditTransaction {
         // "Add Files…" as an individual root), activate its per-file bookmark.
         // This grants the sandbox read+write access to the specific file so that
         // TagReader/TagWriter can open it and FileManager can replace it.
-        var perFileURL: URL? = nil
+        var perFileURL: URL?
         if rootScope == nil, let bookmark = track.fileBookmark {
             var isStale = false
             do {
@@ -400,8 +400,8 @@ actor EditTransaction {
             }
             let artist = try await self.artistRepo.findOrCreate(
                 name: artistName,
-                sortName: patch.sortArtist ?? nil,
-                musicbrainzID: patch.musicbrainzArtistID ?? nil
+                sortName: patch.sortArtist.flatMap(\.self),
+                musicbrainzID: patch.musicbrainzArtistID.flatMap(\.self)
             )
             updated.artistID = artist.id
 
@@ -415,8 +415,8 @@ actor EditTransaction {
                 ? artist
                 : try await self.artistRepo.findOrCreate(
                     name: albumArtistName,
-                    sortName: patch.sortAlbumArtist ?? nil,
-                    musicbrainzID: patch.musicbrainzAlbumArtistID ?? nil
+                    sortName: patch.sortAlbumArtist.flatMap(\.self),
+                    musicbrainzID: patch.musicbrainzAlbumArtistID.flatMap(\.self)
                 )
 
             // Resolve album FK.
@@ -484,7 +484,7 @@ actor EditTransaction {
     /// The cover-art rows as they stand before a database-only edit, so undo
     /// can put them back (#472).
     private func artRestorePoint(for track: Track) async -> BackupRing.DatabaseOnlyRestore {
-        var album: Album? = nil
+        var album: Album?
         if let albumID = track.albumID {
             album = await self.albumOrNil(albumID, context: "artRestorePoint")
         }

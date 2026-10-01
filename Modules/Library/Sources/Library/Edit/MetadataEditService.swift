@@ -291,16 +291,22 @@ public actor MetadataEditService {
             }) { scopedURL in
                 try await withCheckedThrowingContinuation { continuation in
                     Self.tagReadQueue.async {
-                        do { try continuation.resume(returning: TagReader().read(from: scopedURL)) }
-                        catch { continuation.resume(throwing: error) }
+                        do {
+                            try continuation.resume(returning: TagReader().read(from: scopedURL))
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
                     }
                 }
             }
         }
         return try await withCheckedThrowingContinuation { continuation in
             Self.tagReadQueue.async {
-                do { try continuation.resume(returning: TagReader().read(from: url)) }
-                catch { continuation.resume(throwing: error) }
+                do {
+                    try continuation.resume(returning: TagReader().read(from: url))
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }

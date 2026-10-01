@@ -26,6 +26,11 @@ public final class LogStore: Sendable {
         var subscribers: [UInt64: AsyncStream<LogEntry>.Continuation] = [:]
         var nextSubscriberID: UInt64 = 0
 
+        /// True when the ring holds no entry. `count` is a counter, not a collection.
+        var isEmpty: Bool {
+            self.count < 1
+        }
+
         init(capacity: Int) {
             self.buffer = Array(repeating: nil, count: capacity)
         }
@@ -115,7 +120,7 @@ public final class LogStore: Sendable {
     public func snapshot() -> [LogEntry] {
         let cap = self.capacity
         return self._state.withLock { s in
-            guard s.count > 0 else { return [] }
+            guard !s.isEmpty else { return [] }
             var result = [LogEntry]()
             result.reserveCapacity(s.count)
             for i in 0 ..< s.count {
@@ -161,7 +166,7 @@ public final class LogStore: Sendable {
         let (backfill, token): ([LogEntry], UInt64) = self._state.withLock { s in
             // Snapshot the current ring buffer.
             var result = [LogEntry]()
-            if s.count > 0 {
+            if !s.isEmpty {
                 result.reserveCapacity(s.count)
                 for i in 0 ..< s.count {
                     result.append(s.buffer[(s.head + i) % cap]!)

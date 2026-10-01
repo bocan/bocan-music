@@ -101,7 +101,8 @@ private func awaitStatus(
             try? await Task.sleep(nanoseconds: timeoutNanos)
             return nil
         }
-        let first = await group.next() ?? nil
+        // `next()` wraps the child's optional result in a second optional.
+        let first = await group.next().flatMap(\.self)
         group.cancelAll()
         return first
     }
