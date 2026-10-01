@@ -163,6 +163,10 @@ Sparkle keeps the app current automatically. `brew upgrade --greedy bocan` does 
 
 ---
 
+## Documentation
+
+The [wiki](https://github.com/bocan/bocan-music/wiki) is the user guide: [Getting Started](https://github.com/bocan/bocan-music/wiki/Getting-Started), the full feature list, keyboard shortcuts, podcasts, internet radio, Subsonic servers, Phone Sync and [Troubleshooting](https://github.com/bocan/bocan-music/wiki/Troubleshooting). A shorter version is at [bocan.app/docs](https://bocan.app/docs/).
+
 ## Building from source
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for prerequisites, environment setup, the build system, common `make` targets, FFmpeg and fpcalc notes, and contribution guidelines.

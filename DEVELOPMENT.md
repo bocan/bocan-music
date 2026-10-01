@@ -4,7 +4,7 @@
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Xcode | 26+ | App Store / developer.apple.com |
+| Xcode | 27 | App Store / developer.apple.com (needs a Mac running macOS 27) |
 | Homebrew | any | [brew.sh](https://brew.sh) |
 | Swift | 6.2+ | Bundled with Xcode |
 
@@ -51,7 +51,7 @@ make doctor
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |
 | `make pseudolocale` | Regenerate the en-XA pseudolocale in the UI String Catalog |
-| `make release-note` | Add a human note to the pending release PR's changelog. Never touch `release-please--branches--main` by hand: the bot force-recreates it every cycle, so a plain `git switch` lands on a stale local copy and `git pull` produces conflicts in every bot-owned file. The script force-resets onto the remote branch, opens `$EDITOR` on `CHANGELOG.md`, commits only that file, pushes to GitHub only (the Tangled/Codeberg mirrors reject this branch), and returns you to main, deleting the local branch copy so no stale fossil survives into the next cycle |
+| `make release-preview` | Show the version the next release would get and the `CHANGELOG.md` section it would write. Nothing is changed. Release notes are not added by a command: each `feat`, `fix` or `perf` PR writes its own under `## [Unreleased]` (see "Releasing" below) |
 | `make audit-db` | Data-level schema audit against the real library (a `.backup` copy, never the live file; `DB=/path/to/library.sqlite` to override). `Scripts/audit-db-schema.py` reports columns that are 100% NULL, stuck at their DDL default, or over 90% NULL; `Scripts/audit-db-xref.py` reports columns no Swift source outside migrations and tests references. See issue #414 for why this exists |
 | `make data-dictionary` | Regenerate `docs/data-dictionary.md` from a freshly migrated schema (`swift run bocan-schema` in `Modules/Persistence`), merging the curated `docs/data-dictionary-notes.json`; `DB=/path/to/library.sqlite` documents a real library instead. Edit the notes file, never the generated tables |
 | `make clean` | Remove build artefacts |
