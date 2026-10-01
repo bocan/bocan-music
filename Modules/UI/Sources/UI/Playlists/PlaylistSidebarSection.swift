@@ -69,6 +69,14 @@ public struct PlaylistSidebarSection: View {
                 .accessibilityLabel(L10n.string("New Playlist or Folder"))
                 .accessibilityIdentifier(A11y.PlaylistSidebar.addButton)
             }
+            // One element with named actions, so VoiceOver reaches both the
+            // collapse and every item of the "+" menu (#596).
+            .sidebarHeaderAccessibility(title: L10n.string("Playlists"), isExpanded: !self.isCollapsed) {
+                withAnimation(.easeInOut(duration: 0.2)) { self.isCollapsed.toggle() }
+            }
+            .accessibilityAction(named: L10n.string("New Playlist")) { self.vm.beginNewPlaylist() }
+            .accessibilityAction(named: L10n.string("New Smart Playlist")) { self.vm.beginNewSmartPlaylist() }
+            .accessibilityAction(named: L10n.string("New Folder")) { self.vm.beginNewFolder() }
         }
         // Load only if a startup trigger (LibraryViewModel setup / RootView spine)
         // has not already populated the tree; reload() also coalesces, so an

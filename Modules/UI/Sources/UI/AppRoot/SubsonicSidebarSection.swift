@@ -82,55 +82,71 @@ public struct SubsonicSidebarSection: View {
                 }
             }
         } header: {
-            HStack {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { self.sectionExpanded.toggle() }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(localized: "Sources")
-                        Image(systemName: self.sectionExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(Color.textTertiary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .help(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
-                .accessibilityLabel(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
-                .accessibilityValue(self.sectionExpanded ? L10n.string("Expanded") : L10n.string("Collapsed"))
+            self.sourcesHeader
+        }
+    }
 
-                Spacer()
-
-                if let onAddSource {
-                    Button { onAddSource() } label: {
-                        Image(systemName: "plus")
-                            .font(Typography.footnote)
-                    }
-                    .buttonStyle(.borderless)
-                    .fixedSize()
-                    .help(L10n.string("Add a new source server"))
-                    .accessibilityLabel(L10n.string("Add Source"))
-                    .accessibilityIdentifier(A11y.SourcesSidebar.addButton)
+    /// The Sources header: title, collapse chevron and "+", announced as one
+    /// element with named actions (see ``SidebarHeaderAccessibility``, #596).
+    @ViewBuilder
+    private var sourcesHeader: some View {
+        let header = HStack {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { self.sectionExpanded.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(localized: "Sources")
+                    Image(systemName: self.sectionExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.textTertiary)
                 }
             }
-            .contentShape(Rectangle())
-            .contextMenu {
-                if let onAddSource {
-                    Button(L10n.string("Add Server")) { onAddSource() }
+            .buttonStyle(.plain)
+            .help(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
+            .accessibilityLabel(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
+            .accessibilityValue(self.sectionExpanded ? L10n.string("Expanded") : L10n.string("Collapsed"))
+
+            Spacer()
+
+            if let onAddSource {
+                Button { onAddSource() } label: {
+                    Image(systemName: "plus")
+                        .font(Typography.footnote)
                 }
-                if let onManageSources {
-                    Button(L10n.string("Manage Sources")) { onManageSources() }
-                }
-                if !self.hiddenServers.isEmpty, let onEnableServerInSidebar {
-                    Divider()
-                    Menu(L10n.string("Hidden Sources")) {
-                        ForEach(self.hiddenServers, id: \.id) { server in
-                            Button(L10n.string("Show \"\(server.name)\"")) {
-                                onEnableServerInSidebar(server.id)
-                            }
+                .buttonStyle(.borderless)
+                .fixedSize()
+                .help(L10n.string("Add a new source server"))
+                .accessibilityLabel(L10n.string("Add Source"))
+                .accessibilityIdentifier(A11y.SourcesSidebar.addButton)
+            }
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            if let onAddSource {
+                Button(L10n.string("Add Server")) { onAddSource() }
+            }
+            if let onManageSources {
+                Button(L10n.string("Manage Sources")) { onManageSources() }
+            }
+            if !self.hiddenServers.isEmpty, let onEnableServerInSidebar {
+                Divider()
+                Menu(L10n.string("Hidden Sources")) {
+                    ForEach(self.hiddenServers, id: \.id) { server in
+                        Button(L10n.string("Show \"\(server.name)\"")) {
+                            onEnableServerInSidebar(server.id)
                         }
                     }
                 }
             }
+        }
+        .sidebarHeaderAccessibility(title: L10n.string("Sources"), isExpanded: self.sectionExpanded) {
+            withAnimation(.easeInOut(duration: 0.2)) { self.sectionExpanded.toggle() }
+        }
+
+        if let onAddSource {
+            header.accessibilityAction(named: L10n.string("Add Source")) { onAddSource() }
+        } else {
+            header
         }
     }
 
@@ -298,13 +314,18 @@ struct SidebarSectionHeader: View {
             }
         }
         .contentShape(Rectangle())
+        .sidebarHeaderAccessibility(title: self.title, isExpanded: self.isExpanded) {
+            withAnimation(.easeInOut(duration: 0.2)) { self.isExpanded.toggle() }
+        }
 
         // Only attach the context menu when there's an action, so the
         // action-less headers (Recents, Queue) don't get an empty right-click menu.
         if let action {
-            header.contextMenu {
-                Button(L10n.string("\(action.title)\u{2026}")) { action.perform() }
-            }
+            header
+                .accessibilityAction(named: action.title) { action.perform() }
+                .contextMenu {
+                    Button(L10n.string("\(action.title)\u{2026}")) { action.perform() }
+                }
         } else {
             header
         }
