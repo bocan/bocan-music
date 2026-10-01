@@ -21,17 +21,17 @@ permalink: /privacy/
 
   <p>The only network traffic the app makes by default is:</p>
   <ul>
-    <li>Checking for updates (daily, can be disabled) by fetching a single XML feed from <code>{{ site.url }}/appcast.xml</code>. Your IP shows up in our web server's logs along with everyone else's.</li>
+    <li>Checking for updates (daily) by fetching a single XML feed from <code>{{ site.url }}/appcast.xml</code>. Your IP shows up in our web server's logs along with everyone else's.</li>
   </ul>
 
   <h3>What {{ site.title }} sends only if you turn it on</h3>
   <ul>
     <li><strong>Scrobbling</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a>, <a href="https://listenbrainz.org" rel="external noopener">ListenBrainz</a>, or <a href="https://rocksky.app" rel="external noopener">Rocksky</a>. Off by default. Per-account, with credentials you supply, sent only to the service you authorised.</li>
-    <li><strong>AcoustID lookups</strong> to <a href="https://acoustid.org" rel="external noopener">AcoustID</a>, when you ask it to identify a track. Sends an audio fingerprint (not the audio) plus the track's existing tags.</li>
-    <li><strong>Lyrics fetches</strong> to <a href="https://lrclib.net" rel="external noopener">LRCLIB</a> when you toggle the lyrics pane and the file has none. Sends artist, title, album and duration.</li>
-    <li><strong>Deep Dive</strong> (Settings &gt; Library, off by default). When on, opening the Deep Dive tab under Get Info sends a MusicBrainz identifier, or an artist's name when the files carry none, to <a href="https://musicbrainz.org" rel="external noopener">MusicBrainz</a>, and a Wikidata id to <a href="https://en.wikipedia.org" rel="external noopener">Wikipedia</a> for the bio. Turning it on also starts a slow one-off pass that looks up each artist in your library on MusicBrainz (one request every 1.5 s) to fill in names and disambiguations; a progress line above the library shows it running. Reports are cached on your Mac for a week. Turn it off and nothing further is sent.</li>
-    <li><strong>MusicBrainz cover art</strong>. Sends an MBID, gets back an image.</li>
-    <li><strong>Crash reports</strong> via MetricKit. Off by default. Each report is shown to you in full before sending; you decide. We never auto-submit.</li>
+    <li><strong>AcoustID lookups</strong> to <a href="https://acoustid.org" rel="external noopener">AcoustID</a>, when you ask it to identify a track. Sends an audio fingerprint (not the audio) and the track's length, nothing else. The matches are then looked up on <a href="https://musicbrainz.org" rel="external noopener">MusicBrainz</a> by their identifiers.</li>
+    <li><strong>Lyrics fetches</strong> to <a href="https://lrclib.net" rel="external noopener">LRCLIB</a> (Settings &gt; Lyrics, off by default). When on, each song you play that has no synced lyrics of its own is looked up, whether or not the lyrics pane is open. Sends artist, title, album and duration.</li>
+    <li><strong>Deep Dive</strong> (Settings &gt; Library, off by default). When on, opening the Deep Dive tab under Get Info sends a MusicBrainz identifier to <a href="https://musicbrainz.org" rel="external noopener">MusicBrainz</a>, or, when the files carry none, the artist's name together with the album or track title. For the bio it sends a Wikidata id to <a href="https://www.wikidata.org" rel="external noopener">Wikidata</a> and the page title that comes back to <a href="https://en.wikipedia.org" rel="external noopener">Wikipedia</a>, and it loads the artist's picture from the address Wikipedia gives. Turning it on also starts a slow one-off pass that looks up each artist in your library on MusicBrainz (one request every 1.5 s) to fill in names and disambiguations; a progress line above the library shows it running. Reports are cached on your Mac for a week. Turn it off and nothing further is sent.</li>
+    <li><strong>MusicBrainz cover art</strong>, when you ask for it. Sends the artist name and album title to MusicBrainz to find the release, then the release's identifier to the Cover Art Archive, and gets back an image.</li>
+    <li><strong>Crash reports</strong> via MetricKit. Off by default. When on, reports are saved on your Mac and go nowhere: the app has no way to send one. You attach a report to a GitHub issue yourself if you want us to see it.</li>
   </ul>
 
   <h3>What we collect on this website</h3>
@@ -43,10 +43,12 @@ permalink: /privacy/
   <h3>What's stored on your machine</h3>
   <ul>
     <li>Your library database, in <code>~/Library/Application Support/Bocan/</code>.</li>
-    <li>Logs, in <code>~/Library/Logs/Bocan/</code>.</li>
+    <li>Crash reports, if you turned them on, in <code>~/Library/Logs/Bocan/diagnostics/</code>. Ordinary logs are kept in memory only and are gone when the app quits.</li>
     <li>Preferences, in <code>~/Library/Preferences/io.cloudcauldron.bocan.plist</code>.</li>
+    <li>Songs streamed from a Subsonic server, in <code>~/Library/Caches/io.cloudcauldron.bocan/</code>.</li>
+    <li>Passwords and tokens for the services you connected, in your login Keychain.</li>
   </ul>
-  <p>Delete those folders to delete everything {{ site.title }} knows about you.</p>
+  <p>Delete those folders and Keychain items to delete everything {{ site.title }} knows about you.</p>
 
   <h2>{{ site.title }} Music for Android</h2>
 

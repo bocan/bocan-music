@@ -1,7 +1,8 @@
 # Weekly check that Package.resolved pins still match upstream releases.
 #
-# Dependabot only watches the github-actions ecosystem here, and its Swift
-# support cannot see the Xcode-level Package.resolved (Sparkle, transitives),
+# Dependabot watches the github-actions ecosystem and each module's
+# Package.swift (.github/dependabot.yml), but its Swift support cannot see
+# the Xcode-level Package.resolved (Sparkle, transitives),
 # so this job is the alert for Swift dependency drift: it opens, or updates,
 # a single "Dependency drift" issue whenever any pin lags upstream, and
 # closes nothing (a human decides when and how to bump).

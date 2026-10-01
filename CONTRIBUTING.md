@@ -6,6 +6,7 @@ Thank you for your interest in contributing.
 
 - Read `DEVELOPMENT.md` for environment setup.
 - Read `docs/design-spec/_standards.md` — all code must comply.
+- The [wiki](https://github.com/bocan/bocan-music/wiki) has a guided tour for new contributors: [Building from Source](https://github.com/bocan/bocan-music/wiki/Building-from-Source), [Architecture Overview](https://github.com/bocan/bocan-music/wiki/Architecture-Overview) and [Testing](https://github.com/bocan/bocan-music/wiki/Testing). The files in this repository are the source of truth where the two differ.
 - Check for an existing issue or open one to discuss your idea first.
 
 ## Commit conventions
@@ -18,7 +19,7 @@ fix(library): handle symlinks in FSEvents watcher
 chore(deps): update GRDB to 6.28.0
 ```
 
-Scopes match module names: `audio`, `library`, `metadata`, `persistence`, `ui`, `playback`, `cast`, `scrobble`, `observability`.
+Scopes match module names: `observability`, `persistence`, `audio`, `metadata`, `acoustics`, `library`, `playback`, `scrobble`, `subsonic`, `podcasts`, `sync` (the `SyncServer` module) and `ui`. Work outside the modules uses `app`, `deps`, `website`, `scripts` or `ci`.
 
 ## Branches and pull requests
 
@@ -35,7 +36,7 @@ with a pull request.
   `## [Unreleased]` in `CHANGELOG.md`. It becomes the release notes and the
   Sparkle update prompt. Label the PR `skip-changelog` if the change is not
   user-visible.
-- A `feat`, `fix` or `perf` PR also answers the seven review questions in the
+- A `feat`, `fix` or `perf` PR also answers the eight review questions in the
   PR template's "Slice review" section. They are the questions a reviewer
   would ask anyway; short answers with a file and line are enough, and "not
   relevant, because ..." is a valid answer. Delete the section on other PR

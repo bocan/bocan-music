@@ -38,7 +38,7 @@ permalink: /formats/
       <tr>
         <td>AIFF / AIFF-C</td>
         <td><code>.aiff</code> <code>.aif</code></td>
-        <td>FFmpeg</td>
+        <td>AVFoundation, FFmpeg fallback</td>
       </tr>
       <tr>
         <td>AU / SND</td>
@@ -52,7 +52,7 @@ permalink: /formats/
       </tr>
       <tr>
         <td>RF64 / Broadcast Wave</td>
-        <td><code>.wav</code> <code>.bwf</code></td>
+        <td><code>.wav</code></td>
         <td>FFmpeg (identified by magic bytes, not extension)</td>
       </tr>
     </tbody>
@@ -158,8 +158,8 @@ permalink: /formats/
 
   <h2 id="dsd">DSD</h2>
   <p>
-    DSD files are decoded to PCM via DoP (DSD over PCM) for output to
-    standard DACs.
+    DSD files are decoded to PCM for output to standard DACs. There is no
+    DoP or native DSD output.
   </p>
   <table>
     <thead>
@@ -200,9 +200,10 @@ permalink: /formats/
 
   <h2 id="output">Output</h2>
   <p>
-    All formats are decoded internally to <strong>32-bit float PCM</strong>.
-    Output to hardware supports up to <strong>32-bit&nbsp;/&nbsp;384&nbsp;kHz</strong>.
-    DSD is output via DoP. Gapless playback is guaranteed for all formats.
+    All formats are decoded internally to <strong>32-bit float PCM</strong>
+    and played through the system output device, with a peak limiter at the
+    end of the chain. Gapless playback works for every format, between tracks
+    that share a sample rate and channel count.
   </p>
 
   <h2 id="not-supported">What isn't supported</h2>
