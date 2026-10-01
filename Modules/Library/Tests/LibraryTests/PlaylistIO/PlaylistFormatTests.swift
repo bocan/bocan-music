@@ -11,7 +11,6 @@ struct PlaylistFormatTests {
         #expect(PlaylistFormat.pls.preferredExtension == "pls")
         #expect(PlaylistFormat.xspf.preferredExtension == "xspf")
         #expect(PlaylistFormat.cue.preferredExtension == "cue")
-        #expect(PlaylistFormat.itunesXML.preferredExtension == "xml")
     }
 
     @Test("isExportable is true only for M3U/PLS/XSPF families")
@@ -21,7 +20,6 @@ struct PlaylistFormatTests {
         #expect(PlaylistFormat.pls.isExportable)
         #expect(PlaylistFormat.xspf.isExportable)
         #expect(!PlaylistFormat.cue.isExportable)
-        #expect(!PlaylistFormat.itunesXML.isExportable)
     }
 
     @Test("fromExtension is case-insensitive and rejects unknown")
@@ -30,7 +28,7 @@ struct PlaylistFormatTests {
         #expect(PlaylistFormat.fromExtension("pls") == .pls)
         #expect(PlaylistFormat.fromExtension("XSPF") == .xspf)
         #expect(PlaylistFormat.fromExtension("cue") == .cue)
-        #expect(PlaylistFormat.fromExtension("xml") == .itunesXML)
+        #expect(PlaylistFormat.fromExtension("xml") == nil)
         #expect(PlaylistFormat.fromExtension("txt") == nil)
     }
 
@@ -58,16 +56,6 @@ struct PlaylistFormatTests {
     func sniffXSPF() {
         let xml = #"<?xml version="1.0"?><playlist xmlns="http://xspf.org/ns/0/"></playlist>"#
         #expect(PlaylistFormat.sniff(data: Data(xml.utf8)) == .xspf)
-    }
-
-    @Test("sniff detects iTunes Library plist")
-    func sniffITunesXML() {
-        let xml = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0"><dict></dict></plist>
-        """
-        #expect(PlaylistFormat.sniff(data: Data(xml.utf8)) == .itunesXML)
     }
 
     @Test("sniff detects CUE sheet by leading keyword")

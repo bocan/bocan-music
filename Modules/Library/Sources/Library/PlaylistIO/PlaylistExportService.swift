@@ -160,7 +160,7 @@ public actor PlaylistExportService {
             PLSWriter.write(payload, options: PLSWriter.Options(pathMode: pathMode))
         case .xspf:
             XSPFWriter.write(payload, options: XSPFWriter.Options(pathMode: pathMode))
-        case .cue, .itunesXML:
+        case .cue:
             ""
         }
     }

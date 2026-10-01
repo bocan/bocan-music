@@ -211,9 +211,6 @@ public struct PlaylistImportSheet: View {
                 case .cue:
                     L10n.string("CUE sheet")
 
-                case .itunesXML:
-                    L10n.string("iTunes Library.xml")
-
                 case nil:
                     L10n.string("Unknown format")
                 }

@@ -13,7 +13,7 @@ Rows reviewed: 54. Rows with only a migration reference: 239.
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `album_id` (pk) | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+38) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
+| `album_id` (pk) | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+39) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
 | `eq_preset_id` | TEXT | DSPAssignmentRepository.swift, DSPState.swift, DSPViewModel.swift, EQView.swift | DSPChain.swift | M010 |  |
 
 ## `albums`
@@ -148,7 +148,7 @@ Record: `Playlist.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `name` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `is_smart` | BOOLEAN | ITunesLibraryReader.swift, PlaylistService.swift, SmartPlaylistService.swift |  | M001 |  |
+| `is_smart` | BOOLEAN | PlaylistService.swift, SmartPlaylistService.swift |  | M001 |  |
 | `smart_criteria` | TEXT | SmartPlaylistService.swift |  | M001 |  |
 | `sort_order` | INTEGER | AlbumsViewModel.swift, ArtistsViewModel.swift, ComposersView.swift, GenresView.swift, Manifest.swift (+11) | AlbumsGridView.swift, ArtistsView.swift, PodcastsGridView.swift, TrackRow.swift | M001 |  |
 | `created_at` | INTEGER | BackupRing.swift, PlaylistService.swift, SmartPlaylistService.swift, SubsonicServer.swift, SubsonicServerRepository.swift (+2) |  | M001 |  |
@@ -172,7 +172,7 @@ Record: `PodcastEpisodeState.swift`
 | `guid` (pk) | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `play_position` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift | ContinueListeningRail.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, ManifestBuilder.swift (+1) | M023 |  |
 | `play_state` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, Manifest.swift, ManifestBuilder.swift, TranscriptRepository.swift | AutoDownloadCoordinator.swift, EpisodeDownloadManager.swift, EpisodeList.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+PodcastBehaviour.swift (+3) | M023 |  |
-| `last_played_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, ITunesLibraryReader.swift, LibraryStatsRepository+ListeningBehaviour.swift (+11) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
+| `last_played_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift (+10) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
 | `completed_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, PodcastService.swift, TranscriptRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, PodcastsGridView.swift | M023 |  |
 | `download_state` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift | AutoDownloadCoordinator.swift, EpisodeDownloadManager.swift, EpisodeList.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+Podcasts.swift (+2) | M023 |  |
 | `download_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+Podcasts.swift, PodcastService.swift | M023 |  |
@@ -429,7 +429,7 @@ Record: `Track.swift`
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `artist_id` | INTEGER | AlbumRepository+CollectionCards.swift, AlbumRepository.swift, ArtistEnrichmentService.swift, ArtistInfoSheet.swift, ArtistRepository.swift (+25) | AlbumDetailView.swift, AlbumsViewModel.swift, BatchCoverArtViewModel.swift, DuplicateReviewViewModel.swift, FieldDefinitions.swift (+17) | M001 |  |
 | `album_artist_id` | INTEGER | AlbumRepository.swift, AlbumsViewModel.swift, ArtistRepository.swift, EditTransaction.swift, LibraryStatsRepository+Hygiene.swift (+5) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, BatchCoverArtViewModel.swift, DeepDiveService.swift (+10) | M001 |  |
-| `album_id` | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+38) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
+| `album_id` | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+39) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
 | `track_number` | INTEGER | BackupRing.swift, EditTransaction.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+25) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator.swift, SmartPlaylist.swift (+9) | M001 |  |
 | `disc_number` | INTEGER | BackupRing.swift, EditTransaction.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+18) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator.swift, SyncMetaRepository.swift (+6) | M001 |  |
 | `year` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
@@ -444,9 +444,9 @@ Record: `Track.swift`
 | `replaygain_track_peak` | REAL | BackupRing.swift, LibraryViewModel.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryStatsRepository+AudioQuality.swift, ManifestBuilder.swift, QueueReplayGain.swift, ReplayGainAlbumPass.swift, SyncMetaRepository.swift (+2) | M001 |  |
 | `replaygain_album_gain` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryViewModel.swift, ManifestBuilder.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift (+1) | ADR-013, #579 | From tags when present, else computed by ReplayGainAlbumPass after a ReplayGain batch: the power mean of the album's track loudness, written to every track of an album whose tracks all have a track gain. TrackImporter keeps it on rescan. Read at playback in Album and Auto modes (#573). |
 | `replaygain_album_peak` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | ManifestBuilder.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift, TagReader.swift | M001 |  |
-| `play_count` | INTEGER | Field.swift, ITunesLibraryReader.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift, PlayHistoryRecorder.swift (+11) | BuiltInSmartPresets.swift, FieldDefinitions.swift, LibraryChangeObserver.swift, LibraryListeningBehaviourPane.swift, SmartPlaylist.swift (+4) | M001 |  |
+| `play_count` | INTEGER | Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift, PlayHistoryRecorder.swift, QueueItem.swift (+10) | BuiltInSmartPresets.swift, FieldDefinitions.swift, LibraryChangeObserver.swift, LibraryListeningBehaviourPane.swift, SmartPlaylist.swift (+4) | M001 |  |
 | `skip_count` | INTEGER | Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, PlayHistoryRecorder.swift, RuleRowView.swift, TrackImporter.swift (+2) | FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, TagEditorSheet+InfoTabs.swift, TrackTable+ColSpecs.swift | M001 |  |
-| `last_played_at` | INTEGER | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, ITunesLibraryReader.swift, LibraryStatsRepository+ListeningBehaviour.swift (+11) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
+| `last_played_at` | INTEGER | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift (+10) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
 | `rating` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `loved` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
 | `excluded_from_shuffle` | BOOLEAN | AlbumRepository.swift, Field.swift, LibraryViewModel+Scanning.swift, QueueItem.swift, QueuePersistence.swift (+8) | AlbumsGridView.swift, ArtistsView.swift, FieldDefinitions.swift, PlaybackQueue.swift, QueuePlayer.swift (+4) | M001 |  |

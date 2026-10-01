@@ -190,8 +190,6 @@ public actor PlaylistImportService {
         case .pls: payload = try PLSReader.parse(data: data, sourceURL: url)
         case .xspf: payload = try XSPFReader.parse(data: data, sourceURL: url)
         case .cue: return try await self.importCUESheet(data: data, url: url, parentID: parentID)
-        case .itunesXML:
-            throw PlaylistIOError.unrecognisedFormat(url: url)
         }
         return try await self.importPayload(payload, parentID: parentID)
     }
@@ -223,9 +221,6 @@ public actor PlaylistImportService {
                     PlaylistPayload.Entry(path: $0.path, absoluteURL: $0.absoluteURL)
                 }
                 return await self.resolvePreview(PlaylistPayload(name: url.lastPathComponent, entries: entries))
-            case .itunesXML:
-                // iTunes import is not yet wired; show neutral counts.
-                return (matched: 0, missed: 0, stations: 0)
             }
         } catch {
             return (matched: 0, missed: 0, stations: 0)
