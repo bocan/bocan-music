@@ -6,7 +6,7 @@ options:
   bundleIdPrefix: io.cloudcauldron
   deploymentTarget:
     macOS: "15.0"
-  xcodeVersion: "26.0"
+  xcodeVersion: "27.0"
   generateEmptyDirectories: true
   createIntermediateGroups: true
   groupSortPosition: top
