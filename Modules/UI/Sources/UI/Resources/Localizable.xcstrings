@@ -21697,6 +21697,17 @@
         }
       }
     },
+    "Server shortcuts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šéŕvéŕ šĥóŕţçúţš one two"
+          }
+        }
+      }
+    },
     "Server unreachable" : {
       "localizations" : {
         "en" : {
@@ -27637,6 +27648,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "•"
+          }
+        }
+      }
+    },
+    "⌘⇧1 through ⌘⇧9 expand or collapse the first nine servers in the sidebar, in the order they appear there." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⌘⇧1 ţĥŕóúĝĥ ⌘⇧9 éxƥáñđ óŕ çóĺĺáƥšé ţĥé ƒíŕšţ ñíñé šéŕvéŕš íñ ţĥé šíđéƀáŕ, íñ ţĥé óŕđéŕ ţĥéý áƥƥéáŕ ţĥéŕé. one two three four five six seven"
           }
         }
       }

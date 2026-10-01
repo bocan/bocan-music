@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Bòcan Music Help now has pages for Podcasts and Internet Radio, and new topics on searching as you type, moving back and forward, and viewing logs. The help topic for server jump shortcuts is gone, because those shortcuts do not exist.
+Bòcan Music Help now has pages for Podcasts and Internet Radio, and new topics on searching as you type, moving back and forward, and viewing logs. The help for the server shortcuts now says what they do: they expand or collapse a server in the sidebar.
 
 A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.
 

@@ -250,6 +250,11 @@ enum HelpContent {
                 + " Scrobbles are sent both to the server's own scrobble endpoint and to your"
                 + " configured Last.fm, ListenBrainz, or Rocksky accounts."
         ),
+        HelpTopic(
+            title: "Server shortcuts",
+            body: "⌘⇧1 through ⌘⇧9 expand or collapse the first nine servers in the sidebar,"
+                + " in the order they appear there."
+        ),
     ]
 
     static let formatsIntro = "Bòcan plays all formats supported by macOS Core Audio"

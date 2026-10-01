@@ -425,6 +425,11 @@ enum MenuManifest {
         ("Forward", "⌘]"),
     ]
 
+    /// Shortcuts the Help window's prose may name although no menu item has
+    /// them, because a view binds them: the sidebar's server disclosure rows
+    /// (`SourceServerShortcut` in `SubsonicSidebarSection.swift`).
+    static let viewBoundShortcuts = ["⌘⇧1", "⌘⇧2", "⌘⇧3", "⌘⇧4", "⌘⇧5", "⌘⇧6", "⌘⇧7", "⌘⇧8", "⌘⇧9"]
+
     /// Launch-argument defaults overrides that make the menu tree
     /// deterministic regardless of the machine's real preferences (E2E
     /// launches share the container's `UserDefaults`; see phase 32).

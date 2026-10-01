@@ -132,12 +132,14 @@ final class ShortcutParityTests: XCTestCase {
     }
 
     /// Every shortcut-looking token anywhere in the Help window's text (prose
-    /// included) must be a shortcut some manifest item actually has, so a
-    /// stale "⌘⇧X" in running text fails here.
+    /// included) must be a shortcut some manifest item actually has, or one
+    /// the manifest lists as bound by a view, so a stale "⌘⇧X" in running
+    /// text fails here.
     func testHelpProseTokensMatchManifest() throws {
         let tokens = try MenuSourceParsing.helpShortcutTokens()
         XCTAssertFalse(tokens.isEmpty, "help text parsed to no shortcut tokens")
         let known = Set(self.shortcutItems.compactMap(\.shortcut))
+            .union(MenuManifest.viewBoundShortcuts.compactMap(MenuShortcut.fromDisplay))
         for token in tokens {
             guard let parsed = MenuShortcut.fromDisplay(token) else {
                 XCTFail("help token \"\(token)\" does not parse as a shortcut")
@@ -145,7 +147,7 @@ final class ShortcutParityTests: XCTestCase {
             }
             XCTAssertTrue(
                 known.contains(parsed),
-                "help mentions \(token) but no menu item has that shortcut"
+                "help mentions \(token) but no menu item or view-bound shortcut matches it"
             )
         }
     }
