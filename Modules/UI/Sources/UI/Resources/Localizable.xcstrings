@@ -27131,22 +27131,6 @@
         }
       }
     },
-    "iTunes Library.xml" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iTunes Library.xml"
-          }
-        },
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "íŢúñéš Ĺíƀŕáŕý.xḿĺ one two"
-          }
-        }
-      }
-    },
     "in last (days)" : {
       "localizations" : {
         "en" : {
