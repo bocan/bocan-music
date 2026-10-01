@@ -20,8 +20,7 @@ Modules/Library/Sources/Library/PlaylistIO/PlaylistImportService.swift|guard let
 Modules/Persistence/Sources/Persistence/Database.swift|guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {  # invalid user regex matches nothing, by contract
 Modules/Persistence/Sources/Persistence/Internal/BookmarkBlob.swift|_ = try? URL(  # staleness probe by contract
 
-# Podcasts: a documented retry, and a URL used only to word an error message.
-Modules/Podcasts/Sources/Podcasts/FeedParser.swift|if let stripped = Self.feedDataWithStrippedProlog(data), let retried = try? Feed(data: stripped) {  # documented retry; the original error is what gets reported
+# Podcasts: a URL used only to word an error message.
 Modules/Podcasts/Sources/Podcasts/PodcastService.swift|let feedURL = await (try? self.podcastRepo.fetch(id: podcastID)).flatMap { URL(string: $0.feedURL) }  # fallback URL for an error message
 
 # Per-cell artwork in a table: the placeholder is the recovery, and a log line

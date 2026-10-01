@@ -268,10 +268,9 @@ struct FeedParserStylesheetPrologTests {
 
 // MARK: - pubDate spellings
 
-/// FeedKit throws on a `pubDate` it cannot read, and that fails the whole feed,
-/// not one episode. 10.9.0 could not read the spellings below, so a feed that
-/// used any of them never refreshed; 10.9.4 reads them. These cases pin that
-/// floor.
+/// FeedKit throws on a `pubDate` it cannot read. 10.9.0 could not read the
+/// spellings below; 10.9.4 reads them. These cases pin that floor: `FeedDateRepair`
+/// keeps the feed alive either way, but only FeedKit gives these the exact instant.
 @Suite("FeedParser - pubDate spellings")
 struct FeedParserPubDateTests {
     private func rss(pubDate: String) -> Data {
@@ -324,6 +323,163 @@ struct FeedParserPubDateTests {
     @Test("A two-digit year reads as this century, not the first")
     func twoDigitYear() throws {
         #expect(try self.publishedAt("Mon, 01 Jan 24 10:00:00 GMT") == Date(timeIntervalSince1970: 1_704_103_200))
+    }
+}
+
+// MARK: - Unreadable dates (#597)
+
+/// A date FeedKit cannot read must cost one episode its date at most, never
+/// the whole feed.
+@Suite("FeedParser - unreadable dates")
+struct FeedParserUnreadableDateTests {
+    /// Three episodes: a good date, `badDate`, and a good date.
+    private func rss(badDate: String, prolog: String = "") -> Data {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        \(prolog)<rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0">
+          <channel>
+            <title>Date Test</title>
+            <lastBuildDate>yesterday</lastBuildDate>
+            <item>
+              <title>Good 1</title>
+              <enclosure url="https://example.com/a.mp3" type="audio/mpeg" length="1"/>
+              <guid>g1</guid>
+              <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+            </item>
+            <item>
+              <title>Bad</title>
+              <enclosure url="https://example.com/b.mp3" type="audio/mpeg" length="1"/>
+              <guid>g2</guid>
+              <pubDate>\(badDate)</pubDate>
+              <podcast:chapters url="https://example.com/b.json" type="application/json"/>
+            </item>
+            <item>
+              <title>Good 2</title>
+              <enclosure url="https://example.com/c.mp3" type="audio/mpeg" length="1"/>
+              <guid>g3</guid>
+              <pubDate>Wed, 01 Jan 2025 10:00:00 BST</pubDate>
+            </item>
+          </channel>
+        </rss>
+        """
+        return Data(xml.utf8)
+    }
+
+    private func episode(_ guid: String, in feed: ParsedFeed) throws -> ParsedEpisode {
+        try #require(feed.episodes.first { $0.guid == guid })
+    }
+
+    @Test(
+        "A date in a shape we know is rewritten, and the episode keeps the right day",
+        arguments: [
+            ("2024-06-01", 1_717_200_000.0),
+            ("01 Sept 2024", 1_725_148_800.0),
+            ("1 September 2024", 1_725_148_800.0),
+            ("Sun, 01 Sept 2024", 1_725_148_800.0),
+            ("September 1, 2024", 1_725_148_800.0),
+            ("<![CDATA[ 2024-06-01 ]]>", 1_717_200_000.0),
+            ("Sun, 01 Sept 2024 10:00:00 GMT", 1_725_184_800.0),
+        ]
+    )
+    func knownShapeIsRewritten(badDate: String, expected: Double) throws {
+        let feed = try parser.parse(self.rss(badDate: badDate), sourceURL: sourceURL)
+        #expect(feed.episodes.count == 3)
+        #expect(try self.episode("g2", in: feed).publishedAt == Date(timeIntervalSince1970: expected))
+    }
+
+    @Test(
+        "A date nobody can read costs that episode its date, and nothing else",
+        arguments: ["last Tuesday", "01 Sep 2024 at teatime", "32/13/2024", "2024-13-45"]
+    )
+    func unreadableDateIsDropped(badDate: String) throws {
+        let feed = try parser.parse(self.rss(badDate: badDate), sourceURL: sourceURL)
+        #expect(feed.episodes.count == 3)
+        let bad = try self.episode("g2", in: feed)
+        #expect(bad.publishedAt == nil)
+        #expect(bad.title == "Bad")
+        #expect(bad.audioURL == URL(string: "https://example.com/b.mp3"))
+        // The supplement reads the original bytes, so its values still attach.
+        #expect(bad.chaptersURL == URL(string: "https://example.com/b.json"))
+        // Dated episodes sort newest-first; the undated one goes last.
+        #expect(feed.episodes.map(\.guid) == ["g3", "g1", "g2"])
+    }
+
+    @Test("The dates FeedKit reads are left exactly as the feed wrote them")
+    func readableDatesAreUntouched() throws {
+        let feed = try parser.parse(self.rss(badDate: "last Tuesday"), sourceURL: sourceURL)
+        #expect(try self.episode("g1", in: feed).publishedAt == Date(timeIntervalSince1970: 1_704_103_200))
+        // BST is one of the loose zones FeedKit reads; the repair must not drop it.
+        #expect(try self.episode("g3", in: feed).publishedAt != nil)
+    }
+
+    @Test("A stylesheet prolog and a bad date in one feed both recover")
+    func prologAndBadDate() throws {
+        let padding = String(repeating: " ", count: 300)
+        let prolog = "<?xml-stylesheet type=\"text/xsl\" href=\"style.xsl\"?>\(padding)\n"
+        let feed = try parser.parse(self.rss(badDate: "last Tuesday", prolog: prolog), sourceURL: sourceURL)
+        #expect(feed.episodes.count == 3)
+    }
+
+    @Test("An unreadable Atom date does not fail the feed either")
+    func atomBadDate() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <title>Atom Date Test</title>
+          <updated>whenever</updated>
+          <entry>
+            <id>a1</id>
+            <title>Entry</title>
+            <published>soon</published>
+            <updated>2024-06-01</updated>
+            <link rel="enclosure" type="audio/mpeg" href="https://example.com/a.mp3"/>
+          </entry>
+        </feed>
+        """
+        let feed = try parser.parse(Data(xml.utf8), sourceURL: sourceURL)
+        // `published` is dropped, so the episode falls back to the rewritten `updated`.
+        #expect(feed.episodes.first?.publishedAt == Date(timeIntervalSince1970: 1_717_200_000))
+    }
+
+    @Test("Bytes outside the dates survive the repair in a non-UTF-8 feed")
+    func latin1FeedRoundTrips() throws {
+        let xml = """
+        <?xml version="1.0" encoding="ISO-8859-1"?>
+        <rss version="2.0">
+          <channel>
+            <title>Caf\u{E9} Hour</title>
+            <item>
+              <title>Na\u{EF}ve</title>
+              <enclosure url="https://example.com/a.mp3" type="audio/mpeg" length="1"/>
+              <guid>g1</guid>
+              <pubDate>2024-06-01</pubDate>
+            </item>
+          </channel>
+        </rss>
+        """
+        let feed = try parser.parse(#require(xml.data(using: .isoLatin1)), sourceURL: sourceURL)
+        #expect(feed.title == "Caf\u{E9} Hour")
+        #expect(feed.episodes.first?.title == "Na\u{EF}ve")
+        #expect(feed.episodes.first?.publishedAt == Date(timeIntervalSince1970: 1_717_200_000))
+    }
+
+    @Test("A feed that fails for another reason is not repaired")
+    func otherFailureIsLeftAlone() throws {
+        let data = try fixture(named: "rss-full.xml")
+        #expect(FeedDateRepair().repair(data) == nil)
+        #expect(FeedDateRepair().repair(Data("<html><body>nope</body></html>".utf8)) == nil)
+    }
+
+    @Test("The repair counts what it rewrote and what it dropped")
+    func outcomeCounts() throws {
+        let outcome = try #require(FeedDateRepair().repair(self.rss(badDate: "2024-06-01")))
+        // `lastBuildDate` ("yesterday") is dropped; the bad pubDate is rewritten.
+        #expect(outcome.rewritten == 1)
+        #expect(outcome.dropped == 1)
+        let text = String(decoding: outcome.data, as: UTF8.self)
+        #expect(text.contains("<pubDate>2024-06-01T00:00:00Z</pubDate>"))
+        #expect(!text.contains("lastBuildDate"))
+        #expect(text.contains("<pubDate>Wed, 01 Jan 2025 10:00:00 BST</pubDate>"))
     }
 }
 
