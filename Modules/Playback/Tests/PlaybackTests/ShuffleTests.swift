@@ -183,11 +183,9 @@ struct XoshiroTests {
         var rng1 = Xoshiro256StarStar(seed: 1)
         var rng2 = Xoshiro256StarStar(seed: 2)
         var anyDifferent = false
-        for _ in 0 ..< 10 {
-            if rng1.next() != rng2.next() {
-                anyDifferent = true
-                break
-            }
+        for _ in 0 ..< 10 where rng1.next() != rng2.next() {
+            anyDifferent = true
+            break
         }
         #expect(anyDifferent)
     }

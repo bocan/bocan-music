@@ -139,6 +139,9 @@ public struct SubsonicServer: Identifiable, Hashable, Sendable, Codable {
     // MARK: Init
 
     public init(
+        // Memberwise initialiser used across modules; the labels follow the
+        // stored-property order, as the Persistence record does.
+        // swiftlint:disable:next function_default_parameter_at_end
         id: UUID = UUID(),
         name: String,
         serverURL: URL,

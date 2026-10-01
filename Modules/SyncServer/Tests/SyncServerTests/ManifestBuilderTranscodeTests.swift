@@ -60,11 +60,11 @@ struct ManifestBuilderTranscodeTests {
     ) async throws -> Manifest {
         try await fixture.builder.build(
             profile: .everything(includePodcasts: false),
-            transcode: transcode,
             serverId: "srv",
             serverName: "Mac",
             generation: 1,
-            generatedAt: Date(timeIntervalSince1970: 0)
+            generatedAt: Date(timeIntervalSince1970: 0),
+            transcode: transcode
         )
     }
 

@@ -20,7 +20,8 @@ struct PodcastIndexClientTests {
         // Independently compute the expected SHA-1 to verify algorithm and input order.
         let input = "testkey" + "testsecret" + "1717200000"
         let expected = Insecure.SHA1.hash(data: Data(input.utf8))
-            .map { String(format: "%02x", $0) }.joined()
+            .map { String(format: "%02x", $0) }
+            .joined()
 
         #expect(headers["Authorization"] == expected)
         // SHA-1 digest is always 40 hex chars.

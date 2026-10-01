@@ -9,7 +9,9 @@ import Testing
 struct BackgroundServiceRetentionTests {
     private func bocanAppSource() throws -> String {
         let url = URL(filePath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent() // AppTests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent("App/BocanApp.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }

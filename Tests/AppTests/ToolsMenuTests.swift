@@ -43,10 +43,9 @@ struct ToolsMenuTests {
             .deletingLastPathComponent() // Tests/
             .deletingLastPathComponent() // repo root
             .appendingPathComponent("App")
-        let files = try FileManager.default.contentsOfDirectory(
-            at: appDir,
-            includingPropertiesForKeys: nil
-        ).filter { $0.pathExtension == "swift" }
+        let files = try FileManager.default
+            .contentsOfDirectory(at: appDir, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" }
         var declarations = 0
         for file in files {
             let source = try String(contentsOf: file, encoding: .utf8)

@@ -415,6 +415,7 @@ struct SmartPlaylistServiceTests {
 
         actor Counter {
             private(set) var value = 0
+
             func increment() {
                 self.value += 1
             }
@@ -427,7 +428,7 @@ struct SmartPlaylistServiceTests {
 
         let collector = Task {
             do {
-                while let _ = try await iterator.next() {
+                while try await iterator.next() != nil {
                     await counter.increment()
                 }
             } catch {

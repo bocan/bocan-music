@@ -132,6 +132,7 @@ final class URLSessionDownloader: NSObject, EpisodeDownloading, URLSessionDownlo
 
     private final class Handle: EpisodeDownloadHandle, @unchecked Sendable {
         private let task: URLSessionDownloadTask
+
         init(task: URLSessionDownloadTask) {
             self.task = task
         }

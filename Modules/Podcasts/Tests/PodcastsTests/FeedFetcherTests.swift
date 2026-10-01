@@ -52,8 +52,8 @@ final class RequestRecorder: @unchecked Sendable {
 /// A response from `url`, or from the feed URL these tests request when
 /// `url` is nil.
 private func makeHTTPResponse(
-    url: URL? = nil,
     status: Int,
+    url: URL? = nil,
     headers: [String: String] = [:]
 ) throws -> HTTPURLResponse {
     try stubResponse(url: url ?? #require(URL(string: "https://example.com/feed")), status: status, headers: headers)
@@ -251,7 +251,7 @@ struct FeedFetcherTests {
         let expectedUpgraded = try #require(URL(string: "https://podcast.example.org/feed?x=1"))
         mock.handler = { request in
             seen.record(request)
-            return try (body, makeHTTPResponse(url: expectedUpgraded, status: 200))
+            return try (body, makeHTTPResponse(status: 200, url: expectedUpgraded))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(
@@ -281,7 +281,7 @@ struct FeedFetcherTests {
             if request.url?.scheme == "https" {
                 throw URLError(.secureConnectionFailed)
             }
-            return try (body, makeHTTPResponse(url: original, status: 200))
+            return try (body, makeHTTPResponse(status: 200, url: original))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(original, etag: nil, lastModified: nil)
@@ -302,7 +302,7 @@ struct FeedFetcherTests {
             if request.url?.scheme == "https" {
                 return try (Data(), makeHTTPResponse(status: 404))
             }
-            return try (Data("<rss/>".utf8), makeHTTPResponse(url: original, status: 200))
+            return try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: original))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(original, etag: nil, lastModified: nil)
@@ -359,7 +359,7 @@ struct FeedFetcherTests {
         let mock = MockHTTPClient()
         let asked = try #require(URL(string: "https://feeds.example.org/show"))
         let moved = try #require(URL(string: "https://new.example.org/show"))
-        mock.handler = { _ in try (Data("<rss/>".utf8), makeHTTPResponse(url: moved, status: 200)) }
+        mock.handler = { _ in try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: moved)) }
         let result = try await FeedFetcher(http: mock).fetch(asked, etag: nil, lastModified: nil)
         #expect(result.requestedURL == asked)
         #expect(result.finalURL == moved)
@@ -372,7 +372,7 @@ struct FeedFetcherTests {
         let expectedKept = try #require(URL(string: "http://127.0.0.1:8090/feed"))
         mock.handler = { request in
             seen.record(request)
-            return try (Data("<rss/>".utf8), makeHTTPResponse(url: expectedKept, status: 200))
+            return try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: expectedKept))
         }
         let fetcher = FeedFetcher(http: mock)
         _ = try await fetcher.fetch(expectedKept, etag: nil, lastModified: nil)

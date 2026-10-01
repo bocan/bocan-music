@@ -28,9 +28,11 @@ public struct MBRecording: Decodable, Sendable {
 
     /// Primary artist display name built from credit list.
     public var artistName: String {
-        self.artistCredit?.map { credit in
-            (credit.name ?? credit.artist?.name ?? "") + (credit.joinphrase ?? "")
-        }.joined() ?? ""
+        self.artistCredit?
+            .map { credit in
+                (credit.name ?? credit.artist?.name ?? "") + (credit.joinphrase ?? "")
+            }
+            .joined() ?? ""
     }
 
     /// Most prominent genre tag by vote count, if any.  Title-cased since MB tags are lowercase.
@@ -88,9 +90,11 @@ public struct MBRelease: Decodable, Sendable {
 
     public var albumArtistName: String? {
         guard let credits = self.artistCredit, !credits.isEmpty else { return nil }
-        let name = credits.map { credit in
-            (credit.name ?? credit.artist?.name ?? "") + (credit.joinphrase ?? "")
-        }.joined()
+        let name = credits
+            .map { credit in
+                (credit.name ?? credit.artist?.name ?? "") + (credit.joinphrase ?? "")
+            }
+            .joined()
         return name.isEmpty ? nil : name
     }
 }

@@ -174,8 +174,9 @@ final class SecondaryWindowsTests: XCTestCase {
         SurfaceControl(
             identifier,
             name,
-            restore: { _, inv in inv.pressEscape() }
-        ) { app, _, _ in app.menus.firstMatch.exists }
+            restore: { _, inv in inv.pressEscape() },
+            verify: { app, _, _ in app.menus.firstMatch.exists }
+        )
     }
 
     /// A button whose accessibility label flips on click (Pause/Resume).
@@ -185,10 +186,11 @@ final class SecondaryWindowsTests: XCTestCase {
             name,
             restore: { _, inv in inv.element(identifier).click()
                 inv.settle(0.3)
+            },
+            verify: { _, inv, context in
+                inv.element(identifier).label != context.priorLabel
             }
-        ) { _, inv, context in
-            inv.element(identifier).label != context.priorLabel
-        }
+        )
     }
 
     /// A toggle whose accessibility value flips on click. Native SwiftUI
@@ -201,10 +203,11 @@ final class SecondaryWindowsTests: XCTestCase {
             name,
             restore: { _, inv in inv.element(identifier).click()
                 inv.settle(0.3)
+            },
+            verify: { _, inv, context in
+                String(describing: inv.element(identifier).value ?? "") != context.priorValue
             }
-        ) { _, inv, context in
-            String(describing: inv.element(identifier).value ?? "") != context.priorValue
-        }
+        )
     }
 
     // MARK: Helpers
@@ -216,7 +219,9 @@ final class SecondaryWindowsTests: XCTestCase {
             app.radioButtons[title].click()
         } else {
             app.descendants(matching: .any)
-                .matching(NSPredicate(format: "label == %@", title)).firstMatch.click()
+                .matching(NSPredicate(format: "label == %@", title))
+                .firstMatch
+                .click()
         }
         inv.settle(0.3)
     }

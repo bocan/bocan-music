@@ -230,8 +230,7 @@ public actor FSWatcher {
 
 // MARK: - C callback (file-scope)
 
-private let fsEventsCallback: FSEventStreamCallback = {
-    _, clientCallBackInfo, numEvents, eventPaths, eventFlags, _ in
+private let fsEventsCallback: FSEventStreamCallback = { _, clientCallBackInfo, numEvents, eventPaths, eventFlags, _ in
     guard let info = clientCallBackInfo else { return }
     let watcher = Unmanaged<FSWatcher>.fromOpaque(info).takeUnretainedValue()
 

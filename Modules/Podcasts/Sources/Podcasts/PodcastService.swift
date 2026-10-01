@@ -39,6 +39,9 @@ public actor PodcastService {
     /// Cached transcripts are deleted 30 days after their episode is played.
     private static let transcriptRetentionSeconds: TimeInterval = 30 * 24 * 60 * 60
 
+    // Public initialiser that `App` calls with these labels in this order:
+    // `artwork` has no default and stays among the collaborators it belongs to.
+    // swiftlint:disable function_default_parameter_at_end
     /// Creates the service over its repositories. `search` is optional and
     /// `nil` by default. `transcriptHTTP` is the network seam of the
     /// transcript fetcher the service builds; `now` is the clock used for
@@ -65,7 +68,7 @@ public actor PodcastService {
         self.transcriptRepo = transcriptRepo
         self.chaptersRepo = chaptersRepo
         self.fetcher = fetcher
-        self.transcriptFetcher = TranscriptFetcher(http: transcriptHTTP, repo: transcriptRepo, now: now)
+        self.transcriptFetcher = TranscriptFetcher(repo: transcriptRepo, http: transcriptHTTP, now: now)
         self.chaptersFetcher = chaptersFetcher
         self.parser = parser
         self.artwork = artwork
@@ -74,6 +77,8 @@ public actor PodcastService {
         self.now = now
         self.log = log
     }
+
+    // swiftlint:enable function_default_parameter_at_end
 
     /// Registers the post-refresh new-episodes observer (see `onRefreshNewEpisodes`).
     /// Wired once by the App layer at launch.
@@ -134,10 +139,10 @@ public actor PodcastService {
 
         let podcast = parsed.toPodcast(
             feedURL: stored,
+            now: self.now(),
             hints: indexHints,
             etag: fetchResult.etag,
-            lastModified: fetchResult.lastModified,
-            now: self.now()
+            lastModified: fetchResult.lastModified
         )
 
         let podcastID = try await podcastRepo.upsertByFeedURL(podcast)
@@ -330,9 +335,9 @@ public actor PodcastService {
         // Upsert channel (preserves user-owned fields via upsertByFeedURL).
         var updatedPodcast = parsed.toPodcast(
             feedURL: feedURL,
+            now: self.now(),
             etag: fetchResult.etag,
-            lastModified: fetchResult.lastModified,
-            now: self.now()
+            lastModified: fetchResult.lastModified
         )
         updatedPodcast.lastRefreshError = nil
         try await self.podcastRepo.upsertByFeedURL(updatedPodcast)

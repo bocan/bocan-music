@@ -80,9 +80,9 @@ public actor TranscodeCoordinator {
     init(
         database: Database,
         store: TranscodeStore,
-        encoder: any ArtifactEncoding = AudioTranscoderEncoder(),
         prepareWindowBytes: Int64,
-        debounce: Duration
+        debounce: Duration,
+        encoder: any ArtifactEncoding = AudioTranscoderEncoder()
     ) {
         self.profileRepository = SyncProfileRepository(database: database)
         self.ledger = SyncTranscodeRepository(database: database)

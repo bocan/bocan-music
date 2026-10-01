@@ -39,10 +39,11 @@ final class ShortcutParityTests: XCTestCase {
                 XCTFail("\(item.canonicalTitle): KeyBindings.\(name) does not exist")
                 continue
             }
+            let manifestSays = item.shortcut.map(String.init(describing:)) ?? "none"
             XCTAssertEqual(
                 item.shortcut,
                 bound,
-                "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), KeyBindings.\(name) is \(bound)"
+                "\(item.canonicalTitle): manifest says \(manifestSays), KeyBindings.\(name) is \(bound)"
             )
         }
     }
@@ -82,10 +83,11 @@ final class ShortcutParityTests: XCTestCase {
                     item.binding,
                     "\(item.canonicalTitle): manifest expects KeyBindings routing, source is inline"
                 )
+                let manifestSays = item.shortcut.map(String.init(describing:)) ?? "none"
                 XCTAssertEqual(
                     item.shortcut,
                     shortcut,
-                    "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), source says \(shortcut)"
+                    "\(item.canonicalTitle): manifest says \(manifestSays), source says \(shortcut)"
                 )
             }
         }

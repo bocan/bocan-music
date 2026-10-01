@@ -35,8 +35,8 @@ public enum LyricsDocument: Sendable, Hashable {
 
         public init(
             start: TimeInterval,
-            end: TimeInterval? = nil,
             text: String,
+            end: TimeInterval? = nil,
             words: [WordTime]? = nil,
             malformed: Bool = false
         ) {

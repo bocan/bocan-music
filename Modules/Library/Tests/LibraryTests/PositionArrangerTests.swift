@@ -95,7 +95,7 @@ struct PositionArrangerTests {
 
     @Test("repackedPositions is 1024-stepped")
     func repackedPositions() {
-        #expect(PositionArranger.repackedPositions(count: 0) == [])
+        #expect(PositionArranger.repackedPositions(count: 0).isEmpty)
         #expect(PositionArranger.repackedPositions(count: 3) == [1024, 2048, 3072])
     }
 

@@ -68,14 +68,16 @@ struct PairingCoordinatorTests {
         try await trusted.start()
         let ui = TestPairingUIBridge()
         let clock = OSAllocatedUnfairLock(initialState: Date(timeIntervalSince1970: 1000))
+        let now: @Sendable () -> Date = { clock.withLock { $0 } }
         let coordinator = PairingCoordinator(
             identity: identity,
             trusted: trusted,
             ui: ui,
             serverName: { "Test Mac" },
             serverId: serverId,
-            timeout: timeout
-        ) { clock.withLock { $0 } }
+            timeout: timeout,
+            now: now
+        )
         return Harness(coordinator: coordinator, ui: ui, trusted: trusted, serverFingerprint: serverFingerprint, clock: clock)
     }
 

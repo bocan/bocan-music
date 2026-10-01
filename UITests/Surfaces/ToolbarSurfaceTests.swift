@@ -56,19 +56,21 @@ final class ToolbarSurfaceTests: XCTestCase {
                 "Lyrics pane toggle",
                 restore: { _, inv in inv.element("toolbar.lyrics").click()
                     inv.settle(0.3)
+                },
+                verify: { _, inv, context in
+                    inv.element("toolbar.lyrics").label != context.priorLabel
                 }
-            ) { _, inv, context in
-                inv.element("toolbar.lyrics").label != context.priorLabel
-            },
+            ),
             SurfaceControl(
                 "toolbar.visualizer",
                 "Visualizer pane toggle",
                 restore: { _, inv in inv.element("toolbar.visualizer").click()
                     inv.settle(0.3)
+                },
+                verify: { _, inv, context in
+                    inv.element("toolbar.visualizer").label != context.priorLabel
                 }
-            ) { _, inv, context in
-                inv.element("toolbar.visualizer").label != context.priorLabel
-            },
+            ),
             // Toggling the mini player swaps the main window for the compact
             // one; restore with the global shortcut (the main toolbar is gone
             // while the mini player is up).
@@ -78,10 +80,11 @@ final class ToolbarSurfaceTests: XCTestCase {
                 restore: { app, inv in
                     app.typeKey("m", modifierFlags: [.command, .option])
                     inv.settle(0.6)
+                },
+                verify: { _, inv, _ in
+                    inv.element("miniPlayer.layout").waitForExistence(timeout: 5)
                 }
-            ) { _, inv, _ in
-                inv.element("miniPlayer.layout").waitForExistence(timeout: 5)
-            },
+            ),
             // Immersive Mode (ADR-089) opens a full-screen window, which would
             // take the rest of this crawl into another space; asserted
             // present and enabled here, entered and exited by the menu pass.

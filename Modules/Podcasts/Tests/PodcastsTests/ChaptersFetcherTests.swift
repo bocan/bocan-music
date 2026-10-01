@@ -29,7 +29,7 @@ struct ChaptersParseTests {
         #expect(chapters.count == 2)
         #expect(chapters[0].title == "Valid one")
         #expect(chapters[0].startTime == 10)
-        #expect(chapters[1].title == "")
+        #expect(chapters[1].title.isEmpty)
     }
 
     @Test("empty chapters array and garbage both yield an empty list")

@@ -16,6 +16,8 @@ public struct SubsonicPlayContext: Sendable, Equatable {
     public let album: String?
     public let duration: TimeInterval
 
+    // Memberwise initialiser: the parameters keep the stored-property order.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         serverID: UUID,
         songID: String,
@@ -33,6 +35,7 @@ public struct SubsonicPlayContext: Sendable, Equatable {
         self.album = album
         self.duration = duration
     }
+    // swiftlint:enable function_default_parameter_at_end
 }
 
 /// Downstream consumer of recorded plays. The `Scrobble` module supplies the

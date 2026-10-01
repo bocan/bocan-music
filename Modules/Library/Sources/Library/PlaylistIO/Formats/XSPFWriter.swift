@@ -4,6 +4,7 @@ import Foundation
 public enum XSPFWriter {
     public struct Options: Sendable {
         public var pathMode: PathMode
+
         public init(pathMode: PathMode = .absolute) {
             self.pathMode = pathMode
         }

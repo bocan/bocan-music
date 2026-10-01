@@ -53,6 +53,7 @@ struct RemoteCommandsTests {
 
 private actor Counter {
     var value = 0
+
     func incr() {
         self.value += 1
     }
@@ -60,6 +61,7 @@ private actor Counter {
 
 private actor SeekedHolder {
     var value: TimeInterval = -1
+
     func set(_ newValue: TimeInterval) {
         self.value = newValue
     }

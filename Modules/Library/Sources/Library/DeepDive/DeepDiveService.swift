@@ -140,16 +140,18 @@ public actor DeepDiveService {
         }
 
         let owned = try await self.ownedReleaseKeys(artistID: artist.id ?? 0)
-        let discography = groups.releaseGroups.map { group in
-            ArtistReport.Release(
-                title: group.title ?? "",
-                mbid: group.id,
-                primaryType: group.primaryType,
-                secondaryTypes: group.secondaryTypes ?? [],
-                year: group.year,
-                owned: owned.groupIDs.contains(group.id) || owned.titles.contains((group.title ?? "").lowercased())
-            )
-        }.sorted { ($0.year ?? Int.max, $0.title) < ($1.year ?? Int.max, $1.title) }
+        let discography = groups.releaseGroups
+            .map { group in
+                ArtistReport.Release(
+                    title: group.title ?? "",
+                    mbid: group.id,
+                    primaryType: group.primaryType,
+                    secondaryTypes: group.secondaryTypes ?? [],
+                    year: group.year,
+                    owned: owned.groupIDs.contains(group.id) || owned.titles.contains((group.title ?? "").lowercased())
+                )
+            }
+            .sorted { ($0.year ?? Int.max, $0.title) < ($1.year ?? Int.max, $1.title) }
 
         return ArtistReport(
             artistID: artist.id ?? 0,
@@ -343,17 +345,19 @@ public actor DeepDiveService {
                     ])
                 }
             }
-            let appearances = (recording.releases ?? []).map { release in
-                TrackReport.Appearance(
-                    releaseTitle: release.title,
-                    releaseMBID: release.id,
-                    year: release.year,
-                    country: release.country,
-                    status: release.status,
-                    primaryType: release.releaseGroup?.primaryType,
-                    secondaryTypes: release.releaseGroup?.secondaryTypes ?? []
-                )
-            }.sorted { ($0.year ?? Int.max, $0.releaseTitle) < ($1.year ?? Int.max, $1.releaseTitle) }
+            let appearances = (recording.releases ?? [])
+                .map { release in
+                    TrackReport.Appearance(
+                        releaseTitle: release.title,
+                        releaseMBID: release.id,
+                        year: release.year,
+                        country: release.country,
+                        status: release.status,
+                        primaryType: release.releaseGroup?.primaryType,
+                        secondaryTypes: release.releaseGroup?.secondaryTypes ?? []
+                    )
+                }
+                .sorted { ($0.year ?? Int.max, $0.releaseTitle) < ($1.year ?? Int.max, $1.releaseTitle) }
             let report = TrackReport(
                 trackID: trackID,
                 recordingMBID: mbid,

@@ -8,6 +8,7 @@ struct FSWatcherTests {
     func onChangeReceivesURLs() async throws {
         actor Collector {
             var urls: [URL] = []
+
             func append(_ newURLs: [URL]) {
                 self.urls.append(contentsOf: newURLs)
             }

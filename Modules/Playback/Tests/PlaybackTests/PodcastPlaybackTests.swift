@@ -69,10 +69,8 @@ private actor CapturingScrobbleSink: ScrobbleSink {
 
 @Suite("QueuePlayer podcast playback")
 struct PodcastPlaybackTests {
-    // swiftlint:disable:next force_unwrapping
     private static let feed = URL(string: "https://example.invalid/feed.xml")!
     private static let guid = "episode-guid-1"
-    // swiftlint:disable:next force_unwrapping
     private static let enclosure = URL(string: "https://example.invalid/ep1.mp3")!
 
     private func makeFormat() -> AudioSourceFormat {

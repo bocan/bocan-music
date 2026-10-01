@@ -72,6 +72,7 @@ private final class FakeDownloader: EpisodeDownloading, @unchecked Sendable {
 
     private final class Handle: EpisodeDownloadHandle, @unchecked Sendable {
         let control: Control
+
         init(control: Control) {
             self.control = control
         }
@@ -202,6 +203,7 @@ private func eventually(_ maxYields: Int = 2000, _ condition: @Sendable () async
 
 private actor ProgressCollector {
     private(set) var items: [EpisodeDownload] = []
+
     func add(_ item: EpisodeDownload) {
         self.items.append(item)
     }
@@ -213,6 +215,7 @@ private actor ProgressCollector {
 
 private actor DownloadedCollector {
     private(set) var seen: [String] = []
+
     func add(podcastID: Int64, guid: String) {
         self.seen.append("\(podcastID)/\(guid)")
     }

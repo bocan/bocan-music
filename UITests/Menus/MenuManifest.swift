@@ -31,8 +31,7 @@ enum MenuState: String, CaseIterable {
 /// self-referential, and implicit Sendable inference through that cycle is
 /// order-dependent. On CI runners (different batch partitioning) it resolved
 /// to non-Sendable and `MenuManifest.menus` failed to compile (2026-08-30).
-// swiftformat:disable:next redundantSendable
-struct MenuItemSpec: Sendable {
+struct MenuItemSpec: Sendable { // swiftformat:disable:this redundantSendable
     let titles: [String]
     /// Expected shortcut; the parity test checks it against the source
     /// declaration and `KeyBindings.swift`.
@@ -113,8 +112,7 @@ struct MenuItemSpec: Sendable {
 
 /// One expected top-level menu. `Sendable` is explicit for the same reason
 /// as `MenuItemSpec`: it is what `MenuManifest.menus` stores.
-// swiftformat:disable:next redundantSendable
-struct MenuSpec: Sendable {
+struct MenuSpec: Sendable { // swiftformat:disable:this redundantSendable
     let title: String
     /// `false` for menus whose contents are wholly system-managed and
     /// machine-dependent (Window: tiling, tab items, open-window list).

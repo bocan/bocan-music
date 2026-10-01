@@ -87,6 +87,7 @@ private final class TrustBypassTransport: HTTPTransport, @unchecked Sendable {
 
 private final class HostTrustDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
     let host: String
+
     init(host: String) {
         self.host = host
     }

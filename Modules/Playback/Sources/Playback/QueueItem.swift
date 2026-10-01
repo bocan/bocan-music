@@ -123,6 +123,9 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
     // MARK: - Init
 
+    // Memberwise initialiser: the parameters keep the stored-property order,
+    // and `App` and `UI` call it with these labels.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         id: UUID = UUID(),
         trackID: Int64,
@@ -162,6 +165,8 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.artistID = artistID
         self.playableSource = playableSource ?? .localBookmark(bookmark?.data ?? Data())
     }
+
+    // swiftlint:enable function_default_parameter_at_end
 
     // MARK: - Helpers
 

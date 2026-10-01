@@ -39,6 +39,9 @@ public struct CoverArtCandidate: Sendable, Hashable, Identifiable {
         case coverArtArchive
     }
 
+    // Memberwise initialiser: the labels follow the stored-property order, and
+    // callers in other modules use that order.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         id: String,
         releaseGroupID: String? = nil,
@@ -62,4 +65,5 @@ public struct CoverArtCandidate: Sendable, Hashable, Identifiable {
         self.dimensions = dimensions
         self.source = source
     }
+    // swiftlint:enable function_default_parameter_at_end
 }

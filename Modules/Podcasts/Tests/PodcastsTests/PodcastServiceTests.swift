@@ -96,6 +96,7 @@ private func pollFileExists(_ path: String) async throws -> Bool {
 /// Thread-safe sink for the new-episodes observer callback.
 private actor ObserverCollector {
     private(set) var calls: [(id: Int64, guids: [String])] = []
+
     func record(id: Int64, guids: [String]) {
         self.calls.append((id, guids))
     }

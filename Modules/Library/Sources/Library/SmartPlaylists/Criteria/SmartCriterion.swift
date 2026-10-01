@@ -36,6 +36,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     private enum RuleAssoc: String, CodingKey { case rule = "_0" }
     private enum GroupAssoc: String, CodingKey { case logicalOp = "_0", children = "_1" }
     private enum InvalidAssoc: String, CodingKey { case reason }
+
     private static let log = AppLogger.make(.library)
     public static let newerVersionRuleMessage = "This rule was created in a newer version of Bòcan."
 
@@ -110,6 +111,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     ) -> String? {
         struct LenientRule: Decodable {
             let field: String?
+
             enum CodingKeys: String, CodingKey { case field }
             init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)

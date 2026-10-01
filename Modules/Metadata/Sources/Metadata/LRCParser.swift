@@ -13,7 +13,7 @@ public struct LyricLine: Sendable, Equatable {
     /// Lyric text.
     public let text: String
 
-    public init(timestamp: Double? = nil, text: String) {
+    public init(text: String, timestamp: Double? = nil) {
         self.timestamp = timestamp
         self.text = text
     }
@@ -175,7 +175,7 @@ public enum LRCParser {
                 }
             } else {
                 for ts in timestamps {
-                    result.append(LyricLine(timestamp: ts, text: text))
+                    result.append(LyricLine(text: text, timestamp: ts))
                 }
             }
         }

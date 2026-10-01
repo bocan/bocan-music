@@ -189,8 +189,10 @@ struct ManifestBuilderTests {
             accentColor: "#A259FF"
         ))
         try await fixture.playlists.insertRows(
-            [PlaylistTrack(playlistID: manualId, trackID: second, position: 0),
-             PlaylistTrack(playlistID: manualId, trackID: first, position: 1)],
+            [
+                PlaylistTrack(playlistID: manualId, trackID: second, position: 0),
+                PlaylistTrack(playlistID: manualId, trackID: first, position: 1),
+            ],
             in: manualId
         )
 

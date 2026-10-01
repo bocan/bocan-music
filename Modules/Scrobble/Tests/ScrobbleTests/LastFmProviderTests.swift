@@ -25,9 +25,11 @@ struct LastFmProviderTests {
     func invalidSessionError() async {
         await withStubLock {
             StubProtocol.reset()
-            StubProtocol.registerJSON(matching: "audioscrobbler.com", status: 200, json: [
-                "error": 9, "message": "Invalid session key",
-            ])
+            StubProtocol.registerJSON(
+                matching: "audioscrobbler.com",
+                json: ["error": 9, "message": "Invalid session key"],
+                status: 200
+            )
             let creds = StubLastFmCreds(session: "bad", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
             await #expect(throws: ScrobbleError.self) {
@@ -40,9 +42,12 @@ struct LastFmProviderTests {
     func rateLimited() async throws {
         try await withStubLock {
             StubProtocol.reset()
-            StubProtocol.registerJSON(matching: "audioscrobbler.com", status: 200, headers: ["Retry-After": "30"], json: [
-                "error": 29, "message": "Rate limit",
-            ])
+            StubProtocol.registerJSON(
+                matching: "audioscrobbler.com",
+                json: ["error": 29, "message": "Rate limit"],
+                status: 200,
+                headers: ["Retry-After": "30"]
+            )
             let creds = StubLastFmCreds(session: "sk", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
             let results = try await provider.submit([self.makeEvent()])

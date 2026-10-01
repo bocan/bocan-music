@@ -322,11 +322,13 @@ actor EditTransaction {
         //     file tags so TagWriter writes them into the audio file.
         if embedCoverArt, let artPatch = patch.coverArt {
             if let artData = artPatch {
-                let rawArts = [RawCoverArt(
-                    data: artData,
-                    mimeType: Self.mimeType(for: artData),
-                    pictureType: 3 // APIC type 3 = front cover
-                )]
+                let rawArts = [
+                    RawCoverArt(
+                        data: artData,
+                        mimeType: Self.mimeType(for: artData),
+                        pictureType: 3 // APIC type 3 = front cover
+                    ),
+                ]
                 newTags.coverArt = CoverArtExtractor.extract(from: rawArts)
             } else {
                 // Patch explicitly clears the art → remove from file as well.

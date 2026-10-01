@@ -20,6 +20,7 @@ public actor PlaylistExportService {
         public let destination: URL
         public let format: PlaylistFormat
         public let pathMode: PathMode
+
         public init(playlistID: Int64, destination: URL, format: PlaylistFormat, pathMode: PathMode) {
             self.playlistID = playlistID
             self.destination = destination

@@ -750,6 +750,6 @@ struct SubsonicServiceCapabilityLieTests {
         do { _ = try await service.getPodcasts(serverID: id) } catch {}
 
         await fence.trigger()
-        #expect(await collector.value == [], "No emit when there is no capability snapshot to downgrade")
+        #expect(await collector.value.isEmpty, "No emit when there is no capability snapshot to downgrade")
     }
 }

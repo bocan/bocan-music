@@ -357,8 +357,14 @@ struct QueuePlayerTests {
         let block = String(source[start.lowerBound ..< end.lowerBound])
 
         #expect(!block.contains("try?"), "a dropped error leaves the key looking dead with nothing logged")
-        for call in ["runRemote(.play)", "runRemote(.togglePlayPause)", "runRemote(.next)",
-                     "runRemote(.previous)", "runRemote(.seek("] {
+        let calls = [
+            "runRemote(.play)",
+            "runRemote(.togglePlayPause)",
+            "runRemote(.next)",
+            "runRemote(.previous)",
+            "runRemote(.seek(",
+        ]
+        for call in calls {
             #expect(block.contains(call), "missing \(call)")
         }
     }

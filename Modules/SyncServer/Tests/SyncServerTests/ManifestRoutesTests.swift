@@ -96,7 +96,7 @@ struct ManifestRoutesTests {
         let response = await self.makeRouter(database).dispatch(self.request("/v1/ping"), context: self.trustedContext())
 
         #expect(response.status == 500)
-        let body = String(decoding: response.body, as: UTF8.self)
+        let body = try #require(String(bytes: response.body, encoding: .utf8))
         #expect(!body.contains("\"serverId\""), "an empty id reads as a different Mac to the phone")
     }
 

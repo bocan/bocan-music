@@ -33,8 +33,10 @@ private let artistJSON = """
  "relations":[
   {"type":"wikidata","direction":"forward","url":{"resource":"https://www.wikidata.org/wiki/Q1299"}},
   {"type":"discogs","direction":"forward","url":{"resource":"https://www.discogs.com/artist/82730"}},
-  {"type":"member of band","direction":"backward","begin":"1957-03","end":"1970-04-10","ended":true,"attributes":["guitar","lead vocals"],"artist":{"id":"4d5447d7","name":"John Lennon"}},
-  {"type":"member of band","direction":"backward","begin":"1960-08","end":"1962-08","ended":true,"attributes":["drums"],"artist":{"id":"f3bd7f47","name":"Pete Best"}}]}
+  {"type":"member of band","direction":"backward","begin":"1957-03","end":"1970-04-10","ended":true,
+   "attributes":["guitar","lead vocals"],"artist":{"id":"4d5447d7","name":"John Lennon"}},
+  {"type":"member of band","direction":"backward","begin":"1960-08","end":"1962-08","ended":true,
+   "attributes":["drums"],"artist":{"id":"f3bd7f47","name":"Pete Best"}}]}
 """
 private let browseJSON = """
 {"release-group-count":3,"release-group-offset":0,"release-groups":[
@@ -43,7 +45,10 @@ private let browseJSON = """
  {"id":"rg-abbey","title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26"}]}
 """
 private let wikidataJSON = #"{"entities":{"Q1299":{"id":"Q1299","sitelinks":{"enwiki":{"site":"enwiki","title":"The Beatles"}}}}}"#
-private let summaryJSON = #"{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}"#
+private let summaryJSON = #"""
+{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.",
+ "content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}
+"""#
 private let searchJSON = #"{"artists":[{"id":"b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d","name":"The Beatles","score":100,"type":"Group"}]}"#
 private let releaseJSON = """
 {"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","barcode":"077774644624",
@@ -58,14 +63,21 @@ private let groupLookupJSON = """
              {"id":"rel-a","title":"Abbey Road","date":"1969-09-26","status":"Official"},
              {"id":"rel-boot","title":"Abbey Road","date":"1969","status":"Bootleg"}]}
 """
-private let workJSON = #"{"id":"w-1","title":"Come Together","relations":[{"type":"composer","artist":{"id":"a-l","name":"John Lennon"}},{"type":"composer","artist":{"id":"a-m","name":"Paul McCartney"}},{"type":"lyricist","artist":{"id":"a-l","name":"John Lennon"}}]}"#
+private let workJSON = #"""
+{"id":"w-1","title":"Come Together","relations":[
+ {"type":"composer","artist":{"id":"a-l","name":"John Lennon"}},
+ {"type":"composer","artist":{"id":"a-m","name":"Paul McCartney"}},
+ {"type":"lyricist","artist":{"id":"a-l","name":"John Lennon"}}]}
+"""#
 private let recordingJSON = """
 {"id":"rec-1","title":"Come Together","length":259000,"isrcs":["GBAYE0601690"],
  "relations":[{"type":"performance","direction":"forward","work":{"id":"w-1","title":"Come Together"}}],
  "artist-credit":[{"name":"The Beatles","artist":{"id":"\(beatlesMBID)","name":"The Beatles"}}],
  "tags":[{"name":"rock","count":9},{"name":"pop","count":3}],
- "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","release-group":{"id":"rg-abbey","primary-type":"Album"}},
-             {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official","release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
+ "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official",
+              "release-group":{"id":"rg-abbey","primary-type":"Album"}},
+             {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official",
+              "release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
 """
 
 private let groupSearchJSON = """
@@ -79,6 +91,7 @@ private let recordingSearchJSON = """
 private final class SaverSpy: DeepDiveTagSaving, @unchecked Sendable {
     private(set) var recordings: [(mbid: String, trackID: Int64)] = []
     private(set) var groups: [(mbid: String, trackIDs: [Int64])] = []
+
     func saveRecordingID(_ mbid: String, trackID: Int64) async throws {
         self.recordings.append((mbid, trackID))
     }

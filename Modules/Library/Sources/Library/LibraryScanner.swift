@@ -431,7 +431,8 @@ public actor LibraryScanner {
                     markerRepo: TrackMarkerRepository(database: self.database)
                 )
                 for folder in ScanCoordinator.cueFolders(under: url) {
-                    if await service.attachMarkers(inFolder: folder) > 0 {
+                    let attached = await service.attachMarkers(inFolder: folder)
+                    if attached > 0 {
                         didChange = true
                     }
                 }

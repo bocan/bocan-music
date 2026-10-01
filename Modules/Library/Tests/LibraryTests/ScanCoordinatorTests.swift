@@ -40,6 +40,7 @@ private var dolbyLibraryURL: URL {
 /// Thread-safe event accumulator for use in @Sendable scan callbacks.
 private final class EventBox: @unchecked Sendable {
     var events: [ScanProgress] = []
+
     func append(_ event: ScanProgress) {
         self.events.append(event)
     }

@@ -117,6 +117,7 @@ struct LastFmAuthTests {
 
 private actor OpenURLCapture {
     var captured: URL?
+
     func record(_ url: URL) {
         self.captured = url
     }

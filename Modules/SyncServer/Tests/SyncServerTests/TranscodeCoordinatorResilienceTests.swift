@@ -179,9 +179,9 @@ struct TranscodeCoordinatorResilienceTests {
         let coordinator = TranscodeCoordinator(
             database: database,
             store: store,
-            encoder: encoder,
             prepareWindowBytes: .max / 2,
-            debounce: .milliseconds(10)
+            debounce: .milliseconds(10),
+            encoder: encoder
         )
         let tracks = TrackRepository(database: database)
         let ledger = SyncTranscodeRepository(database: database)
@@ -220,9 +220,9 @@ struct TranscodeCoordinatorResilienceTests {
         let coordinator = TranscodeCoordinator(
             database: database,
             store: store,
-            encoder: encoder,
             prepareWindowBytes: .max / 2,
-            debounce: .milliseconds(10)
+            debounce: .milliseconds(10),
+            encoder: encoder
         )
         let tracks = TrackRepository(database: database)
         let ledger = SyncTranscodeRepository(database: database)

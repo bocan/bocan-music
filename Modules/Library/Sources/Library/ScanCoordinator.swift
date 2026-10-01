@@ -523,7 +523,7 @@ actor ScanCoordinator {
         }
         guard resolved != nil else { return nil }
         let length = buffer.firstIndex(of: 0) ?? buffer.count
-        return String(decoding: buffer[..<length], as: UTF8.self)
+        return String(bytes: buffer[..<length], encoding: .utf8)
     }
 }
 

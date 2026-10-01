@@ -6,16 +6,16 @@ extension ParsedFeed {
     ///
     /// - Parameters:
     ///   - feedURL: The normalized storage URL (https-preferred, no fragment).
+    ///   - now: Snapshot date for `addedAt` and `lastRefreshedAt`.
     ///   - hints: Optional search result carrying Podcast Index / iTunes IDs.
     ///   - etag: HTTP ETag validator from the fetch response.
     ///   - lastModified: HTTP Last-Modified validator from the fetch response.
-    ///   - now: Snapshot date for `addedAt` and `lastRefreshedAt`.
     func toPodcast(
         feedURL: URL,
+        now: Date,
         hints: PodcastSearchResult? = nil,
         etag: String? = nil,
-        lastModified: String? = nil,
-        now: Date
+        lastModified: String? = nil
     ) -> Podcast {
         let catJSON = try? JSONEncoder().encode(self.categories)
         let ts = now.timeIntervalSince1970

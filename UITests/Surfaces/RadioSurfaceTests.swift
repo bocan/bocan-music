@@ -20,7 +20,8 @@ final class RadioSurfaceTests: XCTestCase {
     /// which combines its children into one element, so the inner button is
     /// not separately addressable; the toolbar add button covers the flow.
     static let skips = [
-        "radio.emptyState.addStation": "inside a ContentUnavailableView that combines its children; the toolbar radio.addStation covers the add-station flow",
+        "radio.emptyState.addStation": "inside a ContentUnavailableView that combines its children; "
+            + "the toolbar radio.addStation covers the add-station flow",
     ]
 
     func testRadioSurface() {
@@ -36,8 +37,9 @@ final class RadioSurfaceTests: XCTestCase {
             SurfaceControl(
                 "radio.addStation",
                 "Add station (toolbar)",
-                restore: { _, inv in inv.dismissSheet() }
-            ) { app, _, _ in app.sheets.firstMatch.exists },
+                restore: { _, inv in inv.dismissSheet() },
+                verify: { app, _, _ in app.sheets.firstMatch.exists }
+            ),
         ])
     }
 

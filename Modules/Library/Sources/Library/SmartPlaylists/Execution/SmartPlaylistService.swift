@@ -73,6 +73,8 @@ public actor SmartPlaylistService {
     /// Updates the criteria and limit/sort for an existing smart playlist.
     public func update(
         id: Int64,
+        // Public API with a caller in UI; the labels keep the order of `create`.
+        // swiftlint:disable:next function_default_parameter_at_end
         name: String? = nil,
         criteria: SmartCriterion,
         limitSort: LimitSort

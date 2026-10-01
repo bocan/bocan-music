@@ -58,7 +58,7 @@ struct UnavailableItemUpdatesTests {
         defer { Task { await collector.stop() } }
 
         let received = await collector.wait(forAtLeast: 1)
-        #expect(received.first == [], "a fresh player has nothing missing")
+        #expect(received.first?.isEmpty == true, "a fresh player has nothing missing")
     }
 
     @Test("two subscribers both receive the same set, rather than dividing it")

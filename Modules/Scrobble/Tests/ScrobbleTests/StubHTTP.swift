@@ -56,7 +56,7 @@ final class StubProtocol: URLProtocol {
         self.routes.append((matcher, response))
     }
 
-    static func registerJSON(matching substring: String, status: Int = 200, headers: [String: String] = [:], json: Any) {
+    static func registerJSON(matching substring: String, json: Any, status: Int = 200, headers: [String: String] = [:]) {
         // Built here, in the test's own context: a response that cannot be
         // built fails the test, and the route is not registered.
         guard let resp = HTTPURLResponse(url: self.stubURL, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers) else {
@@ -78,11 +78,11 @@ final class StubProtocol: URLProtocol {
 
     private static let stubURL = URL(string: "https://stub")!
 
-    override class func canInit(with request: URLRequest) -> Bool {
+    override static func canInit(with request: URLRequest) -> Bool {
         true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 
@@ -132,6 +132,7 @@ extension URLSession {
 actor StubLastFmCreds: LastFmCredentialsStore {
     var sessionKey: String?
     var username: String?
+
     init(session: String? = nil, user: String? = nil) {
         self.sessionKey = session
         self.username = user
@@ -159,6 +160,7 @@ actor StubLastFmCreds: LastFmCredentialsStore {
 actor StubListenBrainzCreds: ListenBrainzCredentialsStore {
     var token: String?
     var username: String?
+
     init(token: String? = nil, user: String? = nil) {
         self.token = token
         self.username = user

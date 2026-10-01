@@ -330,8 +330,8 @@ struct LyricsDocumentTests {
     func codableSynced() throws {
         let line = LyricsDocument.LyricsLine(
             start: 5.0,
-            end: 9.95,
             text: "Hello",
+            end: 9.95,
             words: [LyricsDocument.WordTime(start: 5.0, word: "Hello")]
         )
         let doc = LyricsDocument.synced(lines: [line], offsetMS: 100)
@@ -400,6 +400,7 @@ struct LyricsDocumentTests {
 /// deterministic, never freshly random per invocation).
 private struct SplitMix64: RandomNumberGenerator {
     private var state: UInt64
+
     init(seed: UInt64) {
         self.state = seed
     }
@@ -427,7 +428,9 @@ struct TimestampCase: CustomStringConvertible {
 struct DocumentCase: CustomStringConvertible {
     let lines: [LineSpec]
     let offsetMS: Int
-    struct LineSpec { let cs: Int
+
+    struct LineSpec {
+        let cs: Int
         let text: String
     }
 

@@ -13,6 +13,7 @@ public struct CUESheet: Sendable, Hashable {
         public let startMs: Int64
         public let endMs: Int64?
         public let isrc: String?
+
         public init(
             number: Int,
             title: String?,
@@ -34,6 +35,7 @@ public struct CUESheet: Sendable, Hashable {
         public let path: String
         public let absoluteURL: URL?
         public let tracks: [Track]
+
         public init(path: String, absoluteURL: URL?, tracks: [Track]) {
             self.path = path
             self.absoluteURL = absoluteURL

@@ -120,8 +120,10 @@ final class MenuEnablementTests: XCTestCase {
                         continue
                     }
                     if item.enabled != expected {
+                        let wanted = expected ? "enabled" : "disabled"
+                        let observedState = item.enabled ? "enabled" : "disabled"
                         mismatches.append(
-                            "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): expected \(expected ? "enabled" : "disabled"), observed \(item.enabled ? "enabled" : "disabled")"
+                            "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): expected \(wanted), observed \(observedState)"
                         )
                     }
                 }

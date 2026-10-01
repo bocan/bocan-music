@@ -59,11 +59,11 @@ public struct ManifestBuilder: Sendable {
 
     func build(
         profile: SyncProfile,
-        transcode: TranscodeSettings = .original,
         serverId: String,
         serverName: String,
         generation: Int,
-        generatedAt: Date
+        generatedAt: Date,
+        transcode: TranscodeSettings = .original
     ) async throws -> Manifest {
         let allTracks = try await self.trackRepository.fetchAllIncludingDisabled()
         let albums = try await self.albumRepository.fetchAll()

@@ -74,8 +74,9 @@ final class BrowseSurfaceTests: XCTestCase {
             SurfaceControl(
                 "albumsGrid.tile.1",
                 "Album tile (open)",
-                restore: { _, inv in inv.selectSidebar("Albums") }
-            ) { app, _, _ in app.buttons["Shuffle Album"].waitForExistence(timeout: 5) },
+                restore: { _, inv in inv.selectSidebar("Albums") },
+                verify: { app, _, _ in app.buttons["Shuffle Album"].waitForExistence(timeout: 5) }
+            ),
         ])
 
         self.assertDrillOutInvariants(app, crawler.inv)

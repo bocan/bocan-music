@@ -38,6 +38,9 @@ public actor ListenBrainzProvider: ScrobbleProvider {
     private let now: @Sendable () -> Date
     private var lastNowPlayingAt: Date?
 
+    // Public initialiser that `App` calls; `config` leads, as it does in the
+    // other providers.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         config: ListenBrainzConfig = .init(),
         http: HTTPClient,
@@ -50,6 +53,8 @@ public actor ListenBrainzProvider: ScrobbleProvider {
         self.credentials = credentials
         self.now = now
     }
+
+    // swiftlint:enable function_default_parameter_at_end
 
     public func isAuthenticated() async -> Bool {
         do {

@@ -53,7 +53,7 @@ struct HttpResponse {
         Self(status: 204)
     }
 
-    static func json(status: Int = 200, data: Data) -> Self {
+    static func json(data: Data, status: Int = 200) -> Self {
         Self(status: status, headers: ["content-type": "application/json"], body: data)
     }
 

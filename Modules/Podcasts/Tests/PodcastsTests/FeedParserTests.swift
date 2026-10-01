@@ -240,7 +240,8 @@ struct FeedParserStylesheetPrologTests {
         // first Feed(data:) fails and the prolog-strip fallback must recover it.
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <?xml-stylesheet type="text/xsl" media="screen" href="/~files/feed-premium-very-long-stylesheet-path-to-push-the-root-well-past-128-bytes.xsl"?>
+        <?xml-stylesheet type="text/xsl" media="screen" \
+        href="/~files/feed-premium-very-long-stylesheet-path-to-push-the-root-well-past-128-bytes.xsl"?>
         <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
           <channel>
             <title>Stylesheet Feed</title>
@@ -473,7 +474,7 @@ struct FeedParserUnreadableDateTests {
         // `lastBuildDate` ("yesterday") is dropped; the bad pubDate is rewritten.
         #expect(outcome.rewritten == 1)
         #expect(outcome.dropped == 1)
-        let text = String(decoding: outcome.data, as: UTF8.self)
+        let text = try #require(String(bytes: outcome.data, encoding: .utf8))
         #expect(text.contains("<pubDate>2024-06-01T00:00:00Z</pubDate>"))
         #expect(!text.contains("lastBuildDate"))
         #expect(text.contains("<pubDate>Wed, 01 Jan 2025 10:00:00 BST</pubDate>"))

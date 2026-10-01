@@ -157,12 +157,9 @@ struct SubsonicServiceReadSweepTests {
     @Test("getPlaylist parses a stub playlist")
     func getPlaylist() async throws {
         let (service, id, transport) = try await makeService()
-        transport
-            .enqueue(
-                json: envelope(
-                    "\"playlist\":{\"id\":\"p1\",\"name\":\"Mix\",\"songCount\":0,\"duration\":0,\"owner\":\"alice\",\"public\":false,\"created\":\"2024-01-01T00:00:00.000Z\",\"changed\":\"2024-01-01T00:00:00.000Z\"}"
-                )
-            )
+        let playlist = "\"playlist\":{\"id\":\"p1\",\"name\":\"Mix\",\"songCount\":0,\"duration\":0,\"owner\":\"alice\",\"public\":false,"
+            + "\"created\":\"2024-01-01T00:00:00.000Z\",\"changed\":\"2024-01-01T00:00:00.000Z\"}"
+        transport.enqueue(json: envelope(playlist))
         let result = try await service.getPlaylist(serverID: id, id: "p1")
         #expect(result.id == "p1")
     }

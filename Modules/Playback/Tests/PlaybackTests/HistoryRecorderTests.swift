@@ -11,6 +11,7 @@ private actor CapturingScrobbleSink: ScrobbleSink {
     private(set) var nowPlayingCalls: [Int64] = []
     private(set) var subsonicCalls: [SubsonicPlayContext] = []
     private(set) var nowPlayingSubsonicCalls: [SubsonicPlayContext] = []
+
     func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async {
         self.calls.append((trackID, playedAt, durationPlayed))
     }

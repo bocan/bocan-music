@@ -40,15 +40,15 @@ public actor ScrobbleQueueWorker {
     /// - Parameters:
     ///   - provider: The service this worker submits to.
     ///   - repository: The queue the pending rows are read from and marked in.
-    ///   - policy: The retry and backoff schedule for failed submissions.
     ///   - reachability: Network state; the worker waits while it reports offline.
+    ///   - policy: The retry and backoff schedule for failed submissions.
     ///   - batchSize: The most rows fetched in one drain pass.
     ///   - now: Clock used to pick the rows that are due; injectable for tests.
     public init(
         provider: any ScrobbleProvider,
         repository: ScrobbleQueueRepository,
-        policy: RetryPolicy = .default,
         reachability: any Reachability,
+        policy: RetryPolicy = .default,
         batchSize: Int = 50,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {

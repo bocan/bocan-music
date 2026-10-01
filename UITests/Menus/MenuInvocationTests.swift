@@ -76,7 +76,8 @@ final class MenuInvocationTests: XCTestCase {
         Skip(
             menu: "Tools",
             item: "Analyse Provenance…",
-            reason: "only immediate feedback is a 2s toast (a SwiftUI overlay XCUITest does not surface); its persistent result lives in Library Summary ▸ Audio Quality, exercised by the phase 32 window crawl"
+            reason: "only immediate feedback is a 2s toast (a SwiftUI overlay XCUITest does not surface); "
+                + "its persistent result lives in Library Summary ▸ Audio Quality, exercised by the phase 32 window crawl"
         ),
     ]
 

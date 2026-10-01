@@ -14,10 +14,8 @@ struct PlayableSourceTests {
         #expect(PlayableSource.localBookmark(Data()).isRemote == false)
         #expect(PlayableSource.localBookmark(Data([0x01, 0x02])).isRemote == false)
         #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").isRemote)
-        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         #expect(PlayableSource.internetRadio(streamURL: url).isRemote)
-        // swiftlint:disable:next force_unwrapping
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         #expect(PlayableSource.podcast(feedURL: feed, episodeGUID: "guid-1").isRemote)
     }
@@ -26,17 +24,14 @@ struct PlayableSourceTests {
     func isLiveStreamDiscrimination() throws {
         #expect(PlayableSource.localBookmark(Data()).isLiveStream == false)
         #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").isLiveStream == false)
-        // swiftlint:disable:next force_unwrapping
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         #expect(PlayableSource.podcast(feedURL: feed, episodeGUID: "guid-1").isLiveStream == false)
-        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         #expect(PlayableSource.internetRadio(streamURL: url).isLiveStream)
     }
 
     @Test("podcastEpisode surfaces only on .podcast")
     func podcastEpisodeAccessor() throws {
-        // swiftlint:disable:next force_unwrapping
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         let episode = PlayableSource.podcast(feedURL: feed, episodeGUID: "ep-42")
         let pair = try #require(episode.podcastEpisode)
@@ -45,7 +40,6 @@ struct PlayableSourceTests {
         // Non-podcast sources return nil.
         #expect(PlayableSource.localBookmark(Data()).podcastEpisode == nil)
         #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").podcastEpisode == nil)
-        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         #expect(PlayableSource.internetRadio(streamURL: url).podcastEpisode == nil)
     }
@@ -63,7 +57,6 @@ struct PlayableSourceTests {
 
     @Test("internetRadioURL surfaces only on .internetRadio")
     func internetRadioAccessor() throws {
-        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         let radio = PlayableSource.internetRadio(streamURL: url)
         #expect(radio.internetRadioURL == url)
@@ -97,15 +90,13 @@ struct PlayableSourceTests {
     func codableLocalMissingBookmark() throws {
         // Minimal legacy-style JSON: only the discriminator. Should decode
         // to an empty-data local bookmark and fall back to fileURL at play time.
-        // swiftlint:disable:next force_unwrapping
-        let json = "{\"kind\":\"localBookmark\"}".data(using: .utf8)!
+        let json = Data("{\"kind\":\"localBookmark\"}".utf8)
         let decoded = try JSONDecoder().decode(PlayableSource.self, from: json)
         #expect(decoded == .localBookmark(Data()))
     }
 
     @Test("Codable round-trip preserves .internetRadio stream URL")
     func codableRoundTripInternetRadio() throws {
-        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         let value = PlayableSource.internetRadio(streamURL: url)
         let data = try JSONEncoder().encode(value)
@@ -115,7 +106,6 @@ struct PlayableSourceTests {
 
     @Test("Codable round-trip preserves .podcast feed URL and episode GUID")
     func codableRoundTripPodcast() throws {
-        // swiftlint:disable:next force_unwrapping
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         let value = PlayableSource.podcast(feedURL: feed, episodeGUID: "ep-99")
         let data = try JSONEncoder().encode(value)
@@ -125,12 +115,12 @@ struct PlayableSourceTests {
 
     @Test("Codable decodes a hand-written .podcast blob with the discriminator keys")
     func codableDecodesPodcastBlob() throws {
-        let json = """
-        {"kind":"podcast","feedURL":"https:\\/\\/example.invalid\\/feed.xml","episodeGUID":"ep-7"}
-        """.data(using: .utf8)
-        // swiftlint:disable:next force_unwrapping
-        let decoded = try JSONDecoder().decode(PlayableSource.self, from: #require(json))
-        // swiftlint:disable:next force_unwrapping
+        let json = Data(
+            """
+            {"kind":"podcast","feedURL":"https:\\/\\/example.invalid\\/feed.xml","episodeGUID":"ep-7"}
+            """.utf8
+        )
+        let decoded = try JSONDecoder().decode(PlayableSource.self, from: json)
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         #expect(decoded == .podcast(feedURL: feed, episodeGUID: "ep-7"))
     }
@@ -258,7 +248,6 @@ struct QueuePersistenceMigrationTests {
         let db = try await Database(location: .inMemory)
         let persistence = QueuePersistence(database: db, debounce: .milliseconds(1))
 
-        // swiftlint:disable:next force_unwrapping
         let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
         let items: [QueueItem] = [
             self.makeItem(trackID: 1),
