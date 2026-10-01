@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Right-click an album's cover in Albums, or at the top of the album's page, and choose Show Original Cover to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
+
+Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
+
 VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
 
 With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.

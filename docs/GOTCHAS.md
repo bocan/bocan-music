@@ -362,7 +362,9 @@ A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.access
 
 **Why:** a test that waits a fixed wall-clock interval for an async main-actor timer flakes when the runner starves the task past the wait. Several suites have been hardened this way; others with real-time waits remain and are known flake candidates rather than regressions.
 
-**Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/VisualizerViewModelTests.swift`
+A poll with a wall-clock deadline (`while Date() < deadline`) is not enough when the test and the awaited task both need the main actor. Other suites can hold the main actor for longer than the timeout; the deadline is then already past when the poll resumes, and it gives up before the awaited task has had its turn. Count the allowance in turns that each yield (a fixed number of short sleeps), so time spent blocked uses none of it. The toast auto-dismiss test failed this way in CI on 2026-10-01 with a 6 s allowance.
+
+**Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/VisualizerViewModelTests.swift`, and `LibraryViewModelToastTests.swift` beside it for the turn-counted poll
 
 ### A UI test that touches AppKit is `@MainActor`
 
