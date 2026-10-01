@@ -51,8 +51,6 @@
         <string>_raop._tcp</string>
         <string>_companion-link._tcp</string>
     </array>
-    <key>NSHelpBook</key>
-    <string>Bocan Help</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>SUPublicEDKey</key>

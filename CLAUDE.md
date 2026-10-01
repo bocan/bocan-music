@@ -110,7 +110,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md`. Read it if you
 
 ## Commits
 
-Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
+Document new features in README.md, in the repo's /website pages, and in the in-app Help window (`Modules/UI/Sources/UI/Help/HelpContent.swift`, the only help text the app ships). NEVER use em dashes (—) in commit messages or markdown, or the website.
 After any logical change, run `make format`, `make lint`, `make build` and `make test-coverage` to ensure standards are met before committing.
 Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / branch / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs gitleaks and SwiftFormat in lint mode; its SwiftLint step currently checks nothing (see `docs/GOTCHAS.md`), so `make lint` is the real gate. CI re-runs all of it. Don't `--no-verify` past failures; fix the issue.
 

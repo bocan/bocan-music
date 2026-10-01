@@ -4,10 +4,10 @@ import XCTest
 
 /// Phase 30 shortcut parity: one source-convention test family comparing
 /// four representations of every shortcut so they can never drift apart
-/// silently again (the help book shipped three wrong shortcuts for
+/// silently again (the help text shipped three wrong shortcuts for
 /// months): the manifest, `KeyBindings.swift`, the `BocanCommands*.swift`
-/// menu declarations, and the help book (its Keyboard Shortcuts table row
-/// by row, plus every shortcut token in its prose). Runs without
+/// menu declarations, and the in-app Help window (its Keyboard Shortcuts table
+/// row by row, plus every shortcut token in its prose). Runs without
 /// launching the app; sources are read relative to the repo root.
 final class ShortcutParityTests: XCTestCase {
     /// Manifest items that carry a shortcut (submenus flattened).
@@ -83,15 +83,15 @@ final class ShortcutParityTests: XCTestCase {
         }
     }
 
-    /// Manifest ▸ help book table, both directions: every row in the
+    /// Manifest ▸ Help window table, both directions: every row in the
     /// Keyboard Shortcuts table belongs to exactly one manifest item and
-    /// shows its exact shortcut; every manifest `helpBookRow` exists.
-    func testHelpBookTableMatchesManifest() throws {
-        let rows = try MenuSourceParsing.helpBookTableRows()
-        XCTAssertFalse(rows.isEmpty, "help book shortcut table parsed to nothing")
+    /// shows its exact shortcut; every manifest `helpRow` exists.
+    func testHelpTableMatchesManifest() throws {
+        let rows = try MenuSourceParsing.helpTableRows()
+        XCTAssertFalse(rows.isEmpty, "help shortcut table parsed to nothing")
         let byRow = Dictionary(
             uniqueKeysWithValues: MenuManifest.allItems
-                .compactMap { item in item.helpBookRow.map { ($0, item) } }
+                .compactMap { item in item.helpRow.map { ($0, item) } }
         )
 
         let helpOnly = Dictionary(uniqueKeysWithValues: MenuManifest.helpOnlyRows)
@@ -101,18 +101,18 @@ final class ShortcutParityTests: XCTestCase {
                 continue
             }
             guard let item = byRow[action] else {
-                XCTFail("help book row \"\(action)\" is not claimed by any manifest item")
+                XCTFail("help row \"\(action)\" is not claimed by any manifest item")
                 continue
             }
             // An aggregated row ("⌘1–⌘5") declares its literal display text;
             // a normal row must parse to the item's exact shortcut.
-            if let literal = item.helpBookDisplay {
-                XCTAssertEqual(display, literal, "help book row \(action)")
+            if let literal = item.helpDisplay {
+                XCTAssertEqual(display, literal, "help row \(action)")
                 continue
             }
             XCTAssertEqual(
                 MenuShortcut.fromDisplay(display), item.shortcut,
-                "help book says \(action) = \(display), manifest says \(item.shortcut.map(String.init(describing:)) ?? "none")"
+                "help says \(action) = \(display), manifest says \(item.shortcut.map(String.init(describing:)) ?? "none")"
             )
         }
 
@@ -120,7 +120,7 @@ final class ShortcutParityTests: XCTestCase {
         for (action, item) in byRow {
             XCTAssertTrue(
                 tableActions.contains(action),
-                "\(item.canonicalTitle): manifest expects help book row \"\(action)\", table has none"
+                "\(item.canonicalTitle): manifest expects help row \"\(action)\", table has none"
             )
         }
         for (action, _) in MenuManifest.helpOnlyRows {
@@ -131,21 +131,23 @@ final class ShortcutParityTests: XCTestCase {
         }
     }
 
-    /// Every shortcut-looking token anywhere in the help book (prose
-    /// included) must be a shortcut some manifest item actually has, so a
-    /// stale "⌘⇧X" in running text fails here.
-    func testHelpBookProseTokensMatchManifest() throws {
-        let tokens = try MenuSourceParsing.helpBookShortcutTokens()
-        XCTAssertFalse(tokens.isEmpty, "help book parsed to no shortcut tokens")
+    /// Every shortcut-looking token anywhere in the Help window's text (prose
+    /// included) must be a shortcut some manifest item actually has, or one
+    /// the manifest lists as bound by a view, so a stale "⌘⇧X" in running
+    /// text fails here.
+    func testHelpProseTokensMatchManifest() throws {
+        let tokens = try MenuSourceParsing.helpShortcutTokens()
+        XCTAssertFalse(tokens.isEmpty, "help text parsed to no shortcut tokens")
         let known = Set(self.shortcutItems.compactMap(\.shortcut))
+            .union(MenuManifest.viewBoundShortcuts.compactMap(MenuShortcut.fromDisplay))
         for token in tokens {
             guard let parsed = MenuShortcut.fromDisplay(token) else {
-                XCTFail("help book token \"\(token)\" does not parse as a shortcut")
+                XCTFail("help token \"\(token)\" does not parse as a shortcut")
                 continue
             }
             XCTAssertTrue(
                 known.contains(parsed),
-                "help book mentions \(token) but no menu item has that shortcut"
+                "help mentions \(token) but no menu item or view-bound shortcut matches it"
             )
         }
     }

@@ -23,10 +23,20 @@ let package = Package(
             providers: [.brew(["ffmpeg"])]
         ),
 
+        // The render blocks of the custom audio units, in Objective-C so that
+        // no Swift code runs on the real-time thread (docs/GOTCHAS.md).
+        .target(
+            name: "AudioEngineKernels",
+            linkerSettings: [
+                .linkedFramework("AudioToolbox"),
+            ]
+        ),
+
         .target(
             name: "AudioEngine",
             dependencies: [
                 "CFFmpeg",
+                "AudioEngineKernels",
                 .product(name: "Observability", package: "Observability"),
             ],
             swiftSettings: [
@@ -50,9 +60,19 @@ let package = Package(
             ]
         ),
 
+        // Test support, in Objective-C: drives a unit's render block the way
+        // Core Audio does and counts the heap allocations the render makes.
+        .target(
+            name: "RenderProbe",
+            path: "Tests/RenderProbe",
+            linkerSettings: [
+                .linkedFramework("AudioToolbox"),
+            ]
+        ),
+
         .testTarget(
             name: "AudioEngineTests",
-            dependencies: ["AudioEngine"],
+            dependencies: ["AudioEngine", "RenderProbe"],
             resources: [
                 .copy("Fixtures"),
             ],
