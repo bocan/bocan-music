@@ -450,17 +450,17 @@ Never gate on a piped grep, whose status is grep's. And in a test file that uses
 
 ## Tooling and repo
 
-### The pre-commit hook is not strict; `make lint` is
+### The pre-commit hook's SwiftLint step checks nothing; `make lint` is the gate
 
-**Problem:** a commit passes the hook and then fails CI on a size rule.
+**Problem:** a commit passes the hook and then fails CI on a lint rule.
 
 **Rule:** run `make lint` yourself before considering a change done. When a file tips over, extract a cohesive section into an extension file named for the type and the feature, the way `Modules/UI/Sources/UI/ViewModels/LibraryViewModel+PlaylistSync.swift` is, rather than adding a suppression.
 
-**Why:** the hook runs SwiftLint non-strict, so warning-level rules pass at commit time, while `make lint` and CI run `--strict` and promote them to errors. The size rules are configured as a warning at 500 lines and an error at 700. Four source files already carry an explicit `file_length` suppression and should not gain company: `App/BocanApp.swift`, `Modules/UI/Sources/UI/ViewModels/LibraryViewModel.swift`, `Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift`, `Modules/UI/Sources/UI/Playlists/Smart/RuleRowView.swift`.
+**Why:** the hook does pass `--strict`, but it calls `xargs swiftlint lint --use-stdin --strict`. With `--use-stdin` SwiftLint lints its standard input, which `xargs` has already consumed, so it lints nothing and exits 0 whatever the staged files hold (measured 2026-10-01: a file with two `switch_case_on_newline` errors passed the hook's command and failed `swiftlint lint --strict` on the same path). The SwiftFormat and gitleaks steps of the hook do work. The hook also never runs the three audit scripts or the `Package.resolved` check that `make lint` runs. The size rules are configured as a warning at 500 lines and an error at 700. Four source files already carry an explicit `file_length` suppression and should not gain company: `App/BocanApp.swift`, `Modules/UI/Sources/UI/ViewModels/LibraryViewModel.swift`, `Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift`, `Modules/UI/Sources/UI/Playlists/Smart/RuleRowView.swift`.
 
 The same applies to cyclomatic complexity, which is capped at 10. The graph builder in `App/BocanApp.swift` sits at that limit, so adding any branching there means extracting a method, not suppressing the rule.
 
-**Canonical file:** `.swiftlint.yml`
+**Canonical file:** `.swiftlint.yml` and `Scripts/pre-commit`
 
 ### Moving SPM pins takes more than a resolve
 

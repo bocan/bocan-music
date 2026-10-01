@@ -269,7 +269,7 @@ test-ui:
 	@echo "=============================="
 	cd Modules/UI && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
-## test-playback: Run Playback SPM package tests (RouteManager, QueuePlayer, GaplessScheduler, etc.)
+## test-playback: Run Playback SPM package tests (QueuePlayer, GaplessScheduler, CrossfadeScheduler, etc.)
 test-playback:
 	@echo "=============================="
 	@echo "= Executing Playback Test"

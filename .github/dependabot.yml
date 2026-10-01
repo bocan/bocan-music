@@ -70,3 +70,24 @@ updates:
       interval: weekly
     commit-message:
       prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Subsonic
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Podcasts
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/SyncServer
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
