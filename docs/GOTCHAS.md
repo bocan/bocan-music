@@ -588,6 +588,10 @@ Tried in June 2026 and reverted. See the keychain entry above for what stays tru
 
 See the content navigation entry above. The destination-history model is deliberate.
 
+### Isolating E2E runs from the developer's debug preferences
+
+E2E launches use the debug bundle ID, so they read the developer's saved debug preferences (DSP state, view modes, table columns, window frames). Closed as not a real problem on 2026-10-01 (#587). Do not propose snapshot and restore, a domain wipe or a broad reset list. If one saved key demonstrably breaks a journey, add that key to the reset list in `App/E2ESeeder.swift`.
+
 ### The Android companion's stack
 
 Settled in the sibling repository and not to be relitigated: Kotlin with Compose, Media3 with the FFmpeg decoder extension, Room, manual dependency injection. Sync is strictly one way, Mac to phone, over the LAN. The phone edits nothing. The wire contract in that repository is normative for both sides; the Mac half is specified in `docs/design-spec/ADR-060-phone-sync.md` and the ADRs that follow it.
