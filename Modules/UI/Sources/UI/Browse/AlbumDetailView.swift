@@ -1,5 +1,3 @@
-import AppKit
-import Library
 import Observability
 import Persistence
 import SwiftUI
@@ -157,26 +155,11 @@ public struct AlbumDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
         .shadow(radius: 8, y: 4)
         .contextMenu {
-            if self.coverPath ?? self.album?.coverArtPath != nil {
-                Button(L10n.string("Show Original Cover")) { self.showOriginalCover() }
+            if let path = self.coverPath ?? self.album?.coverArtPath {
+                Button(L10n.string("Show Original Cover")) {
+                    OriginalCoverOpener.open(workingPath: path, albumID: self.albumID, library: self.library)
+                }
             }
-        }
-    }
-
-    /// Opens the album's cover at full size in the default image viewer. The
-    /// cache keeps covers at no more than 4096 px and the original of a
-    /// larger one beside them (#583); `CoverArtFiles` picks whichever is the
-    /// full image.
-    private func showOriginalCover() {
-        guard let path = self.coverPath ?? self.album?.coverArtPath,
-              let url = CoverArtFiles.fullSizeURL(forWorkingPath: path) else {
-            AppLogger.make(.ui).warning("albumDetail.showOriginal.missing", ["albumID": self.albumID])
-            self.library.showToast(ToastMessage(text: L10n.string("The cover image is no longer on disk.")))
-            return
-        }
-        if !NSWorkspace.shared.open(url) {
-            AppLogger.make(.ui).warning("albumDetail.showOriginal.openFailed", ["path": url.path])
-            self.library.showToast(ToastMessage(text: L10n.string("Couldn’t open the cover image.")))
         }
     }
 

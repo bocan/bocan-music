@@ -401,6 +401,25 @@ public struct AlbumsGridView: View {
         return [id]
     }
 
+    /// The open and play items for a context menu on one album.
+    @ViewBuilder
+    private func singleAlbumMenuItems(album: Album) -> some View {
+        // "Play Album" plays in place (no navigation); "View Album" opens the
+        // album detail, which is what the old single "Play" action did (#349).
+        Button(L10n.string("Play Album")) {
+            guard let id = album.id else { return }
+            Task { await self.library.playAlbum(albumID: id) }
+        }
+        Button(L10n.string("View Album")) {
+            self.vm.selectedAlbumID = album.id
+        }
+        if let path = album.coverArtPath {
+            Button(L10n.string("Show Original Cover")) {
+                OriginalCoverOpener.open(workingPath: path, albumID: album.id, library: self.library)
+            }
+        }
+    }
+
     @ViewBuilder
     private func albumContextMenu(album: Album) -> some View {
         let ids = self.targetIDs(for: album)
@@ -413,18 +432,7 @@ public struct AlbumsGridView: View {
             }
             .disabled(ids.isEmpty)
         } else {
-            // "Play Album" plays in place (no navigation); "View Album" opens the
-            // album detail, which is what the old single "Play" action did (#349).
-            Button(L10n.string("Play Album")) {
-                guard let id = album.id else { return }
-                Task { await self.library.playAlbum(albumID: id) }
-            }
-            Button(L10n.string("View Album")) {
-                self.vm.selectedAlbumID = album.id
-            }
-        }
-
-        if !multi {
+            self.singleAlbumMenuItems(album: album)
             Divider()
             Toggle(L10n.string("Force Gapless Playback"), isOn: Binding(
                 get: { album.forceGapless },

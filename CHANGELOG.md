@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Right-click the cover at the top of an album's page and choose Show Original Cover to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
+Right-click an album's cover in Albums, or at the top of the album's page, and choose Show Original Cover to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
 
 Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
 
