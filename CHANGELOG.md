@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Bòcan Music Help now has pages for Podcasts and Internet Radio, and new topics on searching as you type, moving back and forward, and viewing logs. Several help topics said things the app does not do, and are corrected: where the Miniplayer is in the menus, what the server status colours mean, how server search and streaming work, where to subscribe to a podcast, and what the server shortcuts do.
+
 Playback is less likely to crackle or drop out while the app is busy, for example when you open a menu or Settings. The crossfeed and stereo width effects no longer do work on the audio path that could make it wait.
 
 A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.

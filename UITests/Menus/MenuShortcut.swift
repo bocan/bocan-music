@@ -5,7 +5,7 @@ import Foundation
 /// A keyboard shortcut in normalized form, comparable across its three
 /// representations (phase 30 parity): the manifest declaration, the Swift
 /// source (`KeyboardShortcut(...)` / `.keyboardShortcut(...)`), and the
-/// help book's display strings ("⌘⇧O").
+/// Help window's display strings ("⌘⇧O").
 struct MenuShortcut: Hashable, CustomStringConvertible {
     enum Key: Hashable {
         case char(Character) // stored lowercased

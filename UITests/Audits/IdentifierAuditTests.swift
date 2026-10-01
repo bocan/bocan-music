@@ -321,7 +321,7 @@ final class IdentifierAuditTests: XCTestCase {
             menuBar.menuBarItems["Help"].click()
             menuBar.menuItems["Notices \u{26} Licences\u{2026}"].click()
         }
-        try openAuditClose(surface: "helpBook") {
+        try openAuditClose(surface: "help") {
             menuBar.menuBarItems["Help"].click()
             menuBar.menuItems["Bòcan Music Help"].click()
         }
