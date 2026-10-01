@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Right-click the cover at the top of an album's page and choose Show Original Cover to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
+
+Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
+
 VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
 
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)

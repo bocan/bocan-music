@@ -1,3 +1,5 @@
+import AppKit
+import Library
 import Observability
 import Persistence
 import SwiftUI
@@ -15,6 +17,8 @@ public struct AlbumDetailView: View {
     @State private var album: Album?
     @State private var artistName = ""
     @State private var artwork: NSImage?
+    /// The cached cover's working path, for "Show Original Cover".
+    @State private var coverPath: String?
 
     public init(albumID: Int64, library: LibraryViewModel) {
         self.albumID = albumID
@@ -152,6 +156,28 @@ public struct AlbumDetailView: View {
         .frame(width: 180, height: 180)
         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
         .shadow(radius: 8, y: 4)
+        .contextMenu {
+            if self.coverPath ?? self.album?.coverArtPath != nil {
+                Button(L10n.string("Show Original Cover")) { self.showOriginalCover() }
+            }
+        }
+    }
+
+    /// Opens the album's cover at full size in the default image viewer. The
+    /// cache keeps covers at no more than 4096 px and the original of a
+    /// larger one beside them (#583); `CoverArtFiles` picks whichever is the
+    /// full image.
+    private func showOriginalCover() {
+        guard let path = self.coverPath ?? self.album?.coverArtPath,
+              let url = CoverArtFiles.fullSizeURL(forWorkingPath: path) else {
+            AppLogger.make(.ui).warning("albumDetail.showOriginal.missing", ["albumID": self.albumID])
+            self.library.showToast(ToastMessage(text: L10n.string("The cover image is no longer on disk.")))
+            return
+        }
+        if !NSWorkspace.shared.open(url) {
+            AppLogger.make(.ui).warning("albumDetail.showOriginal.openFailed", ["path": url.path])
+            self.library.showToast(ToastMessage(text: L10n.string("Couldn’t open the cover image.")))
+        }
     }
 
     // MARK: - Data loading
@@ -163,6 +189,11 @@ public struct AlbumDetailView: View {
     }
 
     private func load() async {
+        // This view's identity survives a switch between albums (see the
+        // task(id:) note), so the previous album's cover would otherwise stay
+        // on screen, and behind "Show Original Cover", when the next has none.
+        self.artwork = nil
+        self.coverPath = nil
         await self.library.tracks.load(albumID: self.albumID)
 
         // Resolve album record
@@ -188,6 +219,7 @@ public struct AlbumDetailView: View {
                     try await artRepo.fetch(hash: hash)
                 }.flatMap(\.self)
                 if let artRec {
+                    self.coverPath = artRec.path
                     self.artwork = await ArtworkLoader.shared.image(at: artRec.path)
                 }
             }

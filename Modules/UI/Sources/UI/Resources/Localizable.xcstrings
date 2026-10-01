@@ -7224,6 +7224,17 @@
         }
       }
     },
+    "Couldn’t open the cover image." : {
+      "comment" : "Toast when the default image viewer could not open the album's full-size cover.",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđñ’ţ óƥéñ ţĥé çóvéŕ íḿáĝé. one two three"
+          }
+        }
+      }
+    },
     "Couldn’t read that image file." : {
       "localizations" : {
         "en-XA" : {
@@ -21061,6 +21072,17 @@
         }
       }
     },
+    "Show Original Cover" : {
+      "comment" : "Album page artwork context-menu item: opens the album's cover at full size in the default image viewer.",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵ Óŕíĝíñáĺ Çóvéŕ one two"
+          }
+        }
+      }
+    },
     "Show Settings…" : {
       "localizations" : {
         "en-XA" : {
@@ -23145,6 +23167,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţĥé çóĺóúŕš ţĥé víšúáĺížéŕ đŕáŵš ŵíţĥ. Íţ çĥáñĝéš ñóţĥíñĝ áƀóúţ ţĥé šóúñđ. one two three four five"
+          }
+        }
+      }
+    },
+    "The cover image is no longer on disk." : {
+      "comment" : "Toast when Show Original Cover finds no cover file on disk.",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥé çóvéŕ íḿáĝé íš ñó ĺóñĝéŕ óñ đíšķ. one two three"
           }
         }
       }
