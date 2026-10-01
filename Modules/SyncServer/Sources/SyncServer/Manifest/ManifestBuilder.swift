@@ -273,14 +273,26 @@ public struct ManifestBuilder: Sendable {
                     continue
                 }
                 result.append(self.makeArtifactTrack(
-                    track, id: id, relPath: relPath, row: row, preset: preset,
-                    artistName: artistName, albumTitle: albumTitle
+                    track,
+                    id: id,
+                    relPath: relPath,
+                    row: row,
+                    preset: preset,
+                    artistName: artistName,
+                    albumTitle: albumTitle
                 ))
                 continue
             }
             result.append(self.makeTrack(
-                track, id: id, relPath: relPath, size: track.fileSize, sha256: hash,
-                format: track.fileFormat, clip: nil, artistName: artistName, albumTitle: albumTitle
+                track,
+                id: id,
+                relPath: relPath,
+                size: track.fileSize,
+                sha256: hash,
+                format: track.fileFormat,
+                clip: nil,
+                artistName: artistName,
+                albumTitle: albumTitle
             ))
         }
 
@@ -306,11 +318,15 @@ public struct ManifestBuilder: Sendable {
         albumTitle: [Int64: String]
     ) -> ManifestTrack {
         var artifact = self.makeTrack(
-            track, id: id,
+            track,
+            id: id,
             relPath: Self.swapExtension(relPath, to: preset.fileExtension),
-            size: row.size, sha256: row.sha256,
-            format: preset.formatName, clip: nil,
-            artistName: artistName, albumTitle: albumTitle
+            size: row.size,
+            sha256: row.sha256,
+            format: preset.formatName,
+            clip: nil,
+            artistName: artistName,
+            albumTitle: albumTitle
         )
         artifact.sourceFormat = track.fileFormat
         artifact.bitrate = row.bitrate ?? preset.targetKbps

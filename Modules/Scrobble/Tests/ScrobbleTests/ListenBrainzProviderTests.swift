@@ -103,9 +103,13 @@ struct ListenBrainzProviderTests {
 
     private func makeEvent() -> PlayEvent {
         PlayEvent(
-            queueID: 1, trackID: 1,
-            artist: "Artist", album: "Album", title: "Song",
-            duration: 200, mbid: nil,
+            queueID: 1,
+            trackID: 1,
+            artist: "Artist",
+            album: "Album",
+            title: "Song",
+            duration: 200,
+            mbid: nil,
             playedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
     }

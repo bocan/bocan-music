@@ -34,7 +34,8 @@ final class RadioSurfaceTests: XCTestCase {
                 inv.element("radio.emptyState").exists
             },
             SurfaceControl(
-                "radio.addStation", "Add station (toolbar)",
+                "radio.addStation",
+                "Add station (toolbar)",
                 restore: { _, inv in inv.dismissSheet() }
             ) { app, _, _ in app.sheets.firstMatch.exists },
         ])

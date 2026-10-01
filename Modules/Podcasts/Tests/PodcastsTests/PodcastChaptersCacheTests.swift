@@ -48,8 +48,12 @@ private func makeBed(episodeChaptersURL: String? = chaptersURL) async throws -> 
         addedAt: 1_700_000_000
     ))
     return ChaptersBed(
-        db: db, service: service, chaptersMock: chaptersMock,
-        recorder: RequestRecorder(), repo: repo, podcastID: podcastID
+        db: db,
+        service: service,
+        chaptersMock: chaptersMock,
+        recorder: RequestRecorder(),
+        repo: repo,
+        podcastID: podcastID
     )
 }
 
@@ -64,7 +68,9 @@ private func respond(_ bed: ChaptersBed, with body: Data, status: Int = 200) {
         recorder.record(request)
         return (body, HTTPURLResponse(
             url: URL(string: chaptersURL)!,
-            statusCode: status, httpVersion: nil, headerFields: nil
+            statusCode: status,
+            httpVersion: nil,
+            headerFields: nil
         )!)
     }
 }

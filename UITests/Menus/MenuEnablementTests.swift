@@ -72,12 +72,14 @@ final class MenuEnablementTests: XCTestCase {
         app.typeKey("a", modifierFlags: .command)
         self.settle()
         XCTAssertEqual(
-            try self.selectedTrackRowCount(app: app), selectedBefore,
+            try self.selectedTrackRowCount(app: app),
+            selectedBefore,
             "⌘A in the search field must not change the track selection (#379)"
         )
         app.typeText("x")
         XCTAssertEqual(
-            field.value as? String, "x",
+            field.value as? String,
+            "x",
             "⌘A must select the search field's text so typing replaces it (#379)"
         )
     }

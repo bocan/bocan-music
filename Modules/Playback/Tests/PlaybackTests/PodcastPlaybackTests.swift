@@ -77,8 +77,11 @@ struct PodcastPlaybackTests {
 
     private func makeFormat() -> AudioSourceFormat {
         AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "mp3"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "mp3"
         )
     }
 

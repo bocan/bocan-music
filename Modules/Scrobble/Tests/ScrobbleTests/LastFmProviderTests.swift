@@ -131,9 +131,13 @@ struct LastFmProviderTests {
 
     private func makeEvent(queueID: Int64 = 1) -> PlayEvent {
         PlayEvent(
-            queueID: queueID, trackID: 100,
-            artist: "Cher", album: "Believe", title: "Believe",
-            duration: 240, mbid: nil,
+            queueID: queueID,
+            trackID: 100,
+            artist: "Cher",
+            album: "Believe",
+            title: "Believe",
+            duration: 240,
+            mbid: nil,
             playedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
     }

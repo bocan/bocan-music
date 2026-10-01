@@ -58,7 +58,10 @@ struct ManifestBuilderPodcastTests {
         let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
         let manifest = try await builder.build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
 
         #expect(manifest.podcasts.count == 1)
@@ -94,7 +97,10 @@ struct ManifestBuilderPodcastTests {
         ))
         let cached = try await builder.build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 2, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 2,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
         #expect(try #require(cached.episodes.first).hasChapters)
     }
@@ -113,7 +119,10 @@ struct ManifestBuilderPodcastTests {
 
         let manifest = try await ManifestBuilder(database: database, downloadRoot: tempRoot).build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
 
         let expected = SHA256.hash(data: Data("podcast-audio".utf8))
@@ -145,7 +154,10 @@ struct ManifestBuilderPodcastTests {
 
         let manifest = try await ManifestBuilder(database: database, downloadRoot: tempRoot).build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
 
         #expect(manifest.episodes.isEmpty)
@@ -227,7 +239,10 @@ struct ManifestBuilderPodcastTests {
         let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
         let manifest = try await builder.build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
         let show = try #require(manifest.podcasts.first)
         #expect(show.artworkHash == expectedHash, "the manifest must advertise the stored SHA-256 of the art bytes")
@@ -237,7 +252,10 @@ struct ManifestBuilderPodcastTests {
         try FileManager.default.removeItem(at: artURL)
         let rebuilt = try await builder.build(
             profile: .everything(includePodcasts: true),
-            serverId: "srv", serverName: "Mac", generation: 2, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 2,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
         #expect(try #require(rebuilt.podcasts.first).artworkHash == nil)
     }
@@ -274,7 +292,10 @@ struct ManifestBuilderPodcastTests {
         let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
         let manifest = try await builder.build(
             profile: .everything(includePodcasts: false),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
         #expect(manifest.podcasts.isEmpty)
         #expect(manifest.episodes.isEmpty)

@@ -393,11 +393,13 @@ struct SmartCriteriaCompilerTests {
         let ls = LimitSort(sortBy: .random, ascending: true, limit: nil, liveUpdate: true)
         let c1 = try SQLBuilder.compile(
             criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
-            limitSort: ls, seed: 999
+            limitSort: ls,
+            seed: 999
         )
         let c2 = try SQLBuilder.compile(
             criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
-            limitSort: ls, seed: 999
+            limitSort: ls,
+            seed: 999
         )
         #expect(c1.selectSQL == c2.selectSQL)
     }
@@ -406,11 +408,13 @@ struct SmartCriteriaCompilerTests {
         let ls = LimitSort(sortBy: .random, ascending: true, limit: nil, liveUpdate: true)
         let c1 = try SQLBuilder.compile(
             criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
-            limitSort: ls, seed: 100
+            limitSort: ls,
+            seed: 100
         )
         let c2 = try SQLBuilder.compile(
             criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
-            limitSort: ls, seed: 200
+            limitSort: ls,
+            seed: 200
         )
         #expect(c1.selectSQL != c2.selectSQL)
     }

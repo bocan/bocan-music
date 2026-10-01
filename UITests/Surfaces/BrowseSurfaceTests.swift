@@ -72,7 +72,8 @@ final class BrowseSurfaceTests: XCTestCase {
                 inv.element("albumsGrid").exists
             },
             SurfaceControl(
-                "albumsGrid.tile.1", "Album tile (open)",
+                "albumsGrid.tile.1",
+                "Album tile (open)",
                 restore: { _, inv in inv.selectSidebar("Albums") }
             ) { app, _, _ in app.buttons["Shuffle Album"].waitForExistence(timeout: 5) },
         ])

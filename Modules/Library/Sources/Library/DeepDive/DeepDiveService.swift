@@ -69,7 +69,9 @@ public actor DeepDiveService {
         let changed = try await self.artists.setMusicBrainzID(id: report.artistID, mbid: report.mbid, source: .search)
         guard changed == 1 else { throw DeepDiveError.notFound }
         _ = try await self.artists.setEnrichment(
-            mbid: report.mbid, disambiguation: report.disambiguation, sortName: report.sortName,
+            mbid: report.mbid,
+            disambiguation: report.disambiguation,
+            sortName: report.sortName,
             fetchedAt: Int64(self.now().timeIntervalSince1970)
         )
         self.log.info("deepdive.artist.confirmed", ["artistID": report.artistID, "mbid": report.mbid])
@@ -100,7 +102,9 @@ public actor DeepDiveService {
             do {
                 if let summary = try await self.wikipedia.summary(wikidataID: wikidataID) {
                     bio = ArtistReport.Bio(
-                        extract: summary.extract, pageURL: summary.pageURL, thumbnailURL: summary.thumbnailURL,
+                        extract: summary.extract,
+                        pageURL: summary.pageURL,
+                        thumbnailURL: summary.thumbnailURL,
                         attribution: "Wikipedia, CC BY-SA 4.0"
                     )
                 }
@@ -117,7 +121,9 @@ public actor DeepDiveService {
         if !guessed {
             do {
                 try await self.artists.setEnrichment(
-                    mbid: mbid, disambiguation: detail.disambiguation, sortName: detail.sortName,
+                    mbid: mbid,
+                    disambiguation: detail.disambiguation,
+                    sortName: detail.sortName,
                     fetchedAt: Int64(self.now().timeIntervalSince1970)
                 )
             } catch {
@@ -316,8 +322,11 @@ public actor DeepDiveService {
                 do {
                     let work = try await self.mapErrors { try await self.musicBrainz.fetchWork(mbid: ref.id) }
                     works.append(TrackReport.Work(
-                        title: work.title ?? ref.title ?? "", mbid: work.id,
-                        composers: work.composers, lyricists: work.lyricists, writers: work.writers
+                        title: work.title ?? ref.title ?? "",
+                        mbid: work.id,
+                        composers: work.composers,
+                        lyricists: work.lyricists,
+                        writers: work.writers
                     ))
                 } catch {
                     // The songwriting credits are simply absent otherwise (#492).
@@ -329,9 +338,13 @@ public actor DeepDiveService {
             }
             let appearances = (recording.releases ?? []).map { release in
                 TrackReport.Appearance(
-                    releaseTitle: release.title, releaseMBID: release.id, year: release.year,
-                    country: release.country, status: release.status,
-                    primaryType: release.releaseGroup?.primaryType, secondaryTypes: release.releaseGroup?.secondaryTypes ?? []
+                    releaseTitle: release.title,
+                    releaseMBID: release.id,
+                    year: release.year,
+                    country: release.country,
+                    status: release.status,
+                    primaryType: release.releaseGroup?.primaryType,
+                    secondaryTypes: release.releaseGroup?.secondaryTypes ?? []
                 )
             }.sorted { ($0.year ?? Int.max, $0.releaseTitle) < ($1.year ?? Int.max, $1.releaseTitle) }
             let report = TrackReport(

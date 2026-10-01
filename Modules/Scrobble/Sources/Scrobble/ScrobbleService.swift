@@ -117,9 +117,14 @@ public actor ScrobbleService: ScrobbleSink {
         mbid: String?
     ) async {
         let event = PlayEvent(
-            queueID: -1, trackID: trackID,
-            artist: artist, albumArtist: albumArtist, album: album,
-            title: title, duration: duration, mbid: mbid,
+            queueID: -1,
+            trackID: trackID,
+            artist: artist,
+            albumArtist: albumArtist,
+            album: album,
+            title: title,
+            duration: duration,
+            mbid: mbid,
             playedAt: Date()
         )
         await self.dispatchNowPlaying(event)
@@ -136,9 +141,14 @@ public actor ScrobbleService: ScrobbleSink {
                 return
             }
             let event = PlayEvent(
-                queueID: -1, trackID: row.trackID,
-                artist: row.artist, albumArtist: row.albumArtist, album: row.album,
-                title: row.title, duration: row.duration, mbid: row.mbid,
+                queueID: -1,
+                trackID: row.trackID,
+                artist: row.artist,
+                albumArtist: row.albumArtist,
+                album: row.album,
+                title: row.title,
+                duration: row.duration,
+                mbid: row.mbid,
                 playedAt: Date()
             )
             await self.dispatchNowPlaying(event)
@@ -203,9 +213,14 @@ public actor ScrobbleService: ScrobbleSink {
     public func nowPlayingSubsonic(context: SubsonicPlayContext) async {
         guard await !(self.activeProviderIDs().isEmpty) else { return }
         let event = PlayEvent(
-            queueID: -1, trackID: -1,
-            artist: context.artist, albumArtist: context.albumArtist, album: context.album,
-            title: context.title, duration: context.duration, mbid: nil,
+            queueID: -1,
+            trackID: -1,
+            artist: context.artist,
+            albumArtist: context.albumArtist,
+            album: context.album,
+            title: context.title,
+            duration: context.duration,
+            mbid: nil,
             playedAt: Date(),
             subsonicServerID: context.serverID,
             subsonicSongID: context.songID

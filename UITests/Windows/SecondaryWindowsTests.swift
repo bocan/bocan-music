@@ -86,7 +86,9 @@ final class SecondaryWindowsTests: XCTestCase {
             // Export opens an NSSavePanel (a modal system sheet); asserted
             // present, not clicked, to avoid a blocking save dialog.
             SurfaceControl(
-                "logConsole.export", "Export log", action: .presence,
+                "logConsole.export",
+                "Export log",
+                action: .presence,
                 skip: "opens a modal NSSavePanel the crawl must not block on"
             ) { _, inv, _ in inv.element("logConsole.export").isEnabled },
             Self.flipValue("logConsole.tail", "Tail toggle"),
@@ -134,11 +136,15 @@ final class SecondaryWindowsTests: XCTestCase {
             // The scope segmented control and output-gain slider are
             // continuous/segmented; asserted present with the panel responsive.
             SurfaceControl(
-                "dsp.eq.scope", "EQ scope picker", action: .presence,
+                "dsp.eq.scope",
+                "EQ scope picker",
+                action: .presence,
                 skip: "segmented control; scope switching side effects need seeded EQ state"
             ) { _, inv, _ in inv.element("dsp.eq.enable").exists },
             SurfaceControl(
-                "dsp.eq.outputGain", "EQ output gain", action: .presence,
+                "dsp.eq.outputGain",
+                "EQ output gain",
+                action: .presence,
                 skip: "continuous slider; gain changes race the live signal"
             ) { _, inv, _ in inv.element("dsp.eq.enable").exists },
         ])
@@ -166,7 +172,8 @@ final class SecondaryWindowsTests: XCTestCase {
     /// A pop-up/menu control whose click opens a menu; Escape closes it.
     private static func menuOpener(_ identifier: String, _ name: String) -> SurfaceControl {
         SurfaceControl(
-            identifier, name,
+            identifier,
+            name,
             restore: { _, inv in inv.pressEscape() }
         ) { app, _, _ in app.menus.firstMatch.exists }
     }
@@ -174,7 +181,8 @@ final class SecondaryWindowsTests: XCTestCase {
     /// A button whose accessibility label flips on click (Pause/Resume).
     private static func flipLabel(_ identifier: String, _ name: String) -> SurfaceControl {
         SurfaceControl(
-            identifier, name,
+            identifier,
+            name,
             restore: { _, inv in inv.element(identifier).click()
                 inv.settle(0.3)
             }
@@ -189,7 +197,8 @@ final class SecondaryWindowsTests: XCTestCase {
     /// `SurfaceCrawler`'s matching `ControlContext` capture).
     private static func flipValue(_ identifier: String, _ name: String) -> SurfaceControl {
         SurfaceControl(
-            identifier, name,
+            identifier,
+            name,
             restore: { _, inv in inv.element(identifier).click()
                 inv.settle(0.3)
             }

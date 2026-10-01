@@ -52,7 +52,8 @@ final class ToolbarSurfaceTests: XCTestCase {
                 app.windows.firstMatch.title == "Albums"
             },
             SurfaceControl(
-                "toolbar.lyrics", "Lyrics pane toggle",
+                "toolbar.lyrics",
+                "Lyrics pane toggle",
                 restore: { _, inv in inv.element("toolbar.lyrics").click()
                     inv.settle(0.3)
                 }
@@ -60,7 +61,8 @@ final class ToolbarSurfaceTests: XCTestCase {
                 inv.element("toolbar.lyrics").label != context.priorLabel
             },
             SurfaceControl(
-                "toolbar.visualizer", "Visualizer pane toggle",
+                "toolbar.visualizer",
+                "Visualizer pane toggle",
                 restore: { _, inv in inv.element("toolbar.visualizer").click()
                     inv.settle(0.3)
                 }
@@ -71,7 +73,8 @@ final class ToolbarSurfaceTests: XCTestCase {
             // one; restore with the global shortcut (the main toolbar is gone
             // while the mini player is up).
             SurfaceControl(
-                "toolbar.miniPlayer", "Mini player toggle",
+                "toolbar.miniPlayer",
+                "Mini player toggle",
                 restore: { app, inv in
                     app.typeKey("m", modifierFlags: [.command, .option])
                     inv.settle(0.6)
@@ -83,7 +86,8 @@ final class ToolbarSurfaceTests: XCTestCase {
             // take the rest of this crawl into another space; asserted
             // present and enabled here, entered and exited by the menu pass.
             SurfaceControl(
-                "toolbar.immersive", "Immersive Mode toggle",
+                "toolbar.immersive",
+                "Immersive Mode toggle",
                 action: .presence,
                 skip: "opens a full-screen window; MenuInvocationTests enters and exits it"
             ) { _, inv, _ in
@@ -92,7 +96,8 @@ final class ToolbarSurfaceTests: XCTestCase {
             // Networked (AcoustID): asserted present and correctly disabled
             // without a single-track selection, not clicked (phase 34).
             SurfaceControl(
-                "toolbar.identifyTrack", "Identify Track",
+                "toolbar.identifyTrack",
+                "Identify Track",
                 action: .presence,
                 skip: "opens a live AcoustID lookup (network); hermetic network is phase 34"
             ) { _, inv, _ in

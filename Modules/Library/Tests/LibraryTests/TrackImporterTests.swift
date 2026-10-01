@@ -134,8 +134,11 @@ struct TrackImporterTests {
             coverArtCache: CoverArtCache.make(database: db)
         )
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: self.makeTags(title: "Original"),
-            fileMtime: 1000, fileSize: 100
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(title: "Original"),
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         // Mark user_edited
@@ -153,8 +156,11 @@ struct TrackImporterTests {
             coverArtCache: CoverArtCache.make(database: db)
         )
         _ = try await importer2.importTrack(
-            url: url, bookmark: nil, tags: self.makeTags(title: "Disk Title"),
-            fileMtime: 2000, fileSize: 200
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(title: "Disk Title"),
+            fileMtime: 2000,
+            fileSize: 200
         )
 
         // Title should NOT be overwritten
@@ -374,8 +380,11 @@ struct TrackImporterTests {
 
         let url = URL(fileURLWithPath: "/tmp/with-art.mp3")
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: tags,
-            fileMtime: 1000, fileSize: 4567
+            url: url,
+            bookmark: nil,
+            tags: tags,
+            fileMtime: 1000,
+            fileSize: 4567
         )
 
         let trackRepo = TrackRepository(database: db)
@@ -408,8 +417,11 @@ struct TrackImporterTests {
         )
         let url = dir.appendingPathComponent("artless.mp3")
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: self.makeTags(title: "Artless"),
-            fileMtime: 1000, fileSize: 100
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(title: "Artless"),
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         let expectedHash = ExtractedCoverArt(
@@ -447,8 +459,11 @@ struct TrackImporterTests {
             RawCoverArt(data: Data([0x01, 0x02, 0x03]), mimeType: "image/jpeg", pictureType: 3),
         ])
         _ = try await importer.importTrack(
-            url: dir.appendingPathComponent("embedded.mp3"), bookmark: nil, tags: tags,
-            fileMtime: 1000, fileSize: 100
+            url: dir.appendingPathComponent("embedded.mp3"),
+            bookmark: nil,
+            tags: tags,
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         let albums = try await AlbumRepository(database: db).fetchAll()
@@ -476,8 +491,11 @@ struct TrackImporterTests {
 
         let url = URL(fileURLWithPath: "/tmp/walk-this-way.mp3")
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: tags,
-            fileMtime: 1000, fileSize: 100
+            url: url,
+            bookmark: nil,
+            tags: tags,
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         let track = try await TrackRepository(database: db).fetch(id: id)
@@ -506,8 +524,11 @@ struct TrackImporterTests {
 
         let url = URL(fileURLWithPath: "/tmp/json.mp3")
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: tags,
-            fileMtime: 1000, fileSize: 100
+            url: url,
+            bookmark: nil,
+            tags: tags,
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         let track = try await TrackRepository(database: db).fetch(id: id)
@@ -529,8 +550,11 @@ struct TrackImporterTests {
 
         let url = URL(fileURLWithPath: "/tmp/no-ext.mp3")
         let id = try await importer.importTrack(
-            url: url, bookmark: nil, tags: self.makeTags(title: "No Ext"),
-            fileMtime: 1000, fileSize: 100
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(title: "No Ext"),
+            fileMtime: 1000,
+            fileSize: 100
         )
 
         let track = try await TrackRepository(database: db).fetch(id: id)
@@ -569,8 +593,10 @@ struct TrackImporterTests {
         for (i, artist) in ["Artist A", "Artist B", "Artist C"].enumerated() {
             _ = try await importer.importTrack(
                 url: URL(fileURLWithPath: "/tmp/comp\(i).mp3"),
-                bookmark: nil, tags: self.compilationTags(artist: artist),
-                fileMtime: 1000, fileSize: 100
+                bookmark: nil,
+                tags: self.compilationTags(artist: artist),
+                fileMtime: 1000,
+                fileSize: 100
             )
         }
 
@@ -589,7 +615,8 @@ struct TrackImporterTests {
                 url: URL(fileURLWithPath: "/tmp/split\(i).mp3"),
                 bookmark: nil,
                 tags: self.compilationTags(artist: artist, compilation: false),
-                fileMtime: 1000, fileSize: 100
+                fileMtime: 1000,
+                fileSize: 100
             )
         }
 
@@ -607,7 +634,10 @@ struct TrackImporterTests {
             tags.albumArtist = "The Curator"
             _ = try await importer.importTrack(
                 url: URL(fileURLWithPath: "/tmp/curated\(i).mp3"),
-                bookmark: nil, tags: tags, fileMtime: 1000, fileSize: 100
+                bookmark: nil,
+                tags: tags,
+                fileMtime: 1000,
+                fileSize: 100
             )
         }
 

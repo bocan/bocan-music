@@ -31,7 +31,10 @@ struct ManifestRoutesTests {
         _ = try await LibraryRootRepository(database: database).upsert(LibraryRoot(path: "/Music", bookmark: Data([0x01]), addedAt: 0))
         _ = try await TrackRepository(database: database).insert(Track(
             fileURL: URL(fileURLWithPath: "/Music/a.flac").absoluteString,
-            fileFormat: "flac", contentHash: "aa", addedAt: 0, updatedAt: 0
+            fileFormat: "flac",
+            contentHash: "aa",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let response = await self.makeRouter(database).dispatch(self.request("/v1/manifest"), context: self.trustedContext())
@@ -48,7 +51,10 @@ struct ManifestRoutesTests {
         _ = try await LibraryRootRepository(database: database).upsert(LibraryRoot(path: "/Music", bookmark: Data([0x01]), addedAt: 0))
         _ = try await TrackRepository(database: database).insert(Track(
             fileURL: URL(fileURLWithPath: "/Music/a.flac").absoluteString,
-            fileFormat: "flac", contentHash: "aa", addedAt: 0, updatedAt: 0
+            fileFormat: "flac",
+            contentHash: "aa",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let request = HttpRequest(

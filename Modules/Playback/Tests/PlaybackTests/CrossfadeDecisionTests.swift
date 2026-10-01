@@ -24,8 +24,11 @@ private func item(
         fileURL: "/tmp/decision\(trackID).flac",
         duration: duration,
         sourceFormat: AudioSourceFormat(
-            sampleRate: sampleRate, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: sampleRate,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         ),
         albumID: albumID,
         playableSource: source

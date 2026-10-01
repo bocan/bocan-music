@@ -28,7 +28,8 @@ final class ShortcutParityTests: XCTestCase {
                 continue
             }
             XCTAssertEqual(
-                item.shortcut, bound,
+                item.shortcut,
+                bound,
                 "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), KeyBindings.\(name) is \(bound)"
             )
         }
@@ -58,7 +59,8 @@ final class ShortcutParityTests: XCTestCase {
             switch site.shortcut {
             case let .binding(name):
                 XCTAssertEqual(
-                    item.binding, name,
+                    item.binding,
+                    name,
                     "\(item.canonicalTitle): source routes through KeyBindings.\(name), manifest says \(item.binding ?? "inline")"
                 )
                 XCTAssertEqual(item.shortcut, bindings[name], item.canonicalTitle)
@@ -69,7 +71,8 @@ final class ShortcutParityTests: XCTestCase {
                     "\(item.canonicalTitle): manifest expects KeyBindings routing, source is inline"
                 )
                 XCTAssertEqual(
-                    item.shortcut, shortcut,
+                    item.shortcut,
+                    shortcut,
                     "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), source says \(shortcut)"
                 )
             }
@@ -111,7 +114,8 @@ final class ShortcutParityTests: XCTestCase {
                 continue
             }
             XCTAssertEqual(
-                MenuShortcut.fromDisplay(display), item.shortcut,
+                MenuShortcut.fromDisplay(display),
+                item.shortcut,
                 "help says \(action) = \(display), manifest says \(item.shortcut.map(String.init(describing:)) ?? "none")"
             )
         }

@@ -185,8 +185,11 @@ struct QueuePlayerTests {
 
         // Build 20 in-memory items — no DB needed.
         let sourceFormat = AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
         let items: [QueueItem] = (1 ... 20).map { i in
             QueueItem(
@@ -229,8 +232,11 @@ struct QueuePlayerTests {
         let player = QueuePlayer(engine: engine, database: db)
 
         let sourceFormat = AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
         let items: [QueueItem] = (1 ... 20).map { i in
             QueueItem(

@@ -74,8 +74,13 @@ struct ManifestBuilderTranscodeTests {
         try await self.seedRoot(fixture)
         let id = try await insertTrack(fixture, path: "/Music/Artist/01 Song.flac", hash: "src-hash", isLossless: true)
         try await fixture.ledger.upsert(SyncTranscode(
-            trackID: id, preset: "opus_128", sourceContentHash: "src-hash",
-            sha256: "artifact-sha", size: 4200, createdAt: 1, bitrate: 128
+            trackID: id,
+            preset: "opus_128",
+            sourceContentHash: "src-hash",
+            sha256: "artifact-sha",
+            size: 4200,
+            createdAt: 1,
+            bitrate: 128
         ))
 
         let manifest = try await self.build(fixture, transcode: TranscodeSettings(preset: .opus128))
@@ -117,8 +122,12 @@ struct ManifestBuilderTranscodeTests {
         try await self.seedRoot(fixture)
         let id = try await insertTrack(fixture, path: "/Music/A/retagged.flac", hash: "h-new", isLossless: true)
         try await fixture.ledger.upsert(SyncTranscode(
-            trackID: id, preset: "opus_128", sourceContentHash: "h-old",
-            sha256: "stale-sha", size: 1, createdAt: 1
+            trackID: id,
+            preset: "opus_128",
+            sourceContentHash: "h-old",
+            sha256: "stale-sha",
+            size: 1,
+            createdAt: 1
         ))
 
         let manifest = try await self.build(fixture, transcode: TranscodeSettings(preset: .opus128))
@@ -146,8 +155,13 @@ struct ManifestBuilderTranscodeTests {
         try await self.seedRoot(fixture)
         let id = try await insertTrack(fixture, path: "/Music/A/hi.flac", hash: "h1", isLossless: true)
         try await fixture.ledger.upsert(SyncTranscode(
-            trackID: id, preset: "mp3_320", sourceContentHash: "h1",
-            sha256: "m-sha", size: 9000, createdAt: 1, bitrate: 320
+            trackID: id,
+            preset: "mp3_320",
+            sourceContentHash: "h1",
+            sha256: "m-sha",
+            size: 9000,
+            createdAt: 1,
+            bitrate: 320
         ))
 
         let manifest = try await self.build(fixture, transcode: TranscodeSettings(preset: .mp3320))

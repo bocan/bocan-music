@@ -39,9 +39,16 @@ struct ScrobbleQueueRepositoryTests {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let server = UUID()
         let qid = try #require(try await repo.enqueueSubsonic(
-            serverID: server, songID: "song-9", playedAt: now, durationPlayed: 180,
-            title: "Blue in Green", artist: "Miles Davis", album: "Kind of Blue", albumArtist: "Miles Davis",
-            duration: 337, providerIDs: ["lastfm"]
+            serverID: server,
+            songID: "song-9",
+            playedAt: now,
+            durationPlayed: 180,
+            title: "Blue in Green",
+            artist: "Miles Davis",
+            album: "Kind of Blue",
+            albumArtist: "Miles Davis",
+            duration: 337,
+            providerIDs: ["lastfm"]
         ))
         #expect(qid > 0)
         // fetchPending reads the denormalised payload columns straight off the row.
@@ -337,16 +344,28 @@ struct ScrobbleQueueRepositoryTests {
         let server = UUID()
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let first = try await repo.enqueueSubsonic(
-            serverID: server, songID: "s",
-            playedAt: now, durationPlayed: 100,
-            title: "T", artist: "A", album: nil, albumArtist: nil,
-            duration: 200, providerIDs: ["subsonic"]
+            serverID: server,
+            songID: "s",
+            playedAt: now,
+            durationPlayed: 100,
+            title: "T",
+            artist: "A",
+            album: nil,
+            albumArtist: nil,
+            duration: 200,
+            providerIDs: ["subsonic"]
         )
         let second = try await repo.enqueueSubsonic(
-            serverID: server, songID: "s",
-            playedAt: now, durationPlayed: 100,
-            title: "T", artist: "A", album: nil, albumArtist: nil,
-            duration: 200, providerIDs: ["subsonic"]
+            serverID: server,
+            songID: "s",
+            playedAt: now,
+            durationPlayed: 100,
+            title: "T",
+            artist: "A",
+            album: nil,
+            albumArtist: nil,
+            duration: 200,
+            providerIDs: ["subsonic"]
         )
         #expect(first == second)
         let pending = try await repo.fetchPending(providerID: "subsonic", now: now)

@@ -123,8 +123,14 @@ private func makeBed(
         maxConcurrent: maxConcurrent
     )
     return DownloadBed(
-        db: db, stateRepo: stateRepo, episodeRepo: episodeRepo,
-        store: store, storeRoot: root, fake: fake, manager: manager, podcastID: podcastID
+        db: db,
+        stateRepo: stateRepo,
+        episodeRepo: episodeRepo,
+        store: store,
+        storeRoot: root,
+        fake: fake,
+        manager: manager,
+        podcastID: podcastID
     )
 }
 

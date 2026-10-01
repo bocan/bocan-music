@@ -120,8 +120,10 @@ struct HistoryRecorderTests {
         let db = await makeDatabase()
         let serverID = UUID()
         let context = SubsonicPlayContext(
-            serverID: serverID, songID: "s-1",
-            title: "Song", artist: "Artist",
+            serverID: serverID,
+            songID: "s-1",
+            title: "Song",
+            artist: "Artist",
             duration: 180
         )
         let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)

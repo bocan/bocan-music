@@ -41,9 +41,12 @@ struct SubsonicScrobbleProviderTests {
         let delivery = StubSubsonicDelivery(enabled: [UUID()])
         let provider = SubsonicScrobbleProvider(delivery: delivery)
         let event = PlayEvent(
-            queueID: 9, trackID: 42,
-            artist: "A", title: "T",
-            duration: 100, playedAt: Date()
+            queueID: 9,
+            trackID: 42,
+            artist: "A",
+            title: "T",
+            duration: 100,
+            playedAt: Date()
         )
 
         let results = try await provider.submit([event])
@@ -103,10 +106,14 @@ struct SubsonicScrobbleProviderTests {
 
     private func makePlay(queueID: Int64, server: UUID, song: String) -> PlayEvent {
         PlayEvent(
-            queueID: queueID, trackID: -1,
-            artist: "Artist", title: "Title",
-            duration: 240, playedAt: Date(),
-            subsonicServerID: server, subsonicSongID: song
+            queueID: queueID,
+            trackID: -1,
+            artist: "Artist",
+            title: "Title",
+            duration: 240,
+            playedAt: Date(),
+            subsonicServerID: server,
+            subsonicSongID: song
         )
     }
 }

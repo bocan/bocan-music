@@ -49,7 +49,9 @@ struct RockskyProviderTests {
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
                 let url = URL(string: "https://stub")!
                 let resp = HTTPURLResponse(
-                    url: url, statusCode: 429, httpVersion: nil,
+                    url: url,
+                    statusCode: 429,
+                    httpVersion: nil,
                     headerFields: ["Retry-After": "30"]
                 )!
                 return (Data(), resp)
@@ -202,9 +204,13 @@ struct RockskyProviderTests {
 
     private func makeEvent(queueID: Int64 = 1) -> PlayEvent {
         PlayEvent(
-            queueID: queueID, trackID: 100,
-            artist: "Cher", album: "Believe", title: "Believe",
-            duration: 240, mbid: nil,
+            queueID: queueID,
+            trackID: 100,
+            artist: "Cher",
+            album: "Believe",
+            title: "Believe",
+            duration: 240,
+            mbid: nil,
             playedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
     }

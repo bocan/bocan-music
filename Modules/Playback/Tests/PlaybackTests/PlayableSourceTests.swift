@@ -142,16 +142,21 @@ struct PlayableSourceTests {
 struct QueueItemPlayableSourceTests {
     private func makeFormat() -> AudioSourceFormat {
         AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
     }
 
     @Test("default playableSource is empty localBookmark when bookmark is nil")
     func defaultLocalEmpty() {
         let item = QueueItem(
-            trackID: 1, bookmark: nil,
-            fileURL: "/tmp/a.flac", duration: 1,
+            trackID: 1,
+            bookmark: nil,
+            fileURL: "/tmp/a.flac",
+            duration: 1,
             sourceFormat: self.makeFormat()
         )
         #expect(item.playableSource == .localBookmark(Data()))
@@ -162,8 +167,10 @@ struct QueueItemPlayableSourceTests {
     func defaultLocalWithBookmark() {
         let bytes = Data([0xFE, 0xED])
         let item = QueueItem(
-            trackID: 2, bookmark: BookmarkBlob(data: bytes),
-            fileURL: "/tmp/b.flac", duration: 1,
+            trackID: 2,
+            bookmark: BookmarkBlob(data: bytes),
+            fileURL: "/tmp/b.flac",
+            duration: 1,
             sourceFormat: self.makeFormat()
         )
         #expect(item.playableSource == .localBookmark(bytes))
@@ -173,8 +180,10 @@ struct QueueItemPlayableSourceTests {
     func explicitSubsonic() {
         let server = UUID()
         let item = QueueItem(
-            trackID: 3, bookmark: nil,
-            fileURL: "", duration: 0,
+            trackID: 3,
+            bookmark: nil,
+            fileURL: "",
+            duration: 0,
             sourceFormat: self.makeFormat(),
             playableSource: .subsonic(serverID: server, songID: "song-1")
         )
@@ -190,8 +199,11 @@ struct QueueItemPlayableSourceTests {
 struct QueuePersistenceMigrationTests {
     private func makeFormat() -> AudioSourceFormat {
         AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
     }
 
@@ -200,8 +212,10 @@ struct QueuePersistenceMigrationTests {
         source: PlayableSource = .localBookmark(Data())
     ) -> QueueItem {
         QueueItem(
-            trackID: trackID, bookmark: nil,
-            fileURL: "/tmp/\(trackID).flac", duration: 60,
+            trackID: trackID,
+            bookmark: nil,
+            fileURL: "/tmp/\(trackID).flac",
+            duration: 60,
             sourceFormat: self.makeFormat(),
             playableSource: source
         )
@@ -222,8 +236,10 @@ struct QueuePersistenceMigrationTests {
         ]
 
         await persistence.scheduleSave(
-            items: items, currentIndex: 1,
-            repeatMode: .all, shuffleState: .off
+            items: items,
+            currentIndex: 1,
+            repeatMode: .all,
+            shuffleState: .off
         )
         await persistence._awaitPendingSaveForTesting()
 
@@ -253,8 +269,10 @@ struct QueuePersistenceMigrationTests {
         ]
 
         await persistence.scheduleSave(
-            items: items, currentIndex: 1,
-            repeatMode: .off, shuffleState: .off
+            items: items,
+            currentIndex: 1,
+            repeatMode: .off,
+            shuffleState: .off
         )
         await persistence._awaitPendingSaveForTesting()
 
@@ -301,12 +319,21 @@ struct QueuePersistenceMigrationTests {
         let legacy = LegacyPayload(
             items: [
                 LegacyItem(
-                    id: UUID(), trackID: 7, fileURL: "/tmp/7.flac",
-                    duration: 120, sourceFormat: fmt,
-                    title: "Seven", artistName: "Artist", genre: nil,
-                    rating: 0, loved: false, playCount: 0,
-                    excludedFromShuffle: false, lastPlayedAt: nil,
-                    albumID: nil, artistID: nil
+                    id: UUID(),
+                    trackID: 7,
+                    fileURL: "/tmp/7.flac",
+                    duration: 120,
+                    sourceFormat: fmt,
+                    title: "Seven",
+                    artistName: "Artist",
+                    genre: nil,
+                    rating: 0,
+                    loved: false,
+                    playCount: 0,
+                    excludedFromShuffle: false,
+                    lastPlayedAt: nil,
+                    albumID: nil,
+                    artistID: nil
                 ),
             ],
             currentIndex: 0,

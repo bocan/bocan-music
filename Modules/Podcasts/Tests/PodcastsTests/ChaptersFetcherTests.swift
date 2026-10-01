@@ -77,7 +77,9 @@ struct ChaptersFetchTests {
             requestCount += 1
             return (Data(body.utf8), HTTPURLResponse(
                 url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
         let fetcher = ChaptersFetcher(http: mock)
@@ -96,7 +98,9 @@ struct ChaptersFetchTests {
         mock.handler = { _ in
             (Data(), HTTPURLResponse(
                 url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 500, httpVersion: nil, headerFields: nil
+                statusCode: 500,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
         let fetcher = ChaptersFetcher(http: mock)
@@ -112,7 +116,9 @@ struct ChaptersFetchTests {
         mock.handler = { _ in
             (Data(count: 2048), HTTPURLResponse(
                 url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
         let fetcher = ChaptersFetcher(http: mock, maxBytes: 1024)

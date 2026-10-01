@@ -10,8 +10,11 @@ private func item(_ id: Int64, albumID: Int64? = nil) -> QueueItem {
         fileURL: "/tmp/t\(id).flac",
         duration: 100,
         sourceFormat: AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         ),
         albumID: albumID
     )
@@ -146,8 +149,11 @@ struct QueueItemAPITests {
             fileURL: "file:///tmp/foo.flac",
             duration: 10,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             )
         )
         let url = try q.resolvedURL()
@@ -163,8 +169,11 @@ struct QueueItemAPITests {
             fileURL: "scheme://%ZZ",
             duration: 10,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             )
         )
         #expect(throws: (any Error).self) { _ = try q.resolvedURL() }

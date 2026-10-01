@@ -96,8 +96,12 @@ struct FileServingTests {
         try bytes.write(to: audioURL)
         let bookmark = try audioURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
         let trackId = try await TrackRepository(database: server.database).insert(Track(
-            fileURL: audioURL.absoluteString, fileBookmark: bookmark, fileFormat: "flac",
-            contentHash: "hash123", addedAt: 0, updatedAt: 0
+            fileURL: audioURL.absoluteString,
+            fileBookmark: bookmark,
+            fileFormat: "flac",
+            contentHash: "hash123",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let full = try await server.client.request(port: server.port, path: "/v1/file/track/\(trackId)")
@@ -257,9 +261,14 @@ private struct LoopbackFileServer {
         let port = try await listener.start()
 
         return Self(
-            database: database, port: port, client: LoopbackClient(clientIdentity: clientIdentity),
-            listener: listener, serverStore: serverStore, clientStore: clientStore,
-            scratch: scratch, downloadRoot: downloadRoot
+            database: database,
+            port: port,
+            client: LoopbackClient(clientIdentity: clientIdentity),
+            listener: listener,
+            serverStore: serverStore,
+            clientStore: clientStore,
+            scratch: scratch,
+            downloadRoot: downloadRoot
         )
     }
 

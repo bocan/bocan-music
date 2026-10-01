@@ -109,8 +109,13 @@ struct ManifestBuilderTests {
         let fixture = try await self.makeFixture()
         try await self.seedRoot(fixture)
         _ = try await fixture.tracks.insert(Track(
-            fileURL: self.fileURL("/Music/a.flac"), fileFormat: "flac",
-            replaygainTrackGain: -6.2, replaygainTrackPeak: 0.91, contentHash: "aa", addedAt: 0, updatedAt: 0
+            fileURL: self.fileURL("/Music/a.flac"),
+            fileFormat: "flac",
+            replaygainTrackGain: -6.2,
+            replaygainTrackPeak: 0.91,
+            contentHash: "aa",
+            addedAt: 0,
+            updatedAt: 0
         ))
         _ = try await fixture.tracks.insert(Track(
             fileURL: self.fileURL("/Music/b.flac"),
@@ -175,8 +180,13 @@ struct ManifestBuilderTests {
 
         let folderId = try await fixture.playlists.insert(Playlist(name: "Moods", sortOrder: 1, createdAt: 0, updatedAt: 0, kind: .folder))
         let manualId = try await fixture.playlists.insert(Playlist(
-            name: "Late Night", sortOrder: 2, createdAt: 0, updatedAt: 0,
-            parentID: folderId, kind: .manual, accentColor: "#A259FF"
+            name: "Late Night",
+            sortOrder: 2,
+            createdAt: 0,
+            updatedAt: 0,
+            parentID: folderId,
+            kind: .manual,
+            accentColor: "#A259FF"
         ))
         try await fixture.playlists.insertRows(
             [PlaylistTrack(playlistID: manualId, trackID: second, position: 0),

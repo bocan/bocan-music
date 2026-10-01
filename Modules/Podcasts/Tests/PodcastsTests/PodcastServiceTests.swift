@@ -813,7 +813,9 @@ struct PodcastServiceTests {
         bed.artMock.handler = { _ in
             (artBytes, HTTPURLResponse(
                 url: URL(string: "https://example.com/artwork.jpg")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
         bed.feedMock.handler = { _ in
@@ -852,7 +854,9 @@ struct PodcastServiceTests {
         bed.artMock.handler = { _ in
             (artBytes, HTTPURLResponse(
                 url: URL(string: "https://cdn.example.com/art.png")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
 
@@ -870,7 +874,9 @@ struct PodcastServiceTests {
             downloads += 1
             return (artBytes, HTTPURLResponse(
                 url: URL(string: "https://cdn.example.com/art.png")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
             )!)
         }
         _ = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)

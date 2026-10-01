@@ -20,8 +20,11 @@ struct PlaybackQueueTests {
             fileURL: "/tmp/track\(trackID).flac",
             duration: 200,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             ),
             albumID: albumID
         )
@@ -291,8 +294,11 @@ struct PlaybackQueueTests {
             fileURL: "/tmp/track3.flac",
             duration: 200,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             ),
             excludedFromShuffle: true
         )

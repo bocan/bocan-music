@@ -14,8 +14,11 @@ struct ShuffleTests {
                 fileURL: "/tmp/track\(i).flac",
                 duration: 200,
                 sourceFormat: AudioSourceFormat(
-                    sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                    isInterleaved: false, codec: "flac"
+                    sampleRate: 44100,
+                    bitDepth: 16,
+                    channelCount: 2,
+                    isInterleaved: false,
+                    codec: "flac"
                 )
             )
         }
@@ -78,14 +81,18 @@ struct ShuffleTests {
         var items = self.makeItems(count: 10)
         // Mark items with trackID 3, 7 as excluded.
         items[2] = QueueItem(
-            trackID: 3, bookmark: nil,
-            fileURL: "/tmp/track3.flac", duration: 200,
+            trackID: 3,
+            bookmark: nil,
+            fileURL: "/tmp/track3.flac",
+            duration: 200,
             sourceFormat: AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "flac"),
             excludedFromShuffle: true
         )
         items[6] = QueueItem(
-            trackID: 7, bookmark: nil,
-            fileURL: "/tmp/track7.flac", duration: 200,
+            trackID: 7,
+            bookmark: nil,
+            fileURL: "/tmp/track7.flac",
+            duration: 200,
             sourceFormat: AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "flac"),
             excludedFromShuffle: true
         )
@@ -110,8 +117,10 @@ struct ShuffleTests {
     func smartShuffleAllExcluded() {
         let items = (1 ... 5).map { i in
             QueueItem(
-                trackID: Int64(i), bookmark: nil,
-                fileURL: "/tmp/track\(i).flac", duration: 200,
+                trackID: Int64(i),
+                bookmark: nil,
+                fileURL: "/tmp/track\(i).flac",
+                duration: 200,
                 sourceFormat: AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "flac"),
                 excludedFromShuffle: true
             )
@@ -126,16 +135,20 @@ struct ShuffleTests {
         // Create 10 tracks where only track 1 is loved. Run shuffle 100 times.
         // Track 1 should appear in first 5 positions more than 50% of the time.
         let loved = QueueItem(
-            trackID: 1, bookmark: nil,
-            fileURL: "/tmp/track1.flac", duration: 200,
+            trackID: 1,
+            bookmark: nil,
+            fileURL: "/tmp/track1.flac",
+            duration: 200,
             sourceFormat: AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "flac"),
             loved: true
         )
         var items: [QueueItem] = [loved]
         for i in 2 ... 10 {
             items.append(QueueItem(
-                trackID: Int64(i), bookmark: nil,
-                fileURL: "/tmp/track\(i).flac", duration: 200,
+                trackID: Int64(i),
+                bookmark: nil,
+                fileURL: "/tmp/track\(i).flac",
+                duration: 200,
                 sourceFormat: AudioSourceFormat(sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "flac")
             ))
         }

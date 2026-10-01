@@ -143,7 +143,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected httpStatus error to be thrown")
         } catch let PodcastsError.httpStatus(code, _) {
@@ -160,7 +161,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge error to be thrown")
         } catch let PodcastsError.feedTooLarge(bytes) {
@@ -176,7 +178,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected network error to be thrown")
         } catch PodcastsError.network {
@@ -196,7 +199,8 @@ struct FeedFetcherTests {
         let fetcher = FeedFetcher(http: mock, maxBytes: 1024)
         let result = try await fetcher.fetch(
             #require(URL(string: "https://example.com/feed")),
-            etag: nil, lastModified: nil
+            etag: nil,
+            lastModified: nil
         )
         #expect(result.etag == "\"v2\"")
         #expect(result.lastModified == "Wed, 10 Jan 2024 00:00:00 GMT")
@@ -213,7 +217,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge error to be thrown")
         } catch let PodcastsError.feedTooLarge(bytes) {
@@ -322,7 +327,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "http://podcast.example.org/rss")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge to be thrown")
         } catch PodcastsError.feedTooLarge {

@@ -160,12 +160,16 @@ public actor SmartPlaylistService {
         let sp = try await self.resolve(id: id)
         if !sp.limitSort.liveUpdate {
             return try await self.database.read { db in
-                try Track.fetchAll(db, sql: """
-                SELECT tracks.* FROM tracks
-                INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
-                WHERE playlist_tracks.playlist_id = ?
-                ORDER BY playlist_tracks.position
-                """, arguments: [id])
+                try Track.fetchAll(
+                    db,
+                    sql: """
+                    SELECT tracks.* FROM tracks
+                    INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+                    WHERE playlist_tracks.playlist_id = ?
+                    ORDER BY playlist_tracks.position
+                    """,
+                    arguments: [id]
+                )
             }
         }
         let compiled = try CriteriaCompiler.compile(

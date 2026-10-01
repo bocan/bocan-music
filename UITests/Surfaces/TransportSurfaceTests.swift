@@ -55,11 +55,13 @@ final class TransportSurfaceTests: XCTestCase {
             // Navigation buttons: each pushes a detail / switches destination;
             // restore returns to Songs so the strip stays live for the rest.
             SurfaceControl(
-                "nowPlayingStrip.artwork.button", "Go to album",
+                "nowPlayingStrip.artwork.button",
+                "Go to album",
                 restore: backToSongs
             ) { app, _, _ in app.buttons["Shuffle Album"].exists },
             SurfaceControl(
-                "nowPlayingStrip.subtitle.button", "Go to artist",
+                "nowPlayingStrip.subtitle.button",
+                "Go to artist",
                 restore: backToSongs
             ) { app, _, _ in app.staticTexts["Albums (1)"].exists },
             SurfaceControl(
@@ -71,7 +73,8 @@ final class TransportSurfaceTests: XCTestCase {
             toggleLabel("nowPlayingStrip.mute", "Mute"),
             toggleLabel("nowPlayingStrip.stopAfterCurrent", "Stop after current"),
             SurfaceControl(
-                "nowPlayingStrip.shuffle", "Shuffle toggle",
+                "nowPlayingStrip.shuffle",
+                "Shuffle toggle",
                 restore: { _, inv in inv.element("nowPlayingStrip.shuffle").click()
                     inv.settle(0.3)
                 }
@@ -79,7 +82,8 @@ final class TransportSurfaceTests: XCTestCase {
                 (inv.element("nowPlayingStrip.shuffle").value as? String) != context.priorValue
             },
             SurfaceControl(
-                "nowPlayingStrip.repeat", "Repeat cycle",
+                "nowPlayingStrip.repeat",
+                "Repeat cycle",
                 restore: { _, inv in
                     // Complete the 3-step cycle back to the starting value.
                     inv.element("nowPlayingStrip.repeat").click()
@@ -94,7 +98,8 @@ final class TransportSurfaceTests: XCTestCase {
             // Transport: play/pause flips, next advances the strip title, prev
             // keeps a fixture tone playing.
             SurfaceControl(
-                "nowPlayingStrip.playPause", "Play / pause",
+                "nowPlayingStrip.playPause",
+                "Play / pause",
                 restore: { _, inv in inv.element("nowPlayingStrip.playPause").click()
                     inv.settle(0.3)
                 }
@@ -113,7 +118,8 @@ final class TransportSurfaceTests: XCTestCase {
 
             // Info opens the tag editor sheet.
             SurfaceControl(
-                "nowPlayingStrip.info", "Track info",
+                "nowPlayingStrip.info",
+                "Track info",
                 restore: { _, inv in inv.dismissSheet() }
             ) { app, _, _ in app.sheets.firstMatch.exists },
 
@@ -121,7 +127,8 @@ final class TransportSurfaceTests: XCTestCase {
             // The crawler already polls `verify`; use `.exists`, not a
             // nested `waitForExistence`, so the two waits don't conflict.
             SurfaceControl(
-                "nowPlayingStrip.speedPicker", "Playback speed menu",
+                "nowPlayingStrip.speedPicker",
+                "Playback speed menu",
                 restore: { _, inv in inv.pressEscape() }
             ) { app, _, _ in
                 app.descendants(matching: .any)
@@ -133,7 +140,8 @@ final class TransportSurfaceTests: XCTestCase {
             // rather than a specific preset; arming a preset is covered by
             // the Playback ▸ Sleep Timer menu invocation pass.
             SurfaceControl(
-                "nowPlayingStrip.sleepTimer", "Sleep timer menu",
+                "nowPlayingStrip.sleepTimer",
+                "Sleep timer menu",
                 restore: { _, inv in inv.pressEscape() }
             ) { app, _, context in
                 app.menus.firstMatch.exists || app.windows.count > context.priorWindowCount
@@ -141,7 +149,8 @@ final class TransportSurfaceTests: XCTestCase {
 
             // DSP opens a window.
             SurfaceControl(
-                "nowPlayingStrip.dsp", "Equaliser & DSP window",
+                "nowPlayingStrip.dsp",
+                "Equaliser & DSP window",
                 restore: { _, inv in inv.closeFrontWindow() }
             ) { app, _, context in app.windows.count > context.priorWindowCount },
 
@@ -151,12 +160,14 @@ final class TransportSurfaceTests: XCTestCase {
             // are asserted present with playback still responsive (the spec's
             // sanctioned postcondition for visual/continuous controls).
             SurfaceControl(
-                "nowPlayingStrip.volume", "Volume slider",
+                "nowPlayingStrip.volume",
+                "Volume slider",
                 action: .presence,
                 skip: "continuous control; volume changes are asserted by the Playback menu volume test"
             ) { _, inv, _ in inv.element("nowPlayingStrip.playPause").exists },
             SurfaceControl(
-                "nowPlayingStrip.scrubber", "Seek scrubber",
+                "nowPlayingStrip.scrubber",
+                "Seek scrubber",
                 action: .presence,
                 skip: "continuous control; a seek drag races the live position"
             ) { _, inv, _ in inv.element("nowPlayingStrip.playPause").exists },
@@ -169,7 +180,8 @@ final class TransportSurfaceTests: XCTestCase {
     /// between two "On/Off"-style strings on click.
     private static func toggleLabel(_ identifier: String, _ name: String) -> SurfaceControl {
         SurfaceControl(
-            identifier, "\(name) toggle",
+            identifier,
+            "\(name) toggle",
             restore: { _, inv in inv.element(identifier).click()
                 inv.settle(0.3)
             }

@@ -58,7 +58,9 @@ struct LastFmAuthTests {
                 let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
                 let resp = HTTPURLResponse(
                     url: URL(string: "https://stub")!,
-                    statusCode: 200, httpVersion: nil, headerFields: nil
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
                 )!
                 return (data, resp)
             })

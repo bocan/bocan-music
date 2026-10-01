@@ -102,7 +102,8 @@ struct ScrobbleQueueWorkerTests {
         let provider = MockProvider()
         await provider.queue([{ plays in plays.map { SubmissionResult(queueID: $0.queueID, outcome: .permanentFailure(reason: "bad")) } }])
         let worker = ScrobbleQueueWorker(
-            provider: provider, repository: repo,
+            provider: provider,
+            repository: repo,
             policy: RetryPolicy(baseDelay: 0.01, maxDelay: 0.02, maxAttempts: 3, jitter: 0),
             reachability: StaticReachability(reachable: true)
         )

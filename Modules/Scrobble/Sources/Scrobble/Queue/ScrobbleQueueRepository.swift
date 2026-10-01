@@ -136,9 +136,13 @@ public actor ScrobbleQueueRepository {
               (track_id, played_at, duration_played, submitted, submission_attempts, dead)
             VALUES (?, ?, ?, 0, 0, 0)
             """, arguments: [trackID, Int(playedAt.timeIntervalSince1970), durationPlayed])
-            let queueID: Int64? = try Int64.fetchOne(db, sql: """
-            SELECT id FROM scrobble_queue WHERE track_id = ? AND played_at = ?
-            """, arguments: [trackID, Int(playedAt.timeIntervalSince1970)])
+            let queueID: Int64? = try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT id FROM scrobble_queue WHERE track_id = ? AND played_at = ?
+                """,
+                arguments: [trackID, Int(playedAt.timeIntervalSince1970)]
+            )
             guard let queueID else { return nil }
             for pid in providerIDs {
                 try db.execute(sql: """
@@ -183,10 +187,14 @@ public actor ScrobbleQueueRepository {
                 serverIDString, songID,
                 title, artist, album, albumArtist, duration,
             ])
-            let queueID: Int64? = try Int64.fetchOne(db, sql: """
-            SELECT id FROM scrobble_queue
-             WHERE subsonic_server_id = ? AND subsonic_song_id = ? AND played_at = ?
-            """, arguments: [serverIDString, songID, playedAtEpoch])
+            let queueID: Int64? = try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT id FROM scrobble_queue
+                 WHERE subsonic_server_id = ? AND subsonic_song_id = ? AND played_at = ?
+                """,
+                arguments: [serverIDString, songID, playedAtEpoch]
+            )
             guard let queueID else { return nil }
             for pid in providerIDs {
                 try db.execute(sql: """
@@ -205,30 +213,34 @@ public actor ScrobbleQueueRepository {
         return try await self.db.read { db in
             // LEFT JOIN tracks because Subsonic-sourced rows have NULL track_id;
             // their metadata is carried in the q.payload_* columns instead.
-            let rows = try Row.fetchAll(db, sql: """
-            SELECT q.id, q.track_id, q.played_at, q.duration_played,
-                   q.subsonic_server_id, q.subsonic_song_id,
-                   q.payload_title, q.payload_artist, q.payload_album,
-                   q.payload_album_artist, q.payload_duration,
-                   s.attempts, s.next_attempt_at,
-                   t.title AS track_title, t.duration AS track_duration,
-                   t.musicbrainz_recording_id,
-                   a.name AS artist_name,
-                   aa.name AS album_artist_name,
-                   al.title AS album_title
-              FROM scrobble_submissions s
-              JOIN scrobble_queue q ON q.id = s.queue_id
-              LEFT JOIN tracks t ON t.id = q.track_id
-              LEFT JOIN artists a ON a.id = t.artist_id
-              LEFT JOIN artists aa ON aa.id = t.album_artist_id
-              LEFT JOIN albums al ON al.id = t.album_id
-             WHERE s.provider_id = ?
-               AND s.status IN ('pending', 'retry')
-               AND q.dead = 0
-               AND (s.next_attempt_at IS NULL OR s.next_attempt_at <= ?)
-             ORDER BY q.played_at ASC
-             LIMIT ?
-            """, arguments: [providerID, nowEpoch, limit])
+            let rows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT q.id, q.track_id, q.played_at, q.duration_played,
+                       q.subsonic_server_id, q.subsonic_song_id,
+                       q.payload_title, q.payload_artist, q.payload_album,
+                       q.payload_album_artist, q.payload_duration,
+                       s.attempts, s.next_attempt_at,
+                       t.title AS track_title, t.duration AS track_duration,
+                       t.musicbrainz_recording_id,
+                       a.name AS artist_name,
+                       aa.name AS album_artist_name,
+                       al.title AS album_title
+                  FROM scrobble_submissions s
+                  JOIN scrobble_queue q ON q.id = s.queue_id
+                  LEFT JOIN tracks t ON t.id = q.track_id
+                  LEFT JOIN artists a ON a.id = t.artist_id
+                  LEFT JOIN artists aa ON aa.id = t.album_artist_id
+                  LEFT JOIN albums al ON al.id = t.album_id
+                 WHERE s.provider_id = ?
+                   AND s.status IN ('pending', 'retry')
+                   AND q.dead = 0
+                   AND (s.next_attempt_at IS NULL OR s.next_attempt_at <= ?)
+                 ORDER BY q.played_at ASC
+                 LIMIT ?
+                """,
+                arguments: [providerID, nowEpoch, limit]
+            )
             return rows.map { row in
                 let subsonicServerID = (row["subsonic_server_id"] as String?).flatMap(UUID.init(uuidString:))
                 let subsonicSongID = row["subsonic_song_id"] as String?
@@ -268,10 +280,14 @@ public actor ScrobbleQueueRepository {
             """, arguments: [nowEpoch, queueID, providerID])
             // If every submission row for this queue_id is in a successful terminal
             // state, mark the queue row submitted.
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -297,10 +313,14 @@ public actor ScrobbleQueueRepository {
                SET status = 'sent_unconfirmed', submitted_at = ?, last_error = ?
              WHERE queue_id = ? AND provider_id = ?
             """, arguments: [nowEpoch, reason, queueID, providerID])
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -340,10 +360,14 @@ public actor ScrobbleQueueRepository {
             """, arguments: [reason, queueID, providerID])
             // If every submission row for this queue is in a terminal state and at
             // least one is failed, we mark the queue row dead so the UI can surface it.
-            let alive = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status IN ('pending', 'retry')
-            """, arguments: [queueID]) ?? 0
+            let alive = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status IN ('pending', 'retry')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if alive == 0 {
                 try db.execute(sql: """
                 UPDATE scrobble_queue
@@ -366,10 +390,14 @@ public actor ScrobbleQueueRepository {
             // markSucceeded / markSentUnconfirmed. Without it, a queue row whose
             // last live submission ends ignored strands at submitted = 0: counted
             // by the pending badge forever but never claimable by any worker.
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -402,18 +430,22 @@ public actor ScrobbleQueueRepository {
     /// without going through the queue. Used by the now-playing path.
     public func fetchTrackMetadata(trackID: Int64) async throws -> PendingRow? {
         try await self.db.read { db in
-            let row = try Row.fetchOne(db, sql: """
-            SELECT t.id AS track_id,
-                   t.title, t.duration, t.musicbrainz_recording_id,
-                   a.name AS artist_name,
-                   aa.name AS album_artist_name,
-                   al.title AS album_title
-              FROM tracks t
-              LEFT JOIN artists a ON a.id = t.artist_id
-              LEFT JOIN artists aa ON aa.id = t.album_artist_id
-              LEFT JOIN albums al ON al.id = t.album_id
-             WHERE t.id = ?
-            """, arguments: [trackID])
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT t.id AS track_id,
+                       t.title, t.duration, t.musicbrainz_recording_id,
+                       a.name AS artist_name,
+                       aa.name AS album_artist_name,
+                       al.title AS album_title
+                  FROM tracks t
+                  LEFT JOIN artists a ON a.id = t.artist_id
+                  LEFT JOIN artists aa ON aa.id = t.album_artist_id
+                  LEFT JOIN albums al ON al.id = t.album_id
+                 WHERE t.id = ?
+                """,
+                arguments: [trackID]
+            )
             guard let row else { return nil }
             return PendingRow(
                 queueID: -1,
@@ -445,10 +477,14 @@ public actor ScrobbleQueueRepository {
             """) ?? 0
             let calendar = Calendar(identifier: .gregorian)
             let startOfDay = calendar.startOfDay(for: now)
-            let submittedToday = try Int.fetchOne(db, sql: """
-            SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-             WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
-            """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
+            let submittedToday = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
+                 WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
+                """,
+                arguments: [Int(startOfDay.timeIntervalSince1970)]
+            ) ?? 0
             return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
         }
     }
@@ -569,10 +605,14 @@ public actor ScrobbleQueueRepository {
                     SELECT COUNT(*) FROM scrobble_queue WHERE dead = 1
                     """) ?? 0
                     let startOfDay = Calendar(identifier: .gregorian).startOfDay(for: now())
-                    let submittedToday = try Int.fetchOne(db, sql: """
-                    SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-                     WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
-                    """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
+                    let submittedToday = try Int.fetchOne(
+                        db,
+                        sql: """
+                        SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
+                         WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
+                        """,
+                        arguments: [Int(startOfDay.timeIntervalSince1970)]
+                    ) ?? 0
                     return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
                 }
                 do {
