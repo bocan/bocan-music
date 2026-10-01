@@ -27,20 +27,14 @@ public struct FeedParser: Sendable {
             // would bypass FeedFetcher's conditional GET, size cap, and User-Agent.
             feed = try Feed(data: data)
         } catch {
-            // FeedKit's format sniffer inspects only the first 256 bytes. Feeds that
-            // carry an `<?xml-stylesheet?>` PI (so browsers render them) can push the
-            // `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
-            // Retry once with the XML prolog stripped so the root leads the data.
-            if let stripped = Self.feedDataWithStrippedProlog(data), let retried = try? Feed(data: stripped) {
-                self.log.debug("feed.parse.recoveredViaPrologStrip", ["url": sourceURL.absoluteString])
-                feed = retried
-            } else {
+            guard let recovered = self.recover(data, after: error, sourceURL: sourceURL) else {
                 self.log.error("feed.parse.failed", [
                     "url": sourceURL.absoluteString,
                     "error": String(reflecting: error),
                 ])
                 throw PodcastsError.parseFailed(url: sourceURL, reason: String(describing: error))
             }
+            feed = recovered
         }
 
         var parsed: ParsedFeed
@@ -92,6 +86,54 @@ public struct FeedParser: Sendable {
             }
         }
         return parsed
+    }
+
+    /// The retries for a feed FeedKit refused. Returns nil when none of them
+    /// parses; the caller then reports the original error.
+    private func recover(_ data: Data, after error: any Error, sourceURL: URL) -> Feed? {
+        // A decoding error means FeedKit found the root, so the prolog is not
+        // the problem, and a second full parse of the same content is wasted.
+        if error is DecodingError {
+            return self.parseRepairingDates(data, sourceURL: sourceURL)
+        }
+
+        // FeedKit's format sniffer inspects only the first 256 bytes. Feeds that
+        // carry an `<?xml-stylesheet?>` PI (so browsers render them) can push the
+        // `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
+        // Retry once with the XML prolog stripped so the root leads the data.
+        guard let stripped = Self.feedDataWithStrippedProlog(data) else { return nil }
+        do {
+            let retried = try Feed(data: stripped)
+            self.log.debug("feed.parse.recoveredViaPrologStrip", ["url": sourceURL.absoluteString])
+            return retried
+        } catch is DecodingError {
+            return self.parseRepairingDates(stripped, sourceURL: sourceURL)
+        } catch {
+            // The caller reports the original error.
+            return nil
+        }
+    }
+
+    /// FeedKit throws on any date it cannot read, and that fails the whole
+    /// feed. Retry once with those dates rewritten or removed, so one bad
+    /// episode does not block the rest (#597).
+    private func parseRepairingDates(_ data: Data, sourceURL: URL) -> Feed? {
+        guard let repair = FeedDateRepair().repair(data) else { return nil }
+        do {
+            let retried = try Feed(data: repair.data)
+            self.log.info("feed.parse.recoveredViaDateRepair", [
+                "url": sourceURL.absoluteString,
+                "rewritten": repair.rewritten,
+                "dropped": repair.dropped,
+            ])
+            return retried
+        } catch {
+            self.log.debug("feed.parse.dateRepairFailed", [
+                "url": sourceURL.absoluteString,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 
     /// Returns the feed bytes with the XML prolog (declaration, `<?xml-stylesheet?>`
