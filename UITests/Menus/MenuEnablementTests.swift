@@ -112,7 +112,7 @@ final class MenuEnablementTests: XCTestCase {
             for (menuTitle, specs) in interesting {
                 let observed = try crawler.crawl(menuTitled: menuTitle)
                 for spec in specs {
-                    let expected = spec.enablement[state]!
+                    let expected = try XCTUnwrap(spec.enablement[state])
                     guard let item = Self.find(spec, in: observed.items) else {
                         mismatches.append(
                             "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): not found"

@@ -12,14 +12,16 @@ private final class RoutingHTTP: HTTPClient, @unchecked Sendable {
     private(set) var requests: [String] = []
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let url = request.url!.absoluteString.removingPercentEncoding ?? ""
+        let requestURL = try #require(request.url)
+        let url = requestURL.absoluteString.removingPercentEncoding ?? ""
         self.requests.append(url)
         if self.offline {
             throw URLError(.notConnectedToInternet)
         }
         let hit = self.routes.first { url.contains($0.match) }
         let status = hit == nil ? 404 : 200
-        return (Data((hit?.body ?? "").utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+        let response = try #require(HTTPURLResponse(url: requestURL, statusCode: status, httpVersion: nil, headerFields: nil))
+        return (Data((hit?.body ?? "").utf8), response)
     }
 }
 
@@ -295,10 +297,11 @@ struct DeepDiveServiceTests {
         let bed = try await makeBed()
         let albums = AlbumRepository(database: bed.db)
         let album = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: nil)
+        let albumID = try #require(album.id)
         try await bed.db.write { db in
-            try db.execute(sql: "UPDATE albums SET musicbrainz_release_group_id = 'rg-abbey' WHERE id = ?", arguments: [album.id!])
+            try db.execute(sql: "UPDATE albums SET musicbrainz_release_group_id = 'rg-abbey' WHERE id = ?", arguments: [albumID])
         }
-        let report = try await bed.service.albumReport(albumID: #require(album.id))
+        let report = try await bed.service.albumReport(albumID: albumID)
         #expect(report.releaseChosen)
         #expect(report.releaseMBID == "rel-a", "earliest official, not the 2019 reissue or the bootleg")
         #expect(bed.http.requests.contains { $0.contains("/ws/2/release-group/rg-abbey?") })

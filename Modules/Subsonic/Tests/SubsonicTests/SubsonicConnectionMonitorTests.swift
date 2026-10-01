@@ -32,12 +32,12 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
         } else {
             throw URLError(.badServerResponse)
         }
-        let resp = HTTPURLResponse(
+        let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
             httpVersion: nil,
             headerFields: nil
-        )!
+        ))
         return (data, resp)
     }
 }

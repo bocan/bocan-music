@@ -62,7 +62,10 @@ public actor LRClibClient: LRClibClientProtocol {
     ) async throws -> LyricsDocument? {
         try await self.limiter.wait()
 
-        var components = URLComponents(url: Self.baseURL.appendingPathComponent("get"), resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: Self.baseURL.appendingPathComponent("get"), resolvingAgainstBaseURL: false) else {
+            self.log.warning("lrclib.get.urlFailed", ["artist": artist, "title": title])
+            return nil
+        }
         var items: [URLQueryItem] = [
             URLQueryItem(name: "artist_name", value: artist),
             URLQueryItem(name: "track_name", value: title),
@@ -87,7 +90,10 @@ public actor LRClibClient: LRClibClientProtocol {
     ) async throws -> [LyricsDocument] {
         try await self.limiter.wait()
 
-        var components = URLComponents(url: Self.baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: Self.baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false) else {
+            self.log.warning("lrclib.search.urlFailed", ["artist": artist ?? "", "title": title ?? ""])
+            return []
+        }
         var items: [URLQueryItem] = []
         if let artist {
             items.append(URLQueryItem(name: "artist_name", value: artist))

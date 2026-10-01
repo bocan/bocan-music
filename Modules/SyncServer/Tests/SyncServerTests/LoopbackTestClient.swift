@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import Testing
 
 /// A loopback HTTPS client for the TLS tests: presents a client certificate and
 /// trusts the self-signed server. Each `request` uses a fresh session so every
@@ -21,7 +22,9 @@ final class LoopbackClient: NSObject, URLSessionDelegate, @unchecked Sendable {
         let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
 
-        var request = URLRequest(url: URL(string: "https://127.0.0.1:\(port)\(path)")!)
+        // `#require` records a test failure; a plain throw could pass for the
+        // refused handshake that some of these tests expect.
+        var request = try URLRequest(url: #require(URL(string: "https://127.0.0.1:\(port)\(path)")))
         request.timeoutInterval = 10
         request.httpMethod = method
         if let body {

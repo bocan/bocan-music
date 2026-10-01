@@ -33,13 +33,12 @@ struct ListenBrainzProviderTests {
     }
 
     @Test("401 → invalid credentials")
-    func unauthorized() async {
-        await withStubLock {
+    func unauthorized() async throws {
+        try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 401)
             StubProtocol.register({ $0.url?.absoluteString.contains("submit-listens") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 401, httpVersion: nil, headerFields: nil)!
-                return (Data(), resp)
+                (Data(), resp)
             })
             let provider = ListenBrainzProvider(http: URLSession.stubbed, credentials: StubListenBrainzCreds(token: "bad"))
             await #expect(throws: ScrobbleError.self) {
@@ -52,10 +51,9 @@ struct ListenBrainzProviderTests {
     func rateLimited() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 429, headers: ["Retry-After": "10"])
             StubProtocol.register({ $0.url?.absoluteString.contains("submit-listens") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 429, httpVersion: nil, headerFields: ["Retry-After": "10"])!
-                return (Data(), resp)
+                (Data(), resp)
             })
             let provider = ListenBrainzProvider(http: URLSession.stubbed, credentials: StubListenBrainzCreds(token: "tok"))
             let results = try await provider.submit([self.makeEvent()])
@@ -74,13 +72,13 @@ struct ListenBrainzProviderTests {
             StubProtocol.registerJSON(matching: "submit-listens", json: ["status": "ok"])
             let provider = ListenBrainzProvider(http: URLSession.stubbed, credentials: StubListenBrainzCreds(token: "tok"))
             _ = try await provider.submit([self.makeEvent()])
-            let body = StubProtocol.capturedBodies.first!
-            let json = try JSONSerialization.jsonObject(with: body) as! [String: Any]
+            let body = try #require(StubProtocol.capturedBodies.first)
+            let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
             #expect(json["listen_type"] as? String == "single")
-            let payload = json["payload"] as! [[String: Any]]
+            let payload = try #require(json["payload"] as? [[String: Any]])
             #expect(payload.count == 1)
             #expect(payload[0]["listened_at"] as? Int == 1_700_000_000)
-            let metadata = payload[0]["track_metadata"] as! [String: Any]
+            let metadata = try #require(payload[0]["track_metadata"] as? [String: Any])
             #expect(metadata["track_name"] as? String == "Song")
             #expect(metadata["artist_name"] as? String == "Artist")
         }
@@ -93,10 +91,10 @@ struct ListenBrainzProviderTests {
             StubProtocol.registerJSON(matching: "submit-listens", json: ["status": "ok"])
             let provider = ListenBrainzProvider(http: URLSession.stubbed, credentials: StubListenBrainzCreds(token: "tok"))
             try await provider.nowPlaying(self.makeEvent())
-            let body = StubProtocol.capturedBodies.first!
-            let json = try JSONSerialization.jsonObject(with: body) as! [String: Any]
+            let body = try #require(StubProtocol.capturedBodies.first)
+            let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
             #expect(json["listen_type"] as? String == "playing_now")
-            let listen = (json["payload"] as! [[String: Any]])[0]
+            let listen = try #require((json["payload"] as? [[String: Any]])?.first)
             #expect(listen["listened_at"] == nil)
         }
     }

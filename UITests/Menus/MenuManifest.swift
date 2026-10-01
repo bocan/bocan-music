@@ -37,6 +37,10 @@ struct MenuItemSpec: Sendable {
     /// Expected shortcut; the parity test checks it against the source
     /// declaration and `KeyBindings.swift`.
     var shortcut: MenuShortcut?
+    /// The `key` text of an item whose shortcut did not parse; nil in a
+    /// correct manifest. `ShortcutParityTests.testManifestKeysParse` fails
+    /// on any other value.
+    var unparsedKey: String?
     /// `KeyBindings` constant name the source must route through (nil for
     /// inline shortcuts and shortcut-less items).
     var binding: String?
@@ -74,9 +78,11 @@ struct MenuItemSpec: Sendable {
         enablement: [MenuState: Bool] = [:],
         submenu: [Self] = []
     ) -> Self {
-        Self(
+        let shortcut = key.flatMap(MenuShortcut.fromDisplay)
+        return Self(
             titles: titles,
-            shortcut: key.map { MenuShortcut.fromDisplay($0)! },
+            shortcut: shortcut,
+            unparsedKey: shortcut == nil ? key : nil,
             binding: binding,
             helpRow: row,
             helpDisplay: rowDisplay,

@@ -133,9 +133,14 @@ public actor ListenBrainzProvider: ScrobbleProvider {
 
     /// Validate a token via `/1/validate-token`. Used by the connect flow.
     public func validate(token: String) async throws -> String {
-        var components = URLComponents(url: self.config.endpoint, resolvingAgainstBaseURL: true)!
+        guard var components = URLComponents(url: self.config.endpoint, resolvingAgainstBaseURL: true) else {
+            throw ScrobbleError.malformedResponse(provider: self.id, reason: "bad url")
+        }
         components.path = "/1/validate-token"
-        var req = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            throw ScrobbleError.malformedResponse(provider: self.id, reason: "bad url")
+        }
+        var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("Token \(token)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await self.http.data(for: req)

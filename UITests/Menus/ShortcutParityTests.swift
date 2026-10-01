@@ -15,6 +15,18 @@ final class ShortcutParityTests: XCTestCase {
         MenuManifest.allItems.filter { $0.shortcut != nil }
     }
 
+    /// Every `key:` in the manifest must parse into a shortcut. The manifest
+    /// keeps the text of one that does not, so a typing error fails here
+    /// instead of stopping the whole test process when the table loads.
+    func testManifestKeysParse() {
+        for item in MenuManifest.allItems {
+            XCTAssertNil(
+                item.unparsedKey,
+                "\(item.canonicalTitle): manifest key \(item.unparsedKey ?? "") is not a shortcut"
+            )
+        }
+    }
+
     /// Manifest ▸ KeyBindings: every item that declares a binding name
     /// must match the parsed `KeyBindings` constant, and the constant must
     /// exist.
@@ -79,9 +91,10 @@ final class ShortcutParityTests: XCTestCase {
         }
 
         for item in self.shortcutItems where !item.system {
+            let declared = item.shortcut.map(String.init(describing:)) ?? "none"
             XCTAssertTrue(
                 claimedTitles.contains(item.canonicalTitle),
-                "\(item.canonicalTitle): manifest declares \(item.shortcut!) but no menu source site carries it"
+                "\(item.canonicalTitle): manifest declares \(declared) but no menu source site carries it"
             )
         }
     }

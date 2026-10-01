@@ -29,12 +29,10 @@ public actor PodcastIndexClient {
     /// Search for podcasts by keyword.
     public func search(term: String, max: Int = 40) async throws -> [PodcastSearchResult] {
         try Task.checkCancellation()
-        var comps = URLComponents(string: "\(Self.baseURL)/search/byterm")!
-        comps.queryItems = [
+        let url = try Self.requestURL(path: "search/byterm", queryItems: [
             URLQueryItem(name: "q", value: term),
             URLQueryItem(name: "max", value: String(max)),
-        ]
-        let url = comps.url!
+        ])
         let response: PISearchResponse = try await fetch(url: url)
         return response.feeds.compactMap { Self.map(feed: $0) }
     }
@@ -42,14 +40,30 @@ public actor PodcastIndexClient {
     /// Fetch rich detail for a single feed URL.
     public func podcast(byFeedURL feedURL: URL) async throws -> PodcastSearchResult? {
         try Task.checkCancellation()
-        var comps = URLComponents(string: "\(Self.baseURL)/podcasts/byfeedurl")!
-        comps.queryItems = [URLQueryItem(name: "url", value: feedURL.absoluteString)]
-        let url = comps.url!
+        let url = try Self.requestURL(path: "podcasts/byfeedurl", queryItems: [
+            URLQueryItem(name: "url", value: feedURL.absoluteString),
+        ])
         let response: PIByFeedURLResponse = try await fetch(url: url)
         return Self.map(feed: response.feed)
     }
 
     // MARK: - Networking
+
+    /// Builds the request URL for `path` under the API base. The base and the
+    /// path are constants and `URLComponents` percent-encodes the query, so a
+    /// failure here means the base URL itself is malformed; the caller gets
+    /// the same error as for any other failure of this source.
+    private static func requestURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
+        let endpoint = "\(Self.baseURL)/\(path)"
+        guard var comps = URLComponents(string: endpoint) else {
+            throw PodcastsError.searchUnavailable(source: "podcastIndex", reason: "invalid request URL: \(endpoint)")
+        }
+        comps.queryItems = queryItems
+        guard let url = comps.url else {
+            throw PodcastsError.searchUnavailable(source: "podcastIndex", reason: "invalid request URL: \(endpoint)")
+        }
+        return url
+    }
 
     private func fetch<T: Decodable>(url: URL) async throws -> T {
         var request = URLRequest(url: url, timeoutInterval: 15)

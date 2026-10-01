@@ -12,6 +12,11 @@ public actor DeepDiveService {
     /// Minimum MusicBrainz search score to accept a name match as the artist.
     public static let guessScoreThreshold = 90
 
+    /// Release pages; the release id is appended as a path component, so an
+    /// id from the network can never make the link fail to build.
+    private static let coverArtArchiveReleaseBase = URL(string: "https://coverartarchive.org/release")!
+    private static let musicBrainzReleaseBase = URL(string: "https://musicbrainz.org/release")!
+
     private let artists: ArtistRepository
     private let albums: AlbumRepository
     private let tracks: TrackRepository
@@ -258,8 +263,8 @@ public actor DeepDiveService {
             formats: media.compactMap(\.format),
             trackCount: media.isEmpty ? nil : media.compactMap(\.trackCount).reduce(0, +),
             ownedTrackCount: ownedTracks,
-            coverArtArchiveURL: URL(string: "https://coverartarchive.org/release/\(release.id)")!,
-            musicBrainzURL: URL(string: "https://musicbrainz.org/release/\(release.id)")!,
+            coverArtArchiveURL: Self.coverArtArchiveReleaseBase.appendingPathComponent(release.id),
+            musicBrainzURL: Self.musicBrainzReleaseBase.appendingPathComponent(release.id),
             nearby: nearby,
             fetchedAt: self.now()
         )

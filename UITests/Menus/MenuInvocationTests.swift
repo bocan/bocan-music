@@ -120,10 +120,10 @@ final class MenuInvocationTests: XCTestCase {
             ["View", "Equaliser & DSP…"],
         ] {
             let before = inv.windowCount
-            self.run(path, inv)
-            inv.waitFor("\(path.last!) window") { inv.windowCount == before + 1 }
+            let title = self.run(path, inv)
+            inv.waitFor("\(title) window") { inv.windowCount == before + 1 }
             inv.closeFrontWindow()
-            inv.waitFor("\(path.last!) window to close") { inv.windowCount == before }
+            inv.waitFor("\(title) window to close") { inv.windowCount == before }
         }
 
         // Deep-links to Settings ▸ Sources; the Settings window titles
@@ -166,16 +166,16 @@ final class MenuInvocationTests: XCTestCase {
         commitsInlineRename: Bool = false
     ) {
         let app = inv.app
-        self.run(path, inv)
+        let title = self.run(path, inv)
         let sheet = app.sheets.firstMatch
-        inv.waitFor("\(path.last!) sheet") { sheet.exists }
+        inv.waitFor("\(title) sheet") { sheet.exists }
         let field = sheet.textFields.firstMatch
-        inv.waitFor("\(path.last!) name field") { field.exists }
+        inv.waitFor("\(title) name field") { field.exists }
         field.click()
         inv.app.typeKey("a", modifierFlags: .command) // replace the prefilled default
         field.typeText(name)
         sheet.buttons["Create"].click()
-        inv.waitFor("\(path.last!) sheet commits and closes") { !sheet.exists }
+        inv.waitFor("\(title) sheet commits and closes") { !sheet.exists }
         if commitsInlineRename {
             // The sidebar row is now a focused inline text field; commit it
             // so keyboard focus returns to the app (Return keeps the name).
@@ -664,9 +664,18 @@ final class MenuInvocationTests: XCTestCase {
     // MARK: Coverage bookkeeping
 
     /// Invokes `path` and records it for the completeness assertion.
-    private func run(_ path: [String], _ inv: MenuInvoker) {
+    /// Returns the title of the invoked item, the last element of `path`.
+    @discardableResult
+    private func run(_ path: [String], _ inv: MenuInvoker) -> String {
         inv.invoke(path)
-        self.covered.insert(path.last!)
+        // `invoke` accepts only a path of two or three titles, so there is
+        // always a last one; an empty path fails the test here.
+        guard let title = path.last else {
+            XCTFail("empty menu path")
+            return ""
+        }
+        self.covered.insert(title)
+        return title
     }
 
     /// Every app-owned manifest item must have been invoked (any of its

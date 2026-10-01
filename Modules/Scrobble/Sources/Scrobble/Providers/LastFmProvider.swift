@@ -235,8 +235,11 @@ public actor LastFmProvider: ScrobbleProvider {
 
     /// Browser URL the user needs to open to authorise the token.
     public nonisolated func authorisationURL(forToken token: String) -> URL {
-        var components = URLComponents(url: self.config.authPageBase, resolvingAgainstBaseURL: true)
-            ?? URLComponents(string: self.config.authPageBase.absoluteString)!
+        guard var components = URLComponents(url: self.config.authPageBase, resolvingAgainstBaseURL: true) else {
+            // Same fallback as an unbuildable result below: the bare auth page.
+            self.log.warning("scrobble.lastfm.authorisationURL.failed", ["base": self.config.authPageBase.absoluteString])
+            return self.config.authPageBase
+        }
         var items = components.queryItems ?? []
         items.append(URLQueryItem(name: "api_key", value: self.config.apiKey))
         items.append(URLQueryItem(name: "token", value: token))

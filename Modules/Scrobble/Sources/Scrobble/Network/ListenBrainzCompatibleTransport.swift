@@ -70,7 +70,9 @@ struct ListenBrainzCompatibleTransport {
         payload: [String: Any],
         providerID: String
     ) async throws -> [String: Any] {
-        var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true)!
+        guard var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true) else {
+            throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")
+        }
         components.path = path
         guard let url = components.url else {
             throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")

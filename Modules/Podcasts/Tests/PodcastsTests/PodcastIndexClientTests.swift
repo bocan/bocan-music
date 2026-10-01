@@ -44,12 +44,7 @@ struct PodcastIndexClientTests {
 
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (data, HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (data, stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(
@@ -87,12 +82,7 @@ struct PodcastIndexClientTests {
 
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (data, HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (data, stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(
@@ -115,12 +105,7 @@ struct PodcastIndexClientTests {
     func http401ThrowsSearchUnavailable() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data(), HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 401,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (Data(), stubResponse("https://api.podcastindex.org", status: 401))
         }
 
         let client = PodcastIndexClient(
@@ -144,15 +129,7 @@ struct PodcastIndexClientTests {
         var capturedHeaders: [String: String] = [:]
         mock.handler = { request in
             capturedHeaders = request.allHTTPHeaderFields ?? [:]
-            return (
-                Data("{\"feeds\":[]}".utf8),
-                HTTPURLResponse(
-                    url: URL(string: "https://api.podcastindex.org")!,
-                    statusCode: 200,
-                    httpVersion: nil,
-                    headerFields: nil
-                )!
-            )
+            return try (Data("{\"feeds\":[]}".utf8), stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(

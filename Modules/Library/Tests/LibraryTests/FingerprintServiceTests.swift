@@ -316,12 +316,13 @@ private final class MockHTTPClient: HTTPClient, @unchecked Sendable {
     }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let response = HTTPURLResponse(
-            url: request.url!,
+        let url = try #require(request.url)
+        let response = try #require(HTTPURLResponse(
+            url: url,
             statusCode: self.statusCode,
             httpVersion: "HTTP/1.1",
             headerFields: nil
-        )!
+        ))
         return (self.responseData, response)
     }
 }

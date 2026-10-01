@@ -360,9 +360,13 @@ public actor MetadataEditService {
     // MARK: - Helpers
 
     private static func backupRingDirectory() -> URL {
-        FileManager.default
+        // Same fallback as `LibraryLocation`: the user-domain lookup has no
+        // documented way to come back empty, and the fallback is the same folder.
+        let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
+            .first ?? URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support")
+        return appSupport
             .appendingPathComponent("Bocan", isDirectory: true)
             .appendingPathComponent("EditBackups", isDirectory: true)
     }

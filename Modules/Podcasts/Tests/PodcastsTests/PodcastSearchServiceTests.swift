@@ -4,16 +4,16 @@ import Testing
 
 // MARK: - Helpers
 
-private func makeHTTPResponse(url: URL = URL(string: "https://example.com")!, status: Int) -> HTTPURLResponse {
-    HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!
+private func makeHTTPResponse(status: Int) throws -> HTTPURLResponse {
+    try stubResponse("https://example.com", status: status)
 }
 
 private func loadFixture(named name: String) throws -> Data {
-    guard let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
-          let data = try? Data(contentsOf: url) else {
-        throw PodcastsError.parseFailed(url: URL(string: "test://\(name)")!, reason: "Fixture not found: \(name)")
-    }
-    return data
+    let url = try #require(
+        Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
+        "Fixture not found: \(name)"
+    )
+    return try Data(contentsOf: url)
 }
 
 // MARK: - Tests
@@ -33,9 +33,9 @@ struct PodcastSearchServiceTests {
         mock.handler = { request in
             let urlStr = request.url?.absoluteString ?? ""
             if urlStr.contains("podcastindex.org") {
-                return (piData, makeHTTPResponse(status: 200))
+                return try (piData, makeHTTPResponse(status: 200))
             }
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
 
         let service = PodcastSearchService(
@@ -74,9 +74,9 @@ struct PodcastSearchServiceTests {
         mock.handler = { request in
             let urlStr = request.url?.absoluteString ?? ""
             if urlStr.contains("podcastindex.org") {
-                return (piData, makeHTTPResponse(status: 200))
+                return try (piData, makeHTTPResponse(status: 200))
             }
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
 
         let service = PodcastSearchService(
@@ -108,9 +108,9 @@ struct PodcastSearchServiceTests {
         mock.handler = { request in
             let urlStr = request.url?.absoluteString ?? ""
             if urlStr.contains("podcastindex.org") {
-                return (piData, makeHTTPResponse(status: 200))
+                return try (piData, makeHTTPResponse(status: 200))
             }
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
 
         let service = PodcastSearchService(
@@ -175,7 +175,7 @@ struct PodcastSearchServiceTests {
             if urlStr.contains("podcastindex.org") {
                 throw URLError(.notConnectedToInternet)
             }
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
 
         let service = PodcastSearchService(
@@ -219,7 +219,7 @@ struct PodcastSearchServiceTests {
         let itData = try loadFixture(named: "itunes-search.json")
 
         let mock = MockHTTPClient()
-        mock.handler = { _ in (itData, makeHTTPResponse(status: 200)) }
+        mock.handler = { _ in try (itData, makeHTTPResponse(status: 200)) }
 
         // podcastIndex: nil -- no credentials configured.
         let service = PodcastSearchService(
@@ -240,7 +240,7 @@ struct PodcastSearchServiceTests {
         var callCount = 0
         mock.handler = { _ in
             callCount += 1
-            return (Data(), makeHTTPResponse(status: 200))
+            return try (Data(), makeHTTPResponse(status: 200))
         }
 
         let service = PodcastSearchService(
@@ -268,7 +268,7 @@ struct PodcastSearchServiceTests {
         let recorder = RequestRecorder()
         mock.handler = { request in
             recorder.record(request)
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
         let service = PodcastSearchService(podcastIndex: nil, itunes: ITunesSearchClient(http: mock))
 
@@ -286,7 +286,7 @@ struct PodcastSearchServiceTests {
         let recorder = RequestRecorder()
         mock.handler = { request in
             recorder.record(request)
-            return (itData, makeHTTPResponse(status: 200))
+            return try (itData, makeHTTPResponse(status: 200))
         }
         let service = PodcastSearchService(podcastIndex: nil, itunes: ITunesSearchClient(http: mock))
         let hit = try PodcastSearchResult(

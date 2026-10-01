@@ -15,10 +15,10 @@ private final class StubHTTP: HTTPClient, @unchecked Sendable {
     private(set) var requested: [URL] = []
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let url = request.url!
+        let url = try #require(request.url)
         self.requested.append(url)
         let hit = url == self.feedURL
-        let response = HTTPURLResponse(url: url, statusCode: hit ? 200 : 404, httpVersion: nil, headerFields: nil)!
+        let response = try #require(HTTPURLResponse(url: url, statusCode: hit ? 200 : 404, httpVersion: nil, headerFields: nil))
         return (hit ? self.feedData : Data(), response)
     }
 }

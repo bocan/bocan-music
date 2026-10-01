@@ -147,9 +147,7 @@ public struct FeedParser: Sendable {
         var rootOffset: Int?
         for marker in ["<rss", "<feed"] {
             guard let needle = marker.data(using: .utf8), let range = window.range(of: needle) else { continue }
-            if rootOffset == nil || range.lowerBound < rootOffset! {
-                rootOffset = range.lowerBound
-            }
+            rootOffset = min(rootOffset ?? range.lowerBound, range.lowerBound)
         }
         guard let start = rootOffset, start > 0 else { return nil }
         let declaration = Data(#"<?xml version="1.0" encoding="UTF-8"?>"#.utf8) + Data("\n".utf8)

@@ -39,9 +39,9 @@ struct HistoryRecorderTests {
     // MARK: - Threshold checks
 
     @Test("50% fraction meets threshold for 200s track")
-    func halfFractionMeetsThreshold() async {
+    func halfFractionMeetsThreshold() async throws {
         // 200s track, 100s played = 50%
-        let recorder = await PlayHistoryRecorder(database: makeDatabase())
+        let recorder = try await PlayHistoryRecorder(database: makeDatabase())
         await recorder.trackDidStart(trackID: 1, duration: 200)
         // 100s = 50% → should scrobble
         let shouldScrobble = self.threshold(elapsed: 100, duration: 200)
@@ -68,15 +68,15 @@ struct HistoryRecorderTests {
     }
 
     @Test("trackDidEnd calls no-op when nothing started")
-    func endWithNothingStarted() async {
-        let recorder = await PlayHistoryRecorder(database: makeDatabase())
+    func endWithNothingStarted() async throws {
+        let recorder = try await PlayHistoryRecorder(database: makeDatabase())
         // Should not crash
         await recorder.trackDidEnd(elapsed: 100)
     }
 
     @Test("trackSkipped calls no-op when nothing started")
-    func skipWithNothingStarted() async {
-        let recorder = await PlayHistoryRecorder(database: makeDatabase())
+    func skipWithNothingStarted() async throws {
+        let recorder = try await PlayHistoryRecorder(database: makeDatabase())
         // Should not crash
         await recorder.trackSkipped(elapsed: 100)
     }
@@ -84,7 +84,7 @@ struct HistoryRecorderTests {
     @Test("trackDidEndNaturally credits previous play and forwards to scrobble sink")
     func gaplessHandoffCreditsPreviousPlay() async throws {
         let sink = CapturingScrobbleSink()
-        let db = await makeDatabase()
+        let db = try await makeDatabase()
         try await Self.insertTrack(id: 42, in: db)
         try await Self.insertTrack(id: 43, in: db)
         let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
@@ -104,7 +104,7 @@ struct HistoryRecorderTests {
     @Test("trackDidStart fires nowPlaying on the sink")
     func nowPlayingFiresOnTrackStart() async throws {
         let sink = CapturingScrobbleSink()
-        let db = await makeDatabase()
+        let db = try await makeDatabase()
         try await Self.insertTrack(id: 99, in: db)
         let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
         await recorder.trackDidStart(trackID: 99, duration: 200)
@@ -117,7 +117,7 @@ struct HistoryRecorderTests {
     @Test("Subsonic trackDidStart fires nowPlayingSubsonic and trackDidEnd forwards subsonic play")
     func subsonicPathBypassesLocalDB() async throws {
         let sink = CapturingScrobbleSink()
-        let db = await makeDatabase()
+        let db = try await makeDatabase()
         let serverID = UUID()
         let context = SubsonicPlayContext(
             serverID: serverID,
@@ -159,10 +159,10 @@ struct HistoryRecorderTests {
         return elapsed >= 240.0
     }
 
-    private func makeDatabase() async -> Persistence.Database {
+    private func makeDatabase() async throws -> Persistence.Database {
         // A fully in-memory database suitable for tests.
         // We don't actually write during these unit tests (DB is not used for threshold logic).
-        try! await Database(location: .inMemory)
+        try await Database(location: .inMemory)
     }
 
     static func insertTrack(id: Int64, in db: Persistence.Database) async throws {

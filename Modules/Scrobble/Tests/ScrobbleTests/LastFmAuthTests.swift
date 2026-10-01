@@ -10,6 +10,7 @@ struct LastFmAuthTests {
     func happyPath() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             // Route both auth.getToken and auth.getSession on the same host.
             StubProtocol.register({ req in
                 req.url?.absoluteString.contains("audioscrobbler.com") ?? false
@@ -19,8 +20,6 @@ struct LastFmAuthTests {
                     ? ["token": "tok-xyz"]
                     : ["key": "session-123", "name": "alice"]
                 let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
-                let stubURL = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: stubURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
                 return (data, resp)
             })
             let creds = StubLastFmCreds()
@@ -48,6 +47,7 @@ struct LastFmAuthTests {
     func openURLHasTokenLoggedURLDoesNot() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ req in
                 req.url?.absoluteString.contains("audioscrobbler.com") ?? false
             }, {
@@ -56,12 +56,6 @@ struct LastFmAuthTests {
                     ? ["token": "secret-tok"]
                     : ["key": "sess-key", "name": "bob"]
                 let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
-                let resp = HTTPURLResponse(
-                    url: URL(string: "https://stub")!,
-                    statusCode: 200,
-                    httpVersion: nil,
-                    headerFields: nil
-                )!
                 return (data, resp)
             })
             let creds = StubLastFmCreds()
@@ -91,6 +85,7 @@ struct LastFmAuthTests {
     func timesOut() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             // getToken succeeds, but getSession always returns error 14 (token unauthorised).
             StubProtocol.register({ req in
                 req.url?.absoluteString.contains("audioscrobbler.com") ?? false
@@ -100,8 +95,6 @@ struct LastFmAuthTests {
                     ? ["token": "tok-xyz"]
                     : ["error": 14, "message": "Token has not been issued"]
                 let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
-                let stubURL = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: stubURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
                 return (data, resp)
             })
             let creds = StubLastFmCreds()

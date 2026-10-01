@@ -28,12 +28,12 @@ private final class RecordingStubTransport: HTTPTransport, @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
         let (data, status) = self.responses.removeFirst()
-        let resp = HTTPURLResponse(
+        let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
             httpVersion: nil,
             headerFields: nil
-        )!
+        ))
         return (data, resp)
     }
 }

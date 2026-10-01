@@ -75,12 +75,7 @@ struct ChaptersFetchTests {
         let body = "{ \"chapters\": [ { \"startTime\": 0, \"title\": \"Intro\" } ] }"
         mock.handler = { _ in
             requestCount += 1
-            return (Data(body.utf8), HTTPURLResponse(
-                url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            return try (Data(body.utf8), stubResponse("https://example.com/ch.json"))
         }
         let fetcher = ChaptersFetcher(http: mock)
         let url = try #require(URL(string: "https://example.com/ch.json"))
@@ -96,12 +91,7 @@ struct ChaptersFetchTests {
     func nonOKThrows() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data(), HTTPURLResponse(
-                url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 500,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (Data(), stubResponse("https://example.com/ch.json", status: 500))
         }
         let fetcher = ChaptersFetcher(http: mock)
         let url = try #require(URL(string: "https://example.com/ch.json"))
@@ -114,12 +104,7 @@ struct ChaptersFetchTests {
     func oversizeThrows() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data(count: 2048), HTTPURLResponse(
-                url: URL(string: "https://example.com/ch.json")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (Data(count: 2048), stubResponse("https://example.com/ch.json"))
         }
         let fetcher = ChaptersFetcher(http: mock, maxBytes: 1024)
         let url = try #require(URL(string: "https://example.com/ch.json"))

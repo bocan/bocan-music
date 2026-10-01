@@ -514,7 +514,10 @@ actor ScanCoordinator {
     private static func canonicalPath(_ path: String) -> String? {
         var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
         let resolved = buffer.withUnsafeMutableBufferPointer { ptr -> UnsafeMutablePointer<CChar>? in
-            ptr.baseAddress!.withMemoryRebound(to: CChar.self, capacity: ptr.count) { cPtr in
+            // The buffer is never empty, so there is always a base address;
+            // without one the path counts as unresolvable, like a realpath failure.
+            guard let base = ptr.baseAddress else { return nil }
+            return base.withMemoryRebound(to: CChar.self, capacity: ptr.count) { cPtr in
                 realpath(path, cPtr)
             }
         }

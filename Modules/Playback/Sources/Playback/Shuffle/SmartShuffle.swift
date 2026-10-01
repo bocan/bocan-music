@@ -36,7 +36,8 @@ public struct SmartShuffle: ShuffleStrategy {
 
         while !remaining.isEmpty {
             let weights = remaining.map { self.weight(for: $0, now: now, daySeconds: daySeconds) }
-            let selected = self.weightedSample(from: remaining, weights: weights, using: &rng)
+            // `remaining` is not empty here, so there is always a sample.
+            guard let selected = self.weightedSample(from: remaining, weights: weights, using: &rng) else { break }
             result.append(selected)
             remaining.removeAll { $0.id == selected.id }
 
@@ -74,7 +75,7 @@ public struct SmartShuffle: ShuffleStrategy {
         from items: [QueueItem],
         weights: [Double],
         using rng: inout Xoshiro256StarStar
-    ) -> QueueItem {
+    ) -> QueueItem? {
         let total = weights.reduce(0, +)
         // Map the next random double onto [0, total)
         let pick = (Double(rng.next()) / Double(UInt64.max)) * total
@@ -85,6 +86,6 @@ public struct SmartShuffle: ShuffleStrategy {
                 return item
             }
         }
-        return items.last! // Fallback (floating-point rounding)
+        return items.last // Fallback (floating-point rounding); nil only for no items
     }
 }

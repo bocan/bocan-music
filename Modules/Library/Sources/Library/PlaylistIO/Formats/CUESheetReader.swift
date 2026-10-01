@@ -159,8 +159,8 @@ public enum CUESheetReader {
                 currentTrack = carried
 
             case "TRACK":
-                if currentTrack != nil {
-                    trackBuilders.append(currentTrack!)
+                if let track = currentTrack {
+                    trackBuilders.append(track)
                 }
                 let trackParts = rest.split(separator: " ", omittingEmptySubsequences: true)
                 let num = trackParts.first.flatMap { Int($0) } ?? (trackBuilders.count + 1)
@@ -188,8 +188,8 @@ public enum CUESheetReader {
             }
         }
 
-        if currentTrack != nil {
-            trackBuilders.append(currentTrack!)
+        if let track = currentTrack {
+            trackBuilders.append(track)
             currentTrack = nil
         }
         flushFile()

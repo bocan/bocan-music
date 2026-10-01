@@ -16,10 +16,10 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         self.requests += 1
-        let url = request.url!
+        let url = try #require(request.url)
         let mbid = url.lastPathComponent
-        func response(_ status: Int) -> HTTPURLResponse {
-            HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!
+        func response(_ status: Int) throws -> HTTPURLResponse {
+            try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil))
         }
         if self.rateLimited.contains(mbid) {
             if let hits = self.rateLimitHits {
@@ -27,13 +27,13 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
                 if hits <= 0 {
                     self.rateLimited.remove(mbid)
                 } else {
-                    return (Data(), response(503))
+                    return try (Data(), response(503))
                 }
             } else {
-                return (Data(), response(503))
+                return try (Data(), response(503))
             }
         }
-        guard let artist = self.artists[mbid] else { return (Data(), response(404)) }
+        guard let artist = self.artists[mbid] else { return try (Data(), response(404)) }
         let json: [String: Any] = [
             "id": mbid, "name": artist.name, "sort-name": artist.sortName,
             "disambiguation": artist.disambiguation, "type": "Group", "relations": [],

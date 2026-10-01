@@ -122,12 +122,16 @@ actor CoverArtCache {
     }
 
     static func make(database: Database) -> CoverArtCache {
+        // Same fallback as `LibraryLocation`: the user-domain lookup has no
+        // documented way to come back empty, and the fallback is the same folder.
         let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
+            .first ?? URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support")
+        let cacheRoot = appSupport
             .appendingPathComponent("Bocan", isDirectory: true)
             .appendingPathComponent("CoverArt", isDirectory: true)
-        return CoverArtCache(cacheRoot: appSupport, repo: CoverArtRepository(database: database))
+        return CoverArtCache(cacheRoot: cacheRoot, repo: CoverArtRepository(database: database))
     }
 
     // MARK: - API

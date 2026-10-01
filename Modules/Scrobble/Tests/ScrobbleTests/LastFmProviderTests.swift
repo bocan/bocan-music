@@ -59,10 +59,9 @@ struct LastFmProviderTests {
     func transient5xx() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 503)
             StubProtocol.register({ $0.url?.absoluteString.contains("audioscrobbler.com") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil)!
-                return (Data("server error".utf8), resp)
+                (Data("server error".utf8), resp)
             })
             let creds = StubLastFmCreds(session: "sk", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)

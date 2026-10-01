@@ -15,26 +15,26 @@ struct GaplessTests {
     // MARK: - Compatible pairs
 
     @Test("same rate + same channels = compatible")
-    func sameRateChannels() {
+    func sameRateChannels() throws {
         let bridge = FormatBridge()
-        let lhs = self.makeFmt(sampleRate: 44100, channels: 2)
-        let rhs = self.makeFmt(sampleRate: 44100, channels: 2)
+        let lhs = try self.makeFmt(sampleRate: 44100, channels: 2)
+        let rhs = try self.makeFmt(sampleRate: 44100, channels: 2)
         #expect(bridge.isCompatible(lhs, rhs))
     }
 
     @Test("different sample rates = incompatible")
-    func differentSampleRates() {
+    func differentSampleRates() throws {
         let bridge = FormatBridge()
-        let lhs = self.makeFmt(sampleRate: 44100, channels: 2)
-        let rhs = self.makeFmt(sampleRate: 48000, channels: 2)
+        let lhs = try self.makeFmt(sampleRate: 44100, channels: 2)
+        let rhs = try self.makeFmt(sampleRate: 48000, channels: 2)
         #expect(!bridge.isCompatible(lhs, rhs))
     }
 
     @Test("different channel counts = incompatible")
-    func differentChannelCounts() {
+    func differentChannelCounts() throws {
         let bridge = FormatBridge()
-        let stereo = self.makeFmt(sampleRate: 44100, channels: 2)
-        let mono = self.makeFmt(sampleRate: 44100, channels: 1)
+        let stereo = try self.makeFmt(sampleRate: 44100, channels: 2)
+        let mono = try self.makeFmt(sampleRate: 44100, channels: 1)
         #expect(!bridge.isCompatible(stereo, mono))
     }
 
@@ -74,7 +74,7 @@ struct GaplessTests {
 
     // MARK: - Helpers
 
-    private func makeFmt(sampleRate: Double, channels: AVAudioChannelCount) -> AVAudioFormat {
-        AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channels)!
+    private func makeFmt(sampleRate: Double, channels: AVAudioChannelCount) throws -> AVAudioFormat {
+        try #require(AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channels))
     }
 }

@@ -66,12 +66,7 @@ private func respond(_ bed: ChaptersBed, with body: Data, status: Int = 200) {
     let recorder = bed.recorder
     bed.chaptersMock.handler = { request in
         recorder.record(request)
-        return (body, HTTPURLResponse(
-            url: URL(string: chaptersURL)!,
-            statusCode: status,
-            httpVersion: nil,
-            headerFields: nil
-        )!)
+        return try (body, stubResponse(chaptersURL, status: status))
     }
 }
 

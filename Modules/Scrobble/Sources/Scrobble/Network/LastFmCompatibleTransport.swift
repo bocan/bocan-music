@@ -101,8 +101,9 @@ struct LastFmCompatibleTransport {
     private func makeRequest(params: [String: String], method: String, providerID: String) throws -> URLRequest {
         let body = self.formEncode(params)
         if method == "GET" {
-            var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true)
-                ?? URLComponents(string: self.endpoint.absoluteString)!
+            guard var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true) else {
+                throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")
+            }
             components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
             guard let url = components.url else {
                 throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")

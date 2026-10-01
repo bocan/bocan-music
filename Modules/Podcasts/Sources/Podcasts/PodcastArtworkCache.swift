@@ -41,7 +41,16 @@ public actor PodcastArtworkCache {
     }
 
     private static let defaultRoot: URL = {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        // If the system reports no Application Support directory, use the
+        // conventional path under the home directory (as `DatabaseLocation`
+        // does) so the artwork still lands where macOS does not purge it.
+        let appSupport: URL
+        if let reported = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            appSupport = reported
+        } else {
+            appSupport = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
+            AppLogger.make(.podcasts).warning("artwork.root.fallback", ["root": appSupport.path])
+        }
         return appSupport
             .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
             .appendingPathComponent("Podcasts", isDirectory: true)

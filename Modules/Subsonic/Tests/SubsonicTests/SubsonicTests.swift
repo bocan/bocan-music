@@ -33,12 +33,12 @@ final class StubHTTPTransport: HTTPTransport, @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
         let (data, statusCode) = self.responses.removeFirst()
-        let response = HTTPURLResponse(
+        let response = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: statusCode,
             httpVersion: nil,
             headerFields: nil
-        )!
+        ))
         return (data, response)
     }
 }
@@ -46,7 +46,8 @@ final class StubHTTPTransport: HTTPTransport, @unchecked Sendable {
 // MARK: - Helpers
 
 private let testServerURL = URL(string: "https://music.test.local")!
-private let testServerID = UUID(uuidString: "DEADBEEF-0000-0000-0000-000000000001")!
+/// DEADBEEF-0000-0000-0000-000000000001, from its bytes so that no parse can fail.
+private let testServerID = UUID(uuid: (0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
 /// Minimal OK ping envelope (empty subsonic-response with status=ok).
 private let pingOK = """

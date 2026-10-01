@@ -94,6 +94,9 @@ public enum SQLBuilder {
         args: inout [DatabaseValueConvertible?],
         joins: inout Set<Join>
     ) throws -> String {
+        if case let .unknown(raw) = rule.field {
+            throw SmartPlaylistError.invalidRule(reason: "Unknown field \"\(raw)\"")
+        }
         let def = FieldDefinitions.definition(for: rule.field)
         if let join = def.columnRef.join {
             joins.insert(join)
@@ -201,7 +204,7 @@ public enum SQLBuilder {
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = TimeZone.current
             let start = cal.startOfDay(for: date)
-            let end = cal.date(byAdding: .day, value: 1, to: start)!
+            guard let end = cal.date(byAdding: .day, value: 1, to: start) else { throw Self.valueError(rule) }
             args.append(Int64(start.timeIntervalSince1970))
             args.append(Int64(end.timeIntervalSince1970))
             return "\(col) >= ? AND \(col) < ?"

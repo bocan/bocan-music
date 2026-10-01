@@ -6,14 +6,11 @@ import Testing
 // MARK: - Helper
 
 private func fixture(named name: String) throws -> Data {
-    guard let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
-          let data = try? Data(contentsOf: url) else {
-        throw PodcastsError.parseFailed(
-            url: URL(string: "test://\(name)")!,
-            reason: "Fixture not found: \(name)"
-        )
-    }
-    return data
+    let url = try #require(
+        Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
+        "Fixture not found: \(name)"
+    )
+    return try Data(contentsOf: url)
 }
 
 private let sourceURL = URL(string: "https://example.com/feed")!

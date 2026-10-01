@@ -59,14 +59,11 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
 }
 
 private func fixtureData(named name: String) throws -> Data {
-    guard let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
-          let data = try? Data(contentsOf: url) else {
-        throw PodcastsError.parseFailed(
-            url: URL(string: "test://\(name)")!,
-            reason: "Fixture not found: \(name)"
-        )
-    }
-    return data
+    let url = try #require(
+        Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
+        "Fixture not found: \(name)"
+    )
+    return try Data(contentsOf: url)
 }
 
 private let testFeedURL = URL(string: "https://example.com/feed.rss")!
@@ -117,7 +114,7 @@ struct PodcastServiceTests {
         let refreshData = try fixtureData(named: "rss-refresh-extra.xml")
 
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         // Subscribe with original feed.
@@ -137,7 +134,7 @@ struct PodcastServiceTests {
 
         // Refresh with updated feed (episode 1 title changed; episode 3 added).
         bed.feedMock.handler = { _ in
-            (refreshData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (refreshData, stubResponse(url: testFeedURL))
         }
         _ = try await bed.service.refresh(podcastID: podcastID)
 
@@ -159,7 +156,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -167,12 +164,10 @@ struct PodcastServiceTests {
         let body = "WEBVTT\n\n00:00.000 --> 00:01.000\nHello"
         bed.transcriptMock.handler = { _ in
             requestCount += 1
-            return (Data(body.utf8), HTTPURLResponse(
-                url: URL(string: "https://example.com/ep1-transcript.vtt")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: ["Content-Type": "text/vtt"]
-            )!)
+            return try (
+                Data(body.utf8),
+                stubResponse("https://example.com/ep1-transcript.vtt", headers: ["Content-Type": "text/vtt"])
+            )
         }
 
         // Episode 1 in rss-full.xml carries a podcast:transcript URL (parsed in 21-11).
@@ -190,7 +185,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
@@ -210,7 +205,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         let id1 = try await bed.service.subscribe(feedURL: testFeedURL)
@@ -237,7 +232,7 @@ struct PodcastServiceTests {
             if request.url?.scheme == "https" {
                 throw URLError(.secureConnectionFailed)
             }
-            return (rssData, HTTPURLResponse(url: lan, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            return try (rssData, stubResponse(url: lan))
         }
 
         let podcastID = try await bed.service.subscribe(feedURL: lan)
@@ -254,7 +249,7 @@ struct PodcastServiceTests {
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { request in
             let url = request.url ?? testFeedURL
-            return (rssData, HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            return try (rssData, stubResponse(url: url))
         }
         let listed = try #require(URL(string: "http://example.com/feed.rss"))
 
@@ -285,7 +280,7 @@ struct PodcastServiceTests {
             if request.url?.scheme == "https" {
                 throw URLError(.secureConnectionFailed)
             }
-            return (rssData, HTTPURLResponse(url: lan, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            return try (rssData, stubResponse(url: lan))
         }
 
         let id = try await bed.service.subscribe(feedURL: lan)
@@ -303,7 +298,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(
             feedURL: testFeedURL, podcastIndexID: 42, itunesCollectionID: 9999
@@ -322,7 +317,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         let hints = PodcastSearchResult(
@@ -357,7 +352,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
@@ -365,12 +360,7 @@ struct PodcastServiceTests {
         // Second call returns 304.
         let refETag = "\"abc123\""
         bed.feedMock.handler = { _ in
-            (Data(), HTTPURLResponse(
-                url: testFeedURL,
-                statusCode: 304,
-                httpVersion: nil,
-                headerFields: ["ETag": refETag]
-            )!)
+            try (Data(), stubResponse(url: testFeedURL, status: 304, headers: ["ETag": refETag]))
         }
 
         let t1 = fixedNow.addingTimeInterval(60)
@@ -380,12 +370,12 @@ struct PodcastServiceTests {
         let lateBed = try await makeBed(nowDate: fixedNow.addingTimeInterval(60))
         let rssData2 = try fixtureData(named: "rss-full.xml")
         lateBed.feedMock.handler = { _ in
-            (rssData2, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData2, stubResponse(url: testFeedURL))
         }
         let lateID = try await lateBed.service.subscribe(feedURL: testFeedURL)
 
         lateBed.feedMock.handler = { _ in
-            (Data(), HTTPURLResponse(url: testFeedURL, statusCode: 304, httpVersion: nil, headerFields: nil)!)
+            try (Data(), stubResponse(url: testFeedURL, status: 304))
         }
 
         let outcome = try await lateBed.service.refresh(podcastID: lateID)
@@ -407,7 +397,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-podcast-namespace.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -430,12 +420,12 @@ struct PodcastServiceTests {
         let extraData = try fixtureData(named: "rss-refresh-extra.xml")
 
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
         bed.feedMock.handler = { _ in
-            (extraData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (extraData, stubResponse(url: testFeedURL))
         }
         let outcome = try await bed.service.refresh(podcastID: podcastID)
 
@@ -451,7 +441,7 @@ struct PodcastServiceTests {
         let extraData = try fixtureData(named: "rss-refresh-extra.xml")
 
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -461,7 +451,7 @@ struct PodcastServiceTests {
         }
 
         bed.feedMock.handler = { _ in
-            (extraData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (extraData, stubResponse(url: testFeedURL))
         }
         _ = try await bed.service.refresh(podcastID: podcastID)
 
@@ -476,7 +466,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -499,7 +489,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
         let stateRepo = EpisodeStateRepository(database: bed.db)
@@ -519,7 +509,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
         let stateRepo = EpisodeStateRepository(database: bed.db)
@@ -538,7 +528,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -562,7 +552,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -584,7 +574,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -607,7 +597,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         _ = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -620,7 +610,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -649,7 +639,7 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -679,12 +669,10 @@ struct PodcastServiceTests {
         let bed = try await makeBed()
         let rssData = try fixtureData(named: "rss-full.xml")
         bed.artMock.handler = { request in
-            (Data([0xFF, 0xD8, 0xFF, 0xE0]), HTTPURLResponse(
-                url: request.url ?? testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil
-            )!)
+            try (Data([0xFF, 0xD8, 0xFF, 0xE0]), stubResponse(url: request.url ?? testFeedURL))
         }
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
         let episodes = EpisodeRepository(database: bed.db)
@@ -711,15 +699,10 @@ struct PodcastServiceTests {
         // Artwork mock returns minimal image bytes.
         let artBytes = Data([0xFF, 0xD8, 0xFF, 0xE0])
         bed.artMock.handler = { _ in
-            (artBytes, HTTPURLResponse(
-                url: URL(string: "https://example.com/artwork.jpg")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (artBytes, stubResponse("https://example.com/artwork.jpg"))
         }
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
 
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
@@ -777,12 +760,7 @@ struct PodcastServiceTests {
         var downloadCount = 0
         bed.artMock.handler = { _ in
             downloadCount += 1
-            return (artBytes, HTTPURLResponse(
-                url: URL(string: "https://cdn.example.com/art.png")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            return try (artBytes, stubResponse("https://cdn.example.com/art.png"))
         }
 
         let artURL = try #require(URL(string: "https://cdn.example.com/art.png"))
@@ -811,15 +789,10 @@ struct PodcastServiceTests {
         let rssData = try fixtureData(named: "rss-full.xml")
         let artBytes = Data([0x89, 0x50, 0x4E, 0x47])
         bed.artMock.handler = { _ in
-            (artBytes, HTTPURLResponse(
-                url: URL(string: "https://example.com/artwork.jpg")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (artBytes, stubResponse("https://example.com/artwork.jpg"))
         }
         bed.feedMock.handler = { _ in
-            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (rssData, stubResponse(url: testFeedURL))
         }
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
 
@@ -852,12 +825,7 @@ struct PodcastServiceTests {
         let artBytes = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])
         let expectedHash = SHA256.hash(data: artBytes).map { String(format: "%02x", $0) }.joined()
         bed.artMock.handler = { _ in
-            (artBytes, HTTPURLResponse(
-                url: URL(string: "https://cdn.example.com/art.png")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (artBytes, stubResponse("https://cdn.example.com/art.png"))
         }
 
         let artURL = try #require(URL(string: "https://cdn.example.com/art.png"))
@@ -872,12 +840,7 @@ struct PodcastServiceTests {
         var downloads = 0
         bed.artMock.handler = { _ in
             downloads += 1
-            return (artBytes, HTTPURLResponse(
-                url: URL(string: "https://cdn.example.com/art.png")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            return try (artBytes, stubResponse("https://cdn.example.com/art.png"))
         }
         _ = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
         let healed = try await repo.fetch(id: podcastID)
@@ -934,7 +897,7 @@ struct PodcastServiceTests {
 
         // 9 bytes > cap of 8: rejected, no file written.
         mock.handler = { _ in
-            (Data(count: 9), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (Data(count: 9), stubResponse(url: url))
         }
         let id = try await podcastRepo.insert(Podcast(
             feedURL: "https://example.com/feed.rss", title: "T", addedAt: 0
@@ -944,7 +907,7 @@ struct PodcastServiceTests {
 
         // 8 bytes == cap: accepted and written.
         mock.handler = { _ in
-            (Data(count: 8), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            try (Data(count: 8), stubResponse(url: url))
         }
         let okPath = await cache.cachePodcastArt(podcastID: id, url: url, repo: podcastRepo)
         #expect(okPath != nil, "art within the cap must be accepted")

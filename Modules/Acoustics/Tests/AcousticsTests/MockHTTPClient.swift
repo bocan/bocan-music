@@ -1,4 +1,5 @@
 import Foundation
+import Testing
 @testable import Acoustics
 
 // MARK: - MockHTTPClient
@@ -21,12 +22,13 @@ final class MockHTTPClient: HTTPClient, @unchecked Sendable {
         if let error {
             throw error
         }
-        let response = HTTPURLResponse(
-            url: request.url!,
+        let url = try #require(request.url)
+        let response = try #require(HTTPURLResponse(
+            url: url,
             statusCode: self.statusCode,
             httpVersion: "HTTP/1.1",
             headerFields: nil
-        )!
+        ))
         return (self.responseData, response)
     }
 }

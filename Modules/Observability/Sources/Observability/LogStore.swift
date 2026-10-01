@@ -124,9 +124,11 @@ public final class LogStore: Sendable {
             var result = [LogEntry]()
             result.reserveCapacity(s.count)
             for i in 0 ..< s.count {
-                let index = (s.head + i) % cap
-                // buffer[index] is guaranteed non-nil for indices within count.
-                result.append(s.buffer[index]!)
+                // `record` fills every slot within `count`, so the slot holds an
+                // entry; an empty one is skipped, because this file cannot log.
+                if let entry = s.buffer[(s.head + i) % cap] {
+                    result.append(entry)
+                }
             }
             return result
         }
@@ -169,7 +171,10 @@ public final class LogStore: Sendable {
             if !s.isEmpty {
                 result.reserveCapacity(s.count)
                 for i in 0 ..< s.count {
-                    result.append(s.buffer[(s.head + i) % cap]!)
+                    // Same invariant as `snapshot()`: slots within `count` are filled.
+                    if let entry = s.buffer[(s.head + i) % cap] {
+                        result.append(entry)
+                    }
                 }
             }
             // Register the subscriber atomically with the snapshot.

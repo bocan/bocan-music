@@ -23,12 +23,7 @@ struct TranscriptFetcherTests {
         let mock = MockHTTPClient()
         let body = "WEBVTT\n\n00:00.000 --> 00:01.000\nHello"
         mock.handler = { _ in
-            (Data(body.utf8), HTTPURLResponse(
-                url: URL(string: "https://example.test/t.vtt")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: ["Content-Type": "text/vtt"]
-            )!)
+            try (Data(body.utf8), stubResponse("https://example.test/t.vtt", headers: ["Content-Type": "text/vtt"]))
         }
         let fetcher = TranscriptFetcher(http: mock, repo: repo) { Date(timeIntervalSince1970: 5) }
         let url = try #require(URL(string: "https://example.test/t.vtt"))
