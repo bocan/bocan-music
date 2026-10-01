@@ -47,7 +47,7 @@ struct FileServingTests {
         #expect(response.status == 412)
     }
 
-    @Test("chapters and an undownloaded episode return 404")
+    @Test("unknown chapters and an undownloaded episode return 404")
     func chaptersAndMissingEpisode() async throws {
         let database = try await Database(location: .inMemory)
         let router = self.router(database)

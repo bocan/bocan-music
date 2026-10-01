@@ -39,6 +39,7 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
         episodeRepo: EpisodeRepository(database: db),
         stateRepo: EpisodeStateRepository(database: db),
         transcriptRepo: TranscriptRepository(database: db),
+        chaptersRepo: ChaptersRepository(database: db),
         fetcher: FeedFetcher(http: feedMock),
         artwork: artCache,
         downloadStore: downloadStore,

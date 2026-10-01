@@ -86,6 +86,9 @@ public struct SyncMetaRepository: Sendable {
             // Show content and artwork_hash feed the manifest Podcast object
             // (22-10); a hash change must bump so the phone re-syncs art.
             Table("podcasts"),
+            // A cached chapters document is what makes an episode's
+            // `hasChapters` true (#608), so a new one must reach the phone.
+            Table("podcast_episode_chapters"),
             Table("sync_profile"),
             // Transcode-ledger writes gate manifest inclusion under a
             // transcode preset (ADR-088), so the phone must re-poll.

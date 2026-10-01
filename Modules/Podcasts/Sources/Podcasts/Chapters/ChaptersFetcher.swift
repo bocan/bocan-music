@@ -6,8 +6,8 @@ import Observability
 /// Mirrors `FeedFetcher`: shared `User-Agent`, a short timeout, a size cap, and
 /// http/https only. Errors are thrown but the caller degrades them to "no
 /// chapters". An in-memory cache keyed by URL avoids re-fetching the same
-/// document within a session (the documented upgrade is an on-disk cache sharing
-/// the `PodcastArtworkCache` file-layout convention).
+/// document within a session. The durable cache is `podcast_episode_chapters`,
+/// which `PodcastService` fills from the body `fetch(_:)` hands back (#608).
 public actor ChaptersFetcher {
     private let http: any HTTPClient
     private let maxBytes: Int
@@ -19,12 +19,26 @@ public actor ChaptersFetcher {
         self.maxBytes = maxBytes
     }
 
+    /// The result of `fetch(_:)`: the parsed chapters, plus the raw document
+    /// when this call downloaded it. `body` is `nil` on an in-memory cache hit,
+    /// so a caller that persists the document does so once per download.
+    public struct Fetched: Sendable {
+        public let chapters: [Chapter]
+        public let body: Data?
+    }
+
     /// Returns the parsed, start-sorted chapters for `url`, cached after the first
     /// fetch. Throws `PodcastsError` on a bad URL, network error, non-2xx, or an
     /// oversized body; an unparseable body yields an empty list (not a throw).
     public func chapters(for url: URL) async throws -> [Chapter] {
+        try await self.fetch(url).chapters
+    }
+
+    /// `chapters(for:)`, also handing back the document as served when this
+    /// call went to the network.
+    public func fetch(_ url: URL) async throws -> Fetched {
         if let cached = self.cache[url] {
-            return cached
+            return Fetched(chapters: cached, body: nil)
         }
         try Task.checkCancellation()
 
@@ -63,13 +77,13 @@ public actor ChaptersFetcher {
         let chapters = Self.parse(data)
         self.cache[url] = chapters
         self.log.debug("chapters.fetch.end", ["url": url.absoluteString, "count": chapters.count])
-        return chapters
+        return Fetched(chapters: chapters, body: data)
     }
 
     /// Parses the Podcasting 2.0 JSON chapters document. Entries without a
     /// `startTime` are skipped; an unparseable body or missing `chapters` array
     /// yields an empty list. Sorted ascending by start time, `id` = sorted index.
-    static func parse(_ data: Data) -> [Chapter] {
+    public static func parse(_ data: Data) -> [Chapter] {
         guard let document = try? JSONDecoder().decode(ChaptersDocument.self, from: data),
               let entries = document.chapters else {
             return []
