@@ -88,6 +88,7 @@ public struct Migrator {
         M051ArtistMusicBrainzFetchedAt.register(in: &dm)
         M052ArtistMusicBrainzIDSource.register(in: &dm)
         M053SyncTranscodes.register(in: &dm)
+        M054PodcastEpisodeChapters.register(in: &dm)
     }
 
     // MARK: - Migration

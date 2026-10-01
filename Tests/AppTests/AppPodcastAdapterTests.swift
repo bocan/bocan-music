@@ -63,6 +63,7 @@ private func makeBed() async throws -> Bed {
         episodeRepo: EpisodeRepository(database: db),
         stateRepo: EpisodeStateRepository(database: db),
         transcriptRepo: TranscriptRepository(database: db),
+        chaptersRepo: ChaptersRepository(database: db),
         fetcher: FeedFetcher(http: http),
         artwork: PodcastArtworkCache(http: http, root: tmp.appendingPathComponent("art")),
         downloadStore: DownloadStore(root: tmp.appendingPathComponent("dl")),

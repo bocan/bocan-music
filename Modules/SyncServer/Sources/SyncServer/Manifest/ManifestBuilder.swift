@@ -32,6 +32,7 @@ public struct ManifestBuilder: Sendable {
     private let podcastRepository: PodcastRepository
     private let episodeRepository: EpisodeRepository
     private let episodeStateRepository: EpisodeStateRepository
+    private let chaptersRepository: ChaptersRepository
     private let lyricsService: LyricsService
     private let smartService: SmartPlaylistService
     private let downloadStore: DownloadStore
@@ -49,6 +50,7 @@ public struct ManifestBuilder: Sendable {
         self.podcastRepository = PodcastRepository(database: database)
         self.episodeRepository = EpisodeRepository(database: database)
         self.episodeStateRepository = EpisodeStateRepository(database: database)
+        self.chaptersRepository = ChaptersRepository(database: database)
         self.lyricsService = LyricsService(database: database, fetcher: nil)
         self.smartService = SmartPlaylistService(database: database)
         self.downloadStore = DownloadStore(root: downloadRoot)
@@ -134,11 +136,19 @@ public struct ManifestBuilder: Sendable {
                 self.episodeRepository.fetchForPodcast(podcastID: podcastId).map { ($0.guid, $0) },
                 uniquingKeysWith: { first, _ in first }
             )
+            // `hasChapters` promises that `/v1/chapters` has a document to
+            // serve, so it follows the cache, not the feed's chapters URL (#608).
+            let withChapters = try await self.chaptersRepository.guidsWithCurrentChapters(podcastID: podcastId)
 
             var addedAny = false
             for state in states {
                 guard let content = contentByGUID[state.guid] else { continue }
-                guard let episode = self.makeEpisode(content: content, state: state, podcastId: podcastId) else { continue }
+                guard let episode = self.makeEpisode(
+                    content: content,
+                    state: state,
+                    podcastId: podcastId,
+                    hasChapters: withChapters.contains(state.guid)
+                ) else { continue }
                 episodes.append(episode)
                 addedAny = true
             }
@@ -157,7 +167,12 @@ public struct ManifestBuilder: Sendable {
         return (shows.sorted { $0.id < $1.id }, episodes.sorted { $0.id < $1.id })
     }
 
-    private func makeEpisode(content: PodcastEpisode, state: PodcastEpisodeState, podcastId: Int64) -> ManifestEpisode? {
+    private func makeEpisode(
+        content: PodcastEpisode,
+        state: PodcastEpisodeState,
+        podcastId: Int64,
+        hasChapters: Bool
+    ) -> ManifestEpisode? {
         let fileURL = self.downloadStore.fileURL(podcastID: podcastId, guid: content.guid, mime: content.audioMIME)
         // The hash is stored at download time (M032); fall back to hashing the
         // file for episodes downloaded before that migration.
@@ -183,7 +198,7 @@ public struct ManifestBuilder: Sendable {
             relPath: "Podcasts/\(podcastId)/\(fileURL.lastPathComponent)",
             size: size,
             sha256: sha256,
-            hasChapters: content.chaptersURL != nil,
+            hasChapters: hasChapters,
             playPositionMs: Int((state.playPosition * 1000).rounded()),
             playState: state.playState.rawValue
         )

@@ -105,4 +105,30 @@ struct ITunesSearchClientTests {
         let r = try #require(result)
         #expect(r.title == "Swift by Sundell")
     }
+
+    // MARK: Storefront (#605)
+
+    private func country(of request: URLRequest?) -> String? {
+        guard let url = request?.url else { return nil }
+        return URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first { $0.name == "country" }?.value
+    }
+
+    @Test("search and lookup send the given storefront country")
+    func requestsCarryCountry() async throws {
+        let data = try loadFixture()
+        let mock = MockHTTPClient()
+        let recorder = RequestRecorder()
+        mock.handler = { request in
+            recorder.record(request)
+            return (data, self.makeOKResponse())
+        }
+
+        let client = ITunesSearchClient(http: mock)
+        _ = try await client.search(term: "swift", country: "DE")
+        _ = try await client.lookup(collectionID: 1_234_567, country: "DE")
+
+        #expect(recorder.requests.count == 2)
+        #expect(recorder.requests.map { self.country(of: $0) } == ["DE", "DE"])
+    }
 }

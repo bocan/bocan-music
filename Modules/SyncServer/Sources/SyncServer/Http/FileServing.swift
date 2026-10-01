@@ -16,10 +16,9 @@ import Podcasts
 /// Tracks and episodes both support `Range` resume and `If-Match`/`ETag` (via the
 /// stored `content_hash`; episodes gained one in migration M032).
 ///
-/// One v1 limitation, driven by the data model (not the wire contract):
-/// `/v1/chapters` returns 404 because chapters are fetched from the network on
-/// demand with no cached store to serve, and a serving handler must not make
-/// outbound requests. Caching chapters is a Podcasts-module follow-up.
+/// `/v1/chapters` is answered by `ChapterServing`, from the chapters cache
+/// only: a serving handler must not make outbound requests, so an episode
+/// whose chapters were never fetched on the Mac is a 404.
 struct FileServing {
     private let trackRepository: TrackRepository
     private let episodeRepository: EpisodeRepository
@@ -34,6 +33,7 @@ struct FileServing {
     private let transcodeLedger: SyncTranscodeRepository
     private let transcodeStore: TranscodeStore
     private let transcodeCoordinator: TranscodeCoordinator?
+    private let chapterServing: ChapterServing
     private let log = AppLogger.make(.sync)
 
     init(
@@ -55,6 +55,7 @@ struct FileServing {
         self.transcodeLedger = SyncTranscodeRepository(database: database)
         self.transcodeStore = TranscodeStore(root: transcodeRoot)
         self.transcodeCoordinator = transcodeCoordinator
+        self.chapterServing = ChapterServing(database: database)
     }
 
     func routes() -> [Router.Route] {
@@ -71,8 +72,8 @@ struct FileServing {
             Router.Route("GET", "/v1/lyrics/{trackId}", auth: .paired) { _, match in
                 await self.lyrics(match)
             },
-            Router.Route("GET", "/v1/chapters/{episodeId}", auth: .paired) { _, _ in
-                Self.notFound
+            Router.Route("GET", "/v1/chapters/{episodeId}", auth: .paired) { _, match in
+                await self.chapterServing.respond(match)
             },
         ]
     }
@@ -387,7 +388,8 @@ struct FileServing {
         .error(.internal, message: "Error", status: 500)
     }
 
-    private static func guidHash(_ guid: String) -> String {
+    /// The wire episode id: the first 32 hex digits of the GUID's SHA-256.
+    static func guidHash(_ guid: String) -> String {
         String(SHA256.hash(data: Data(guid.utf8)).map { String(format: "%02x", $0) }.joined().prefix(32))
     }
 

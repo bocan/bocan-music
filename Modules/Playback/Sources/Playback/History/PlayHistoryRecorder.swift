@@ -69,8 +69,10 @@ public extension ScrobbleSink {
 
 /// Observes engine state and records play-history events.
 ///
-/// **Scrobble threshold**: a play is recorded when ≥ 50% of the track has been
-/// played, OR ≥ 4 minutes have elapsed — whichever comes first (same rule as Last.fm).
+/// **Play threshold**: a play is recorded when ≥ 50% of the track has been
+/// played, OR ≥ 4 minutes have elapsed, whichever comes first. This is looser
+/// than the Last.fm rule: it has no minimum track length. The scrobble sink
+/// applies that rule itself (#606).
 /// `play_count` and `last_played_at` on the `tracks` row are also incremented.
 ///
 /// **Skip detection**: if the track ends / is replaced before the threshold is

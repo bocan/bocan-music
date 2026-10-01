@@ -215,5 +215,21 @@
   "artists.musicbrainz_fetched_at": {
     "traces": "#401",
     "note": "Unix seconds of the last MusicBrainz artist lookup; NULL = never. Set by ArtistRepository.setEnrichment (including on a 404, so a stale MBID is not retried every launch); read by fetchNeedingEnrichment."
+  },
+  "podcast_episode_chapters.podcast_id": {
+    "traces": "ADR-066, #608",
+    "note": "Show the cached chapters document belongs to; cascades away with the show. Written by ChaptersRepository.upsert (from PodcastService.chapters); read by ChaptersRepository.fetchCurrent and guidsWithCurrentChapters."
+  },
+  "podcast_episode_chapters.guid": {
+    "traces": "ADR-066, #608",
+    "note": "Episode GUID; composite key with podcast_id, the same identity as podcast_episodes and podcast_episode_state."
+  },
+  "podcast_episode_chapters.content": {
+    "traces": "ADR-066, #608",
+    "note": "The Podcasting 2.0 chapters JSON exactly as the publisher served it. Stored only when it parses to at least one chapter. Served unchanged by Phone Sync (ChapterServing, GET /v1/chapters/{episodeId}) and parsed by PodcastService.chapters when the network fetch fails."
+  },
+  "podcast_episode_chapters.source_url": {
+    "traces": "ADR-066, #608",
+    "note": "The episode chapters_url the body was fetched from. Every read joins on podcast_episodes.chapters_url = source_url, so a feed that moves or drops its chapters retires the row without a delete."
   }
 }

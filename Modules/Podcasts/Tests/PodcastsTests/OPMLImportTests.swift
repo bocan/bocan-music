@@ -20,6 +20,7 @@ struct OPMLImportTests {
             episodeRepo: EpisodeRepository(database: db),
             stateRepo: EpisodeStateRepository(database: db),
             transcriptRepo: TranscriptRepository(database: db),
+            chaptersRepo: ChaptersRepository(database: db),
             fetcher: FeedFetcher(http: feedMock),
             artwork: PodcastArtworkCache(http: MockHTTPClient(), root: artTemp),
             now: { Date(timeIntervalSince1970: 1_700_000_000) }

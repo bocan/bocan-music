@@ -104,6 +104,41 @@ struct SyncMetaObservationTests {
         #expect(await counter.wait(forAtLeast: 1) >= 1, "a rating change must bump")
     }
 
+    @Test("a re-fetched identical chapters document is ignored, a changed one is seen (#608)")
+    func chaptersCacheBumpsOnlyOnChange() async throws {
+        let database = try await Database(location: .inMemory)
+        let syncMeta = SyncMetaRepository(database: database)
+        let podcastID = try await PodcastRepository(database: database).insert(
+            Podcast(feedURL: "https://example.test/feed", title: "Show", addedAt: 0)
+        )
+        let chapters = ChaptersRepository(database: database)
+        let url = "https://example.test/chapters.json"
+        let document = PodcastChapters(
+            podcastID: podcastID,
+            guid: "g",
+            content: #"{"chapters":[{"startTime":0,"title":"Intro"}]}"#,
+            sourceURL: url
+        )
+        try await chapters.upsert(document)
+
+        let counter = EmissionCounter()
+        await counter.start(syncMeta.observeLibraryChanges(narrowTracksToManifestColumns: true))
+        defer { Task { await counter.stop() } }
+        try await Task.sleep(for: .milliseconds(200))
+
+        try await chapters.upsert(document)
+        #expect(await counter.wait(forAtLeast: 1, timeout: .milliseconds(600)) == 0, "the same body must not bump")
+
+        // Positive control: a new document changes what the phone is served.
+        try await chapters.upsert(PodcastChapters(
+            podcastID: podcastID,
+            guid: "g",
+            content: #"{"chapters":[{"startTime":5,"title":"Cold open"}]}"#,
+            sourceURL: url
+        ))
+        #expect(await counter.wait(forAtLeast: 1) >= 1, "a changed document must bump")
+    }
+
     @Test("the wide region sees an end-of-play write, because a smart playlist can key on it")
     func wideRegionSeesPlayCount() async throws {
         let database = try await Database(location: .inMemory)

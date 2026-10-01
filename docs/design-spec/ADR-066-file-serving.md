@@ -136,9 +136,36 @@ Return the section-8 JSON:
 Return the Podcasting 2.0 chapters JSON as cached by the Mac (from the episode's
 `chapters_url`, persisted). If chapters were never fetched/cached, `404`. This is
 pass-through of cached JSON; do not fetch on demand inside the request (no
-outbound network from a serving handler). If the Mac does not cache chapters yet,
-this endpoint may return `404` in v1 and be filled in later; document the choice
-and keep `hasChapters` in the manifest honest.
+outbound network from a serving handler).
+
+**As built (#608).** The first release answered `404` for every episode, because
+chapters were fetched on demand and kept only in memory. The cache now exists:
+
+- **Store.** `podcast_episode_chapters` (M054), keyed `(podcast_id, guid)`, holds
+  the document verbatim (`content`) and the `chapters_url` it came from
+  (`source_url`). `ChaptersRepository` (Persistence) is the only writer. A row is
+  *current* only while `source_url` equals the episode's `chapters_url`; every
+  read applies that test, so a feed that moves or drops its chapters retires the
+  old document.
+- **Writer.** `PodcastService.chapters(podcastID:guid:)` stores each document it
+  downloads, provided it parses to at least one chapter. The fetch stays
+  network-first, and falls back to the stored document when the network fails.
+  It runs when the chapter list is shown, and `EpisodeDownloadManager` calls it
+  through an App-wired observer when a download finishes, so an episode that was
+  never opened on the Mac still has chapters to serve.
+- **Route.** `ChapterServing` resolves `episodeId` as the episode file route does
+  (downloaded episodes only, profile includes podcasts) and answers `200`,
+  `Content-Type: application/json`, body = the stored document unchanged. No
+  current document -> `404`. No `ETag`, no `Range` (small, and the phone fetches
+  it on demand).
+- **Manifest.** `hasChapters` is true exactly when the route has a current
+  document to serve, not when the feed merely names a chapters URL.
+  `podcast_episode_chapters` is in the generation observer's region, so a newly
+  cached document reaches the phone on its next poll. A re-fetch that returns
+  the same bytes writes nothing and does not bump the generation.
+
+Not built: a backfill for episodes downloaded before this change. Their chapters
+are cached the next time the chapter list is shown on the Mac.
 
 ## Concurrency and safety
 

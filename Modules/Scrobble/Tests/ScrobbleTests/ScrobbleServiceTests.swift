@@ -10,13 +10,13 @@ struct ScrobbleServiceTests {
         try await Database(location: .inMemory)
     }
 
-    private func seedTrack(_ db: Database, id: Int64 = 1) async throws {
+    private func seedTrack(_ db: Database, id: Int64 = 1, duration: TimeInterval = 240) async throws {
         try await db.write { db in
             try db.execute(sql: "INSERT OR IGNORE INTO artists (id, name) VALUES (1, 'Artist')")
             try db.execute(sql: """
             INSERT INTO tracks (id, file_url, title, artist_id, duration, added_at, updated_at)
-            VALUES (?, ?, 'Song', 1, 240.0, 0, 0)
-            """, arguments: [id, "/tmp/\(id).flac"])
+            VALUES (?, ?, 'Song', 1, ?, 0, 0)
+            """, arguments: [id, "/tmp/\(id).flac", duration])
         }
     }
 
@@ -69,6 +69,59 @@ struct ScrobbleServiceTests {
         await service.recordPlay(trackID: 1, playedAt: ancient, durationPlayed: 200)
         let stats = try await repo.stats()
         #expect(stats.pending == 0)
+    }
+
+    // MARK: - 30-second minimum (#606)
+
+    @Test("a track shorter than 30 seconds, played in full, records a play and enqueues no scrobble")
+    func shortTrackRecordsPlayWithoutScrobble() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db, duration: 20)
+        let repo = ScrobbleQueueRepository(database: db)
+        let service = self.makeService(providers: [SpyProvider(id: "alpha", authenticated: true)], repo: repo)
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: service)
+
+        await recorder.trackDidStart(trackID: 1, duration: 20)
+        await recorder.trackDidEnd(elapsed: 20)
+
+        // Play history keeps its own rule, so the play counts.
+        #expect(try await TrackRepository(database: db).fetch(id: 1).playCount == 1)
+        #expect(try await repo.stats().pending == 0)
+    }
+
+    @Test("a normal track past the threshold records a play and enqueues a scrobble")
+    func normalTrackRecordsPlayAndScrobble() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db, duration: 200)
+        let repo = ScrobbleQueueRepository(database: db)
+        let service = self.makeService(providers: [SpyProvider(id: "alpha", authenticated: true)], repo: repo)
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: service)
+
+        await recorder.trackDidStart(trackID: 1, duration: 200)
+        await recorder.update(elapsed: 100)
+
+        #expect(try await TrackRepository(database: db).fetch(id: 1).playCount == 1)
+        #expect(try await repo.stats().pending == 1)
+    }
+
+    @Test("recordSubsonicPlay skips a song shorter than 30 seconds")
+    func recordSubsonicSkipsShortSong() async throws {
+        let db = try await self.makeDB()
+        let repo = ScrobbleQueueRepository(database: db)
+        let service = self.makeService(providers: [SpyProvider(id: "alpha", authenticated: true)], repo: repo)
+        let ctx = SubsonicPlayContext(
+            serverID: UUID(), songID: "abc", title: "T", artist: "A", duration: 20
+        )
+        await service.recordSubsonicPlay(context: ctx, playedAt: Date(), durationPlayed: 20)
+        #expect(try await repo.stats().pending == 0)
+    }
+
+    @Test("a track of unknown length is measured by the time played")
+    func unknownLengthUsesTimePlayed() {
+        #expect(ScrobbleService.isEligible(durationPlayed: 45, duration: 0))
+        #expect(!ScrobbleService.isEligible(durationPlayed: 20, duration: 0))
+        #expect(!ScrobbleService.isEligible(durationPlayed: 20, duration: 20))
+        #expect(ScrobbleService.isEligible(durationPlayed: 100, duration: 200))
     }
 
     // MARK: - nowPlaying

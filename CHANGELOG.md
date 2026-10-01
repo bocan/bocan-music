@@ -21,6 +21,14 @@ VoiceOver and other assistive tools now describe the sleep timer button by what 
 
 With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.
 
+The podcast settings for refresh interval, refresh on launch and storefront country now do what they say. Manual only stops the automatic checks, and search uses the Apple Podcasts catalogue of the country you choose.
+
+Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
+
+The hover text on the lyrics pane close button now shows the correct shortcut, Option-Command-L. The Love button on the play bar no longer shows a shortcut in its hover text, because that shortcut loves the selected tracks and not the track that is playing.
+
+Podcast chapters now reach your phone with Phone Sync, for episodes you have downloaded on the Mac. Chapters for those episodes also stay available on the Mac when you are offline.
+
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
