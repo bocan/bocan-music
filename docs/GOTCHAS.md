@@ -202,6 +202,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/AudioEngine/Sources/AudioEngine/AudioEngine+ReplayGain.swift` and `Graph/PumpSource.swift`; the render proof is `Modules/AudioEngine/Tests/AudioEngineTests/ReplayGainPumpTests.swift`
 
+### A render block is Objective-C, never a Swift closure
+
+**Problem:** the debug build crackles when a menu, Settings or the sleep timer opens, and the release build does not. A Swift `internalRenderBlock` looks allocation-free and is not. Measured on 2026-10-01: the bridge that hands Core Audio's pull-input block to a Swift closure boxes it on the heap, one allocation per unit per render cycle, in the optimized build too. The unoptimized build adds one allocation per sample when the effect is on (513 per 512-frame cycle), and runtime metadata lookups for an `= []` option-set literal and the generic `abs`.
+
+**Rule:** a custom `AUAudioUnit`'s render block and its state live in the Objective-C target `AudioEngineKernels`, in a class that overrides `internalRenderBlock` itself. The Swift subclass adds buses, the parameter tree and registration, and writes parameters through `renderState`. Do not override `internalRenderBlock` in Swift, not even to return a block made in C: the override wraps it in a Swift closure and the bridge comes back. A new unit gets a case in `RenderKernelTests`, which counts allocations on the render call and must read zero. Do not "fix" this by optimizing the debug build: the real-time thread must be safe in every configuration.
+
+**Why:** the audio thread has a deadline of a few milliseconds and must not wait for the allocator or a runtime lock. The main thread uses the same allocator and the same metadata cache, and it uses them hardest when SwiftUI builds views for the first time, which is why UI actions set off the crackle. The optimizer hides most of the cost, so the shipped build was the last place to show it. The sample that found it: `sample <pid>`, then read the `com.apple.audio.IOThread.client` thread for `swift_allocObject`, `_swift_getGenericMetadata` and `malloc`. The Thread Sanitizer is a separate cause of crackle and is on for the test action only (`Scripts/patch-scheme.sh`); `otool -L` on the built `Bocan.debug.dylib` shows whether a binary carries it.
+
+**Canonical file:** `Modules/AudioEngine/Sources/AudioEngineKernels/AudioEngineKernels.m`; the proof is `Modules/AudioEngine/Tests/AudioEngineTests/DSP/RenderKernelTests.swift` with the probe in `Modules/AudioEngine/Tests/RenderProbe/RenderProbe.m`
+
 ## Scanning, TagLib and feed parsing
 
 ### TagLib reads must use a read-only `FileStream`
