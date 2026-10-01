@@ -13,11 +13,12 @@ public actor ITunesSearchClient {
         self.http = http
     }
 
-    /// Search for podcasts by keyword.
+    /// Search for podcasts by keyword in one country's Apple Podcasts
+    /// catalogue (`country` is an ISO 3166-1 alpha-2 code).
     public func search(
         term: String,
         limit: Int = 40,
-        country: String = "US"
+        country: String = PodcastSettings.defaultStorefront
     ) async throws -> [PodcastSearchResult] {
         try Task.checkCancellation()
         var comps = URLComponents(string: "https://itunes.apple.com/search")!
@@ -32,11 +33,18 @@ public actor ITunesSearchClient {
         return response.results.compactMap { Self.map(result: $0) }
     }
 
-    /// Fetch detail for a single podcast by its iTunes collection ID.
-    public func lookup(collectionID: Int) async throws -> PodcastSearchResult? {
+    /// Fetch detail for a single podcast by its iTunes collection ID, from the
+    /// same storefront the search used (a show can be missing from another).
+    public func lookup(
+        collectionID: Int,
+        country: String = PodcastSettings.defaultStorefront
+    ) async throws -> PodcastSearchResult? {
         try Task.checkCancellation()
         var comps = URLComponents(string: "https://itunes.apple.com/lookup")!
-        comps.queryItems = [URLQueryItem(name: "id", value: String(collectionID))]
+        comps.queryItems = [
+            URLQueryItem(name: "id", value: String(collectionID)),
+            URLQueryItem(name: "country", value: country),
+        ]
         let url = comps.url!
         let response: ITunesSearchResponse = try await fetch(url: url)
         return response.results.compactMap { Self.map(result: $0) }.first

@@ -257,4 +257,56 @@ struct PodcastSearchServiceTests {
         #expect(results.isEmpty)
         #expect(callCount == 0)
     }
+
+    // MARK: Storefront (#605)
+
+    @Test("The iTunes request carries the storefront country chosen in Settings")
+    func searchCarriesChosenStorefront() async throws {
+        let itData = try loadFixture(named: "itunes-search.json")
+        let suite = "PodcastSearchServiceTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        // What the Settings pane stores for "United Kingdom".
+        defaults.set("gb", forKey: PodcastSettings.Key.storefront)
+
+        let mock = MockHTTPClient()
+        let recorder = RequestRecorder()
+        mock.handler = { request in
+            recorder.record(request)
+            return (itData, makeHTTPResponse(status: 200))
+        }
+        let service = PodcastSearchService(podcastIndex: nil, itunes: ITunesSearchClient(http: mock))
+
+        _ = try await service.search(term: "swift", country: PodcastSettings(defaults: defaults).storefront)
+
+        let url = try #require(recorder.requests.first?.url)
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(query.first { $0.name == "country" }?.value == "GB")
+    }
+
+    @Test("The detail lookup uses the same storefront when iTunes is the only source")
+    func detailCarriesChosenStorefront() async throws {
+        let itData = try loadFixture(named: "itunes-search.json")
+        let mock = MockHTTPClient()
+        let recorder = RequestRecorder()
+        mock.handler = { request in
+            recorder.record(request)
+            return (itData, makeHTTPResponse(status: 200))
+        }
+        let service = PodcastSearchService(podcastIndex: nil, itunes: ITunesSearchClient(http: mock))
+        let hit = try PodcastSearchResult(
+            canonicalFeedKey: "example.com/feed.xml",
+            feedURL: #require(URL(string: "https://example.com/feed.xml")),
+            title: "Swift by Sundell",
+            sources: [.itunes],
+            itunesCollectionID: 1_234_567
+        )
+
+        _ = await service.detail(for: hit, country: "JP")
+
+        let url = try #require(recorder.requests.first?.url)
+        #expect(url.path == "/lookup")
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(query.first { $0.name == "country" }?.value == "JP")
+    }
 }
