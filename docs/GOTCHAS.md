@@ -518,6 +518,16 @@ To re-test: `mv Modules/<Name>/.build{,.bak}` for SwiftPM, or delete `~/Library/
 
 **Canonical file:** `Modules/UI/Sources/UI/Resources/Localizable.xcstrings`
 
+### There is one help surface, the in-app Help window
+
+**Problem:** help text written where no user can read it. From May to October 2026 the repository carried an Apple Help Book (`HelpBook/Bocan.help`) beside the in-app Help window. The Help menu opened only the window. The book was never registered (`Info.plist` used `NSHelpBook`, which macOS does not read; the real keys are `CFBundleHelpBookFolder` and `CFBundleHelpBookName`) and never indexed (`hiutil ... || true` hid the failure), yet it was bundled, tested for parity, and kept up to date: the Podcasts and Internet Radio help went only into the book. The same audit found a help topic for `⌘⇧1` to `⌘⇧9` server shortcuts that no code implements.
+
+**Rule:** a feature's help topic goes in `HelpContent`, and nowhere else in the app. Do not add a second help surface without code that opens it and a check that macOS registers it. Help strings are catalog keys held in variables, so each needs a `manual` catalog entry, then `make pseudolocale`. Do not document a shortcut that no menu item has: the E2E `ShortcutParityTests` checks every shortcut token in the help sources against the menu manifest, and it is not in `make test` or CI, so run it by hand after editing help text (`xcodebuild ... -only-testing:BocanUITests/ShortcutParityTests test`; it does not launch the app).
+
+**Why:** two hand-maintained copies drift, and a copy nothing opens gets no reader to notice. A parity test between two copies proves they agree, not that either is reachable or true.
+
+**Canonical file:** `Modules/UI/Sources/UI/Help/HelpContent.swift` and `HelpShortcuts.swift`; the guards are `Modules/UI/Tests/UITests/ViewModelTests/HelpContentTests.swift` and `UITests/Menus/ShortcutParityTests.swift`
+
 ### Capturing a usable performance trace
 
 **Problem:** a trace that contains none of the app's own signpost spans.

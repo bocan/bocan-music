@@ -25,7 +25,7 @@ enum MenuState: String, CaseIterable {
 /// can carry (dynamic Show/Hide and Mute/Unmute pairs); the first is
 /// canonical. Shortcuts are declared as display strings ("⇧⌘N") and
 /// parsed into `MenuShortcut` for comparison, so the manifest reads like
-/// the help book's table.
+/// the Help window's table.
 ///
 /// `Sendable` is explicit, not redundant: `submenu` makes the type
 /// self-referential, and implicit Sendable inference through that cycle is
@@ -40,12 +40,12 @@ struct MenuItemSpec: Sendable {
     /// `KeyBindings` constant name the source must route through (nil for
     /// inline shortcuts and shortcut-less items).
     var binding: String?
-    /// Action name of this item's row in the help book's Keyboard
+    /// Action name of this item's row in the Help window's Keyboard
     /// Shortcuts table, where it has one.
-    var helpBookRow: String?
+    var helpRow: String?
     /// Literal shortcut text expected in that row when it aggregates more
     /// than one shortcut ("⌘1–⌘5") and so cannot parse as the item's own.
-    var helpBookDisplay: String?
+    var helpDisplay: String?
     /// Apple- or SwiftUI-owned: structure is asserted, but enablement and
     /// invocation passes leave it alone.
     var system = false
@@ -78,8 +78,8 @@ struct MenuItemSpec: Sendable {
             titles: titles,
             shortcut: key.map { MenuShortcut.fromDisplay($0)! },
             binding: binding,
-            helpBookRow: row,
-            helpBookDisplay: rowDisplay,
+            helpRow: row,
+            helpDisplay: rowDisplay,
             conditional: conditional,
             enablement: enablement,
             submenu: submenu
@@ -120,10 +120,10 @@ struct MenuSpec: Sendable {
 
 /// The declarative single source of truth for the phase 30 crawl: every
 /// top-level menu in order, every item in order, with expected titles,
-/// shortcuts, help book rows, and ownership. The structural crawl fails
+/// shortcuts, Help window rows, and ownership. The structural crawl fails
 /// bidirectionally on any drift between this table and the live menu bar;
 /// the parity test fails on drift between this table, `KeyBindings.swift`,
-/// the `BocanCommands*.swift` declarations, and the help book.
+/// the `BocanCommands*.swift` declarations, and the in-app Help window.
 ///
 /// Negative test verified manually on 2026-08-11: renaming "Clear Queue"
 /// here to "Clear Playback Queue" failed the crawl with `Playback:
@@ -418,7 +418,7 @@ enum MenuManifest {
         ]),
     ]
 
-    /// Help book Keyboard Shortcuts rows with no menu item to claim them:
+    /// Help window Keyboard Shortcuts rows with no menu item to claim them:
     /// toolbar-only shortcuts, verified literally against the table.
     static let helpOnlyRows: [(action: String, display: String)] = [
         ("Back", "⌘["),
