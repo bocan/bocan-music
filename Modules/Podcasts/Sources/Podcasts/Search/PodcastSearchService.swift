@@ -26,7 +26,13 @@ public actor PodcastSearchService {
     /// Never throws when at least one source succeeds. Throws
     /// ``PodcastsError/searchUnavailable(source:reason:)`` only when ALL sources fail.
     /// Returns `[]` immediately for a blank or whitespace-only query.
-    public func search(term: String) async throws -> [PodcastSearchResult] {
+    ///
+    /// `country` is the Apple Podcasts storefront the iTunes source searches
+    /// (`PodcastSettings.storefront`); Podcast Index has no storefronts.
+    public func search(
+        term: String,
+        country: String = PodcastSettings.defaultStorefront
+    ) async throws -> [PodcastSearchResult] {
         let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         try Task.checkCancellation()
@@ -44,7 +50,7 @@ public actor PodcastSearchService {
             return try await pi.search(term: trimmed)
         }
         async let itOutcome: Result<[PodcastSearchResult], Error> = Self.withTimeout(8) {
-            try await it.search(term: trimmed)
+            try await it.search(term: trimmed, country: country)
         }
 
         let (piResult, itResult) = await (piOutcome, itOutcome)
@@ -80,7 +86,10 @@ public actor PodcastSearchService {
     ///
     /// Prefers Podcast Index's `byfeedurl` endpoint; falls back to iTunes lookup;
     /// falls back to returning the existing result unchanged. Never throws.
-    public func detail(for result: PodcastSearchResult) async -> PodcastSearchResult {
+    public func detail(
+        for result: PodcastSearchResult,
+        country: String = PodcastSettings.defaultStorefront
+    ) async -> PodcastSearchResult {
         if let pi = podcastIndex {
             do {
                 if let enriched = try await pi.podcast(byFeedURL: result.feedURL) {
@@ -96,7 +105,7 @@ public actor PodcastSearchService {
             }
         } else if let collectionID = result.itunesCollectionID {
             do {
-                if let enriched = try await itunes.lookup(collectionID: collectionID) {
+                if let enriched = try await itunes.lookup(collectionID: collectionID, country: country) {
                     return Self.blend(preferred: result, secondary: enriched)
                 }
             } catch {

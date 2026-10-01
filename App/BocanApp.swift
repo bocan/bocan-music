@@ -876,6 +876,7 @@ extension BocanApp {
             episodeRepo: episodeRepo,
             stateRepo: stateRepo,
             transcriptRepo: TranscriptRepository(database: db),
+            chaptersRepo: ChaptersRepository(database: db),
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
@@ -888,7 +889,12 @@ extension BocanApp {
             stateRepo: stateRepo,
             episodeRepo: episodeRepo
         )
-        let feedRefreshScheduler = FeedRefreshScheduler(service: podcastService)
+        // Settings > Podcasts decides the interval, "Manual only" and whether
+        // the launch refreshes (#605).
+        let feedRefreshScheduler = FeedRefreshScheduler(
+            service: podcastService,
+            settings: PodcastSettings(defaults: .standard)
+        )
 
         let qp = QueuePlayer(
             engine: eng,
@@ -961,7 +967,23 @@ extension BocanApp {
         // scheduler starts means the very first background refresh already honours
         // it. ADR-044 spec: start() is called once at launch and is idempotent
         // so wake-notifications can also call it without duplicating the loop.
+        // The scheduler follows Settings > Podcasts for the app's lifetime. The
+        // stream starts first and the values are then read once more, so a
+        // change made while the graph was being built is not missed.
+        let podcastSettingsChanges = PodcastSettings.changes(in: .standard)
+        Task.detached(priority: .background) { [feedRefreshScheduler] in
+            await feedRefreshScheduler.apply(PodcastSettings(defaults: .standard))
+            for await settings in podcastSettingsChanges {
+                await feedRefreshScheduler.apply(settings)
+            }
+        }
         Task.detached(priority: .background) { [episodeRepo, stateRepo, podcastDownloads, db] in
+            // #608: a finished download warms the chapters cache, so Phone
+            // Sync has the episode's chapters to serve without it being
+            // opened here first.
+            await podcastDownloads.setDownloadedObserver { podcastID, guid in
+                await podcastService.cacheChapters(podcastID: podcastID, guid: guid)
+            }
             await podcastService.setNewEpisodesObserver { podcastID, newGUIDs in
                 let newestN = UserDefaults.standard.object(forKey: "podcasts.autoDownloadCount") as? Int ?? 3
                 let coordinator = AutoDownloadCoordinator(

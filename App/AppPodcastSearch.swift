@@ -15,11 +15,15 @@ struct AppPodcastSearch: PodcastSearchProviding {
     let fetcher: FeedFetcher
     let parser: FeedParser
     let podcastRepo: PodcastRepository
+    /// The storefront country chosen in Settings > Podcasts. Read on every
+    /// request, so a change applies to the next search (#605).
+    var storefront: @Sendable () -> String = { PodcastSettings(defaults: .standard).storefront }
 
     // MARK: - PodcastSearchProviding
 
     func search(term: String) async throws -> [UIPodcastSearchResult] {
-        let results = try await self.searchService.search(term: term)
+        let country = self.storefront()
+        let results = try await self.searchService.search(term: term, country: country)
         return results.map(Self.map)
     }
 
@@ -27,7 +31,8 @@ struct AppPodcastSearch: PodcastSearchProviding {
         // Optionally enrich channel metadata from the index (best-effort; never throws).
         var enriched: PodcastSearchResult?
         if let hint {
-            enriched = await self.searchService.detail(for: Self.unmap(hint))
+            let country = self.storefront()
+            enriched = await self.searchService.detail(for: Self.unmap(hint), country: country)
         }
 
         // Fetch + parse the live feed (source of truth for episode list).

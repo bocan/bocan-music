@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - LyricsPane
 
-/// The right-side overlay pane for lyrics, toggled by `⌘L` and a toolbar button.
+/// The right-side overlay pane for lyrics, toggled by `⌥⌘L` and a toolbar button.
 ///
 /// Embed this as a trailing overlay inside `BocanRootView`.  State is persisted
 /// via `@AppStorage` on ``LyricsViewModel/paneVisible``.
@@ -137,7 +137,7 @@ public struct LyricsPane: View {
                     Image(systemName: "xmark")
                 }
                 .buttonStyle(.plain)
-                .help(L10n.string("Close lyrics pane (⌘L)"))
+                .help(L10n.string("Close lyrics pane (⌥⌘L)"))
                 .accessibilityLabel(L10n.string("Close lyrics pane"))
                 .accessibilityIdentifier(A11y.Lyrics.closeButton)
             }

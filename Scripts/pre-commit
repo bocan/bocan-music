@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # pre-commit hook: runs gitleaks on everything staged, then swiftformat (lint)
-# and swiftlint on staged Swift files.
-# Installed by `make install-hooks` to .git/hooks/pre-commit.
+# and swiftlint (strict) on staged Swift files.
+# Installed by `make install-hooks` to .git/hooks/pre-commit (a copy: run it
+# again after this file changes).
+#
+# The hook is the fast check, not the full gate. `make lint` also runs the audit
+# scripts and the Package.resolved check; run it before a change is done.
 #
 # Bypass with `git commit --no-verify` (discouraged; reviewers should reject
 # commits with --no-verify unless a justification is in the PR description).
@@ -18,22 +22,65 @@ else
     exit 1
 fi
 
-STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+# Staged Swift files, NUL-delimited so a path with spaces stays one argument.
+# A staged deletion has no file to check: the filter leaves deletions out, and
+# the -f test covers a file that is staged but gone from the working tree.
+STAGED=()
+while IFS= read -r -d '' path; do
+    if [[ "$path" == *.swift && -f "$path" ]]; then
+        STAGED+=("$path")
+    fi
+done < <(git diff --cached --name-only -z --diff-filter=ACMR)
 
-if [[ -z "$STAGED" ]]; then
+if [[ ${#STAGED[@]} -eq 0 ]]; then
     exit 0
 fi
 
 echo "=== Pre-commit: swiftformat lint ==="
-echo "$STAGED" | xargs swiftformat --lint --quiet && echo "✓ swiftformat clean" || {
+swiftformat --lint --quiet "${STAGED[@]}" && echo "✓ swiftformat clean" || {
     echo "✗ swiftformat found issues. Run 'make format' to fix."
     exit 1
 }
 
 echo "=== Pre-commit: swiftlint ==="
-echo "$STAGED" | xargs swiftlint lint --use-stdin --strict 2>/dev/null || \
-    swiftlint lint --strict && echo "✓ swiftlint clean" || {
-    echo "✗ swiftlint found issues. Fix them before committing."
+# SwiftLint applies the `included` list in .swiftlint.yml only when it walks the
+# tree. A path given as an argument is linted wherever it lives, so the hook
+# would reject files that `make lint` never reads. Keep the two in step: lint a
+# staged file only if it sits under an `included` directory. `--force-exclude`
+# does the same for the `excluded` list.
+INCLUDED=()
+while IFS= read -r dir; do
+    INCLUDED+=("${dir%/}")
+done < <(awk '
+    /^included:/ { on = 1; next }
+    on && /^[[:space:]]*-[[:space:]]/ {
+        sub(/^[[:space:]]*-[[:space:]]*/, ""); sub(/[[:space:]]*(#.*)?$/, ""); print; next
+    }
+    on && /^[^[:space:]#]/ { on = 0 }
+' .swiftlint.yml)
+
+LINTABLE=()
+for path in "${STAGED[@]}"; do
+    if [[ ${#INCLUDED[@]} -eq 0 ]]; then
+        LINTABLE+=("$path")
+        continue
+    fi
+    for dir in "${INCLUDED[@]}"; do
+        if [[ "$path" == "$dir"/* ]]; then
+            LINTABLE+=("$path")
+            break
+        fi
+    done
+done
+
+if [[ ${#LINTABLE[@]} -eq 0 ]]; then
+    echo "✓ swiftlint: no staged file is in a linted directory"
+    exit 0
+fi
+
+# Same strictness as `make lint`: `swiftlint lint --strict --quiet`.
+swiftlint lint --strict --quiet --force-exclude "${LINTABLE[@]}" && echo "✓ swiftlint clean" || {
+    echo "✗ swiftlint found issues in the staged files (listed above). Fix them before committing."
     exit 1
 }
 

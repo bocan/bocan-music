@@ -87,6 +87,17 @@ public actor EpisodeDownloadManager {
         self.progressContinuation = continuation
     }
 
+    /// Invoked with the podcast id and episode GUID each time a download lands
+    /// on disk. The App layer hangs the chapters pre-fetch off this (#608).
+    /// `nil` until the App wires it.
+    private var onDownloaded: (@Sendable (Int64, String) async -> Void)?
+
+    /// Registers the download-finished observer (see `onDownloaded`). Wired
+    /// once by the App layer at launch.
+    public func setDownloadedObserver(_ observer: @escaping @Sendable (Int64, String) async -> Void) {
+        self.onDownloaded = observer
+    }
+
     // MARK: - Public API
 
     /// Enqueue a download. Sets state to `queued`, then `downloading` when a slot
@@ -388,6 +399,11 @@ public actor EpisodeDownloadManager {
                 self.episodes[key] = nil
                 self.emit(key, status: .downloaded, fraction: 1.0, written: bytes, total: bytes)
                 self.log.debug("download.finished", ["podcastID": key.podcastID, "guid": key.guid, "bytes": bytes])
+                if let observer = self.onDownloaded {
+                    // Detached from the queue: the observer may go to the
+                    // network and must not hold up the next download.
+                    Task { await observer(key.podcastID, key.guid) }
+                }
             } catch {
                 self.log.error("download.move.failed", ["guid": key.guid, "error": String(reflecting: error)])
                 await self.fail(key)
