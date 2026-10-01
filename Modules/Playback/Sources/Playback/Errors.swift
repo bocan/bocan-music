@@ -13,14 +13,19 @@ public enum PlaybackError: Error, Sendable, CustomStringConvertible {
         switch self {
         case let .noBookmark(id):
             "Track \(id) has no security-scoped bookmark; re-scan to create one."
+
         case let .bookmarkResolutionFailed(id, err):
             "Bookmark resolution failed for track \(id): \(err.localizedDescription)"
+
         case let .trackNotFound(id):
             "Track \(id) not found in the database."
+
         case .queueEmpty:
             "The playback queue is empty."
+
         case let .engineFailure(err):
             "Audio engine failure: \(err.localizedDescription)"
+
         case let .incompatibleFormat(reason):
             "Incompatible audio format for gapless playback: \(reason)"
         }

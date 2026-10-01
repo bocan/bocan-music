@@ -288,10 +288,12 @@ public actor PlaybackQueue {
         switch self.repeatMode {
         case .one:
             return self.currentItem
+
         case .all:
             guard !self.items.isEmpty else { return nil }
             let next = ((currentIndex ?? -1) + 1) % self.items.count
             return self.items[next]
+
         case .off:
             let next = (currentIndex ?? -1) + 1
             return next < self.items.count ? self.items[next] : nil
@@ -306,6 +308,7 @@ public actor PlaybackQueue {
         switch self.repeatMode {
         case .one, .off:
             return next < self.items.count ? self.items[next] : nil
+
         case .all:
             guard !self.items.isEmpty else { return nil }
             return self.items[next % self.items.count]

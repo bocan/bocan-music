@@ -90,10 +90,12 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         case let .rule(rule):
             var inner = container.nestedContainer(keyedBy: RuleAssoc.self, forKey: .rule)
             try inner.encode(rule, forKey: ._0)
+
         case let .group(op, children):
             var inner = container.nestedContainer(keyedBy: GroupAssoc.self, forKey: .group)
             try inner.encode(op, forKey: ._0)
             try inner.encode(children, forKey: ._1)
+
         case let .invalid(reason):
             var inner = container.nestedContainer(keyedBy: InvalidAssoc.self, forKey: .invalid)
             try inner.encode(reason, forKey: .reason)
@@ -123,12 +125,14 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         switch rule.field {
         case let .unknown(raw):
             return "Unknown field \"\(raw)\""
+
         default:
             break
         }
         switch rule.comparator {
         case let .unknown(raw):
             return "Unknown comparator \"\(raw)\""
+
         default:
             return nil
         }

@@ -74,12 +74,16 @@ struct LastFmCompatibleTransport {
             switch errCode {
             case 11, 16: // Service offline / temporarily unavailable
                 throw ScrobbleError.transient(provider: providerID, reason: msg, retryAfter: retryAfter)
+
             case 29: // Rate limit exceeded
                 throw ScrobbleError.transient(provider: providerID, reason: msg, retryAfter: retryAfter ?? 60)
+
             case 9: // Invalid session key — re-auth required
                 throw ScrobbleError.invalidCredentials(provider: providerID)
+
             case 4, 13, 14, 17, 18, 22, 23: // Auth failed / token invalid / unauthorised
                 throw ScrobbleError.invalidCredentials(provider: providerID)
+
             default:
                 throw ScrobbleError.permanent(provider: providerID, reason: msg)
             }

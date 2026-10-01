@@ -425,8 +425,10 @@ public actor SmartPlaylistService {
                 return [id]
             }
             return []
+
         case .invalid:
             return []
+
         case let .group(_, children):
             return children.flatMap(Self.collectPlaylistRefs(in:))
         }

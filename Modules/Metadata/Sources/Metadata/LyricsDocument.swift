@@ -81,6 +81,7 @@ extension LyricsDocument: Codable {
         case .unsynced:
             let text = try c.decode(String.self, forKey: .text)
             self = .unsynced(text)
+
         case .synced:
             let lines = try c.decode([LyricsLine].self, forKey: .lines)
             let offset = try c.decodeIfPresent(Int.self, forKey: .offsetMS) ?? 0
@@ -94,6 +95,7 @@ extension LyricsDocument: Codable {
         case let .unsynced(text):
             try c.encode(TypeKey.unsynced, forKey: .type)
             try c.encode(text, forKey: .text)
+
         case let .synced(lines, offsetMS):
             try c.encode(TypeKey.synced, forKey: .type)
             try c.encode(lines, forKey: .lines)
@@ -130,6 +132,7 @@ public extension LyricsDocument {
         switch self {
         case let .unsynced(text):
             return text
+
         case let .synced(lines, offsetMS):
             var parts: [String] = []
             if offsetMS != 0 {

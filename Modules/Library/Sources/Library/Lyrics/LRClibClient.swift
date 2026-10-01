@@ -149,13 +149,16 @@ public actor LRClibClient: LRClibClientProtocol {
                         ])
                         return nil
                     }
+
                 case 404:
                     return nil
+
                 case 429:
                     attempt += 1
                     let delay = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000
                     self.log.warning("lrclib.rateLimit", ["attempt": attempt])
                     try await Task.sleep(nanoseconds: delay)
+
                 default:
                     self.log.warning("lrclib.unexpectedStatus", ["status": http.statusCode])
                     return nil

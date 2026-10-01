@@ -48,11 +48,13 @@ final class LoopbackClient: NSObject, URLSessionDelegate, @unchecked Sendable {
             } else {
                 completionHandler(.cancelAuthenticationChallenge, nil)
             }
+
         case NSURLAuthenticationMethodClientCertificate:
             completionHandler(
                 .useCredential,
                 URLCredential(identity: self.clientIdentity, certificates: nil, persistence: .forSession)
             )
+
         default:
             completionHandler(.performDefaultHandling, nil)
         }

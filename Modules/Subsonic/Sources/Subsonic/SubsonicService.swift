@@ -25,11 +25,13 @@ private final class SubsonicMetricsRelay: SwiftSonicMetricsCollector, @unchecked
                 "subsonic.request.start",
                 ["server": self.serverName, "endpoint": endpoint]
             )
+
         case let .succeeded(endpoint, _, duration):
             self.log.debug(
                 "subsonic.request.ok",
                 ["server": self.serverName, "endpoint": endpoint, "ms": Int(duration * 1000)]
             )
+
         case let .failed(endpoint, _, error, attempt):
             self.log.warning(
                 "subsonic.request.fail",
@@ -40,6 +42,7 @@ private final class SubsonicMetricsRelay: SwiftSonicMetricsCollector, @unchecked
                     "err": error.localizedDescription,
                 ]
             )
+
         case let .retryScheduled(endpoint, attempt, delay):
             self.log.info(
                 "subsonic.request.retry",
@@ -596,6 +599,7 @@ public actor SubsonicService {
                 auth: .tokenAuth(username: username, password: secret, reusesSalt: false),
                 clientName: Self.clientName
             )
+
         case .apiKey:
             config = ServerConfiguration(
                 serverURL: server.serverURL,

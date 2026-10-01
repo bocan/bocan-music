@@ -129,13 +129,16 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case .localBookmark:
             let data = try container.decodeIfPresent(Data.self, forKey: .bookmark) ?? Data()
             self = .localBookmark(data)
+
         case .subsonic:
             let serverID = try container.decode(UUID.self, forKey: .serverID)
             let songID = try container.decode(String.self, forKey: .songID)
             self = .subsonic(serverID: serverID, songID: songID)
+
         case .internetRadio:
             let url = try container.decode(URL.self, forKey: .streamURL)
             self = .internetRadio(streamURL: url)
+
         case .podcast:
             let feedURL = try container.decode(URL.self, forKey: .feedURL)
             let guid = try container.decode(String.self, forKey: .episodeGUID)
@@ -151,13 +154,16 @@ public enum PlayableSource: Sendable, Hashable, Codable {
             if !data.isEmpty {
                 try container.encode(data, forKey: .bookmark)
             }
+
         case let .subsonic(serverID, songID):
             try container.encode(Kind.subsonic, forKey: .kind)
             try container.encode(serverID, forKey: .serverID)
             try container.encode(songID, forKey: .songID)
+
         case let .internetRadio(url):
             try container.encode(Kind.internetRadio, forKey: .kind)
             try container.encode(url, forKey: .streamURL)
+
         case let .podcast(feedURL, guid):
             try container.encode(Kind.podcast, forKey: .kind)
             try container.encode(feedURL, forKey: .feedURL)

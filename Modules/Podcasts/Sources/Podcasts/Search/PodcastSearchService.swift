@@ -59,6 +59,7 @@ public actor PodcastSearchService {
         let piFeeds: [PodcastSearchResult]
         switch piResult {
         case let .success(feeds): piFeeds = feeds
+
         case let .failure(err):
             piFeeds = []
             self.log.warning("search.pi.failed", ["term": trimmed, "error": String(reflecting: err)])
@@ -67,6 +68,7 @@ public actor PodcastSearchService {
         let itFeeds: [PodcastSearchResult]
         switch itResult {
         case let .success(feeds): itFeeds = feeds
+
         case let .failure(err):
             itFeeds = []
             self.log.warning("search.itunes.failed", ["term": trimmed, "error": String(reflecting: err)])

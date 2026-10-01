@@ -38,16 +38,22 @@ extension AcousticsError: CustomStringConvertible {
         switch self {
         case let .fpcalcFailed(exitCode, stderr):
             "Fingerprinting failed: fpcalc exited with status \(exitCode). \(stderr)"
+
         case let .networkError(underlying):
             "The fingerprint lookup could not reach the service: \(underlying.localizedDescription)"
+
         case .rateLimitExceeded:
             "The fingerprint service is rate limiting requests. Try again shortly."
+
         case .noResults:
             "No matching recording was found for this track."
+
         case let .invalidResponse(reason):
             "The fingerprint service returned data that could not be read: \(reason)"
+
         case let .tagWritebackFailed(underlying):
             "The chosen match could not be written to the file: \(underlying.localizedDescription)"
+
         case let .invalidInput(reason):
             "This item cannot be fingerprinted: \(reason)"
         }

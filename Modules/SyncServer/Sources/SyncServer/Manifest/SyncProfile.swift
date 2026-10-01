@@ -14,6 +14,7 @@ public enum SyncProfile: Sendable, Codable, Equatable {
         switch self {
         case let .everything(includePodcasts):
             includePodcasts
+
         case let .selected(_, includePodcasts):
             includePodcasts
         }

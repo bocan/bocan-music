@@ -61,31 +61,40 @@ extension Value: Codable {
         case let .text(v):
             try container.encode(Tag.text, forKey: .tag)
             try container.encode(v, forKey: .text)
+
         case let .int(v):
             try container.encode(Tag.int, forKey: .tag)
             try container.encode(v, forKey: .int)
+
         case let .double(v):
             try container.encode(Tag.double, forKey: .tag)
             try container.encode(v, forKey: .double)
+
         case let .bool(v):
             try container.encode(Tag.bool, forKey: .tag)
             try container.encode(v, forKey: .bool)
+
         case let .date(v):
             try container.encode(Tag.date, forKey: .tag)
             try container.encode(v, forKey: .date)
+
         case let .duration(v):
             try container.encode(Tag.duration, forKey: .tag)
             try container.encode(v, forKey: .duration)
+
         case let .range(low, high):
             try container.encode(Tag.range, forKey: .tag)
             try container.encode(low, forKey: .low)
             try container.encode(high, forKey: .high)
+
         case let .playlistRef(v):
             try container.encode(Tag.playlistRef, forKey: .tag)
             try container.encode(v, forKey: .playlistRef)
+
         case let .enumeration(v):
             try container.encode(Tag.enumeration, forKey: .tag)
             try container.encode(v, forKey: .enumeration)
+
         case .null:
             try container.encode(Tag.null, forKey: .tag)
         }

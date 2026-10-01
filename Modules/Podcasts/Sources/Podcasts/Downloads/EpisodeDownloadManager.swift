@@ -408,6 +408,7 @@ public actor EpisodeDownloadManager {
                 self.log.error("download.move.failed", ["guid": key.guid, "error": String(reflecting: error)])
                 await self.fail(key)
             }
+
         case let .failure(error):
             self.log.warning("download.failed", ["guid": key.guid, "error": String(reflecting: error)])
             await self.fail(key)

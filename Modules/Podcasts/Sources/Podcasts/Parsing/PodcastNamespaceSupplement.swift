@@ -130,8 +130,10 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.result.fundingURL = PodcastNamespaceSupplement.webURL(attributeDict["url"])
                 self.capturingFundingText = true
                 self.fundingTextBuffer = ""
+
             case "chapters" where self.inItem && self.currentItemChaptersURL == nil:
                 self.currentItemChaptersURL = PodcastNamespaceSupplement.webURL(attributeDict["url"])
+
             case "person" where self.inChannel || self.inItem:
                 self.capturingPersonText = true
                 self.personTextBuffer = ""
@@ -139,10 +141,13 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.pendingPersonGroup = PodcastNamespaceSupplement.cleanAttr(attributeDict["group"])
                 self.pendingPersonImageURL = PodcastNamespaceSupplement.webURL(attributeDict["img"])?.absoluteString
                 self.pendingPersonHref = PodcastNamespaceSupplement.webURL(attributeDict["href"])?.absoluteString
+
             case "podroll" where self.inChannel && !self.inItem:
                 self.inPodroll = true
+
             case "remoteItem" where self.inPodroll:
                 self.captureRemoteItem(attributeDict)
+
             default:
                 break
             }
@@ -153,17 +158,21 @@ private final class Driver: NSObject, XMLParserDelegate {
         switch elementName {
         case "channel":
             self.inChannel = true
+
         case "item":
             self.inItem = true
             self.currentItemGUID = nil
             self.currentItemEnclosureURL = nil
             self.currentItemChaptersURL = nil
             self.currentItemPersons = []
+
         case "guid" where self.inItem:
             self.capturingGUID = true
             self.guidBuffer = ""
+
         case "enclosure" where self.inItem:
             self.currentItemEnclosureURL = attributeDict["url"]
+
         default:
             break
         }
@@ -205,14 +214,17 @@ private final class Driver: NSObject, XMLParserDelegate {
         switch elementName {
         case "channel":
             self.inChannel = false
+
         case "item":
             self.commitItem()
+
         case "guid" where self.capturingGUID:
             // Trim to match FeedKit/XMLKit, which trims element text.
             let guid = self.guidBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             self.currentItemGUID = guid.isEmpty ? nil : guid
             self.capturingGUID = false
             self.guidBuffer = ""
+
         default:
             break
         }

@@ -122,6 +122,7 @@ public enum CUESheetReader {
                 } else {
                     sheetTitle = val
                 }
+
             case "PERFORMER":
                 let val = self.unquote(rest)
                 if currentTrack != nil {
@@ -129,6 +130,7 @@ public enum CUESheetReader {
                 } else {
                     sheetPerformer = val
                 }
+
             case "FILE":
                 // A TRACK belongs to the FILE where its INDEX 01 occurs. In
                 // EAC "gaps appended" sheets the next track opens under the
@@ -150,6 +152,7 @@ public enum CUESheetReader {
                 currentFilePath = payload
                 currentFileURL = M3UReader.resolveURL(rawPath: payload, baseDir: baseDir)
                 currentTrack = carried
+
             case "TRACK":
                 if currentTrack != nil {
                     trackBuilders.append(currentTrack!)
@@ -157,6 +160,7 @@ public enum CUESheetReader {
                 let trackParts = rest.split(separator: " ", omittingEmptySubsequences: true)
                 let num = trackParts.first.flatMap { Int($0) } ?? (trackBuilders.count + 1)
                 currentTrack = TrackBuilder(number: num)
+
             case "INDEX":
                 // INDEX nn mm:ss:ff
                 let idxParts = rest.split(separator: " ", omittingEmptySubsequences: true)
@@ -167,10 +171,13 @@ public enum CUESheetReader {
                 if idxNum == 1 {
                     currentTrack?.startMs = ms
                 }
+
             case "ISRC":
                 currentTrack?.isrc = rest.trimmingCharacters(in: .whitespaces)
+
             case "REM":
                 continue // ignored
+
             default:
                 continue
             }

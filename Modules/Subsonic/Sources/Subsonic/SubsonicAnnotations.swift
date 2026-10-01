@@ -104,6 +104,7 @@ public actor SubsonicAnnotations {
         let enabled = switch action {
         case .star, .unstar:
             await self.service.syncsStars(serverID: action.serverID)
+
         case .setRating:
             await self.service.syncsRatings(serverID: action.serverID)
         }
@@ -123,8 +124,10 @@ public actor SubsonicAnnotations {
             switch action {
             case let .star(sid, songID):
                 try await self.service.star(serverID: sid, songID: songID)
+
             case let .unstar(sid, songID):
                 try await self.service.unstar(serverID: sid, songID: songID)
+
             case let .setRating(sid, songID, rating):
                 try await self.service.setRating(serverID: sid, songID: songID, rating: rating)
             }

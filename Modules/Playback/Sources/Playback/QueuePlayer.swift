@@ -946,15 +946,18 @@ public actor QueuePlayer: Transport {
             case .ended:
                 self.stopScrobbleUpdateLoop()
                 await self.handleTrackEnded()
+
             case .playing:
                 self.lastEmittedState = .playing
                 self.stateContinuation?.yield(.playing)
                 await self.gaplessScheduler.start()
                 self.startScrobbleUpdateLoop()
+
             case .paused:
                 self.lastEmittedState = .paused
                 self.stateContinuation?.yield(.paused)
                 self.stopScrobbleUpdateLoop()
+
             default:
                 self.lastEmittedState = engineState
                 self.stateContinuation?.yield(engineState)
@@ -1333,6 +1336,7 @@ public actor QueuePlayer: Transport {
                 "reason": preparation == .crossfade ? "boundary" : "engineFallback",
                 "next": item.trackID,
             ])
+
         case .gapless:
             if await self.crossfadeScheduler.isEnabled {
                 self.log.debug("crossfade.decision", [

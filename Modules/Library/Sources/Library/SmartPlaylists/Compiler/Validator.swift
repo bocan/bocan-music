@@ -19,8 +19,10 @@ public enum Validator {
         switch criterion {
         case let .rule(rule):
             try Self.validateRule(rule)
+
         case let .invalid(reason):
             throw SmartPlaylistError.invalidRule(reason: reason)
+
         case let .group(_, children):
             guard !children.isEmpty else { throw SmartPlaylistError.emptyGroup }
             guard depth <= Self.maxGroupDepth else {
@@ -75,10 +77,12 @@ public enum Validator {
             guard case .playlistRef = rule.value else {
                 throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
             }
+
         case .pathUnder:
             guard case .text = rule.value else {
                 throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
             }
+
         default:
             break
         }
@@ -87,6 +91,7 @@ public enum Validator {
         if case .bool = def.dataType {
             switch rule.comparator {
             case .isTrue, .isFalse: break
+
             default:
                 throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
             }

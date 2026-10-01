@@ -44,6 +44,7 @@ public enum XSPFWriter {
                 return url.absoluteString
             }
             return entry.path
+
         case let .relative(root):
             guard let url = entry.absoluteURL, url.isFileURL else { return entry.path }
             if let rel = M3UWriter.relativePath(of: url, to: root) {

@@ -225,8 +225,10 @@ struct SubsonicConnectionMonitorTests {
                     switch update.status {
                     case .online:
                         sawOnline = true
+
                     case .connecting where sawOnline:
                         return true
+
                     default:
                         break
                     }

@@ -105,10 +105,13 @@ struct ListenBrainzCompatibleTransport {
         switch status {
         case 401, 403:
             throw ScrobbleError.invalidCredentials(provider: providerID)
+
         case 429:
             throw ScrobbleError.transient(provider: providerID, reason: "rate limited", retryAfter: retryAfter ?? 60)
+
         case 500 ... 599:
             throw ScrobbleError.transient(provider: providerID, reason: "http \(status)", retryAfter: retryAfter)
+
         default:
             let body = String(data: data, encoding: .utf8) ?? "<binary>"
             throw ScrobbleError.permanent(provider: providerID, reason: "http \(status): \(body.prefix(200))")

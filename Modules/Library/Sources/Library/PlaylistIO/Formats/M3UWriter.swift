@@ -66,6 +66,7 @@ public enum M3UWriter {
                 return url.path
             }
             return entry.path
+
         case let .relative(root):
             guard let url = entry.absoluteURL, url.isFileURL else { return entry.path }
             return Self.relativePath(of: url, to: root) ?? url.path

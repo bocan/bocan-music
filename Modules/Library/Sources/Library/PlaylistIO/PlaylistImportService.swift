@@ -209,10 +209,13 @@ public actor PlaylistImportService {
             switch format {
             case .m3u, .m3u8:
                 return try await self.resolvePreview(M3UReader.parse(data: data, sourceURL: url))
+
             case .pls:
                 return try await self.resolvePreview(PLSReader.parse(data: data, sourceURL: url))
+
             case .xspf:
                 return try await self.resolvePreview(XSPFReader.parse(data: data, sourceURL: url))
+
             case .cue:
                 // ADR-087: cue FILE entries resolve against indexed tracks
                 // like any playlist; the markers themselves have no preview.

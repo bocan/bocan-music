@@ -111,10 +111,13 @@ public actor SyncListener {
             switch state {
             case .ready:
                 log.debug("sync.localNetwork.browser.ready")
+
             case let .waiting(error):
                 log.debug("sync.localNetwork.browser.waiting", ["error": String(reflecting: error)])
+
             case let .failed(error):
                 log.error("sync.localNetwork.browser.failed", ["error": String(reflecting: error)])
+
             default:
                 break
             }
@@ -162,10 +165,12 @@ public actor SyncListener {
                     if claim() {
                         continuation.resume(returning: listener.port?.rawValue ?? 0)
                     }
+
                 case let .failed(error):
                     if claim() {
                         continuation.resume(throwing: error)
                     }
+
                 default:
                     break
                 }

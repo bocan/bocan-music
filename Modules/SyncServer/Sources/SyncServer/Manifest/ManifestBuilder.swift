@@ -418,9 +418,11 @@ public struct ManifestBuilder: Sendable {
             let trackIds: [Int64] = switch playlist.kind {
             case .folder:
                 []
+
             case .manual:
                 try await self.playlistRepository.fetchTrackIDs(playlistID: id)
                     .filter { includedTrackIds.contains($0) }
+
             case .smart:
                 try await self.smartService.tracks(for: id)
                     .compactMap(\.id)

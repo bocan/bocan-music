@@ -181,8 +181,10 @@ public actor ScrobbleQueueWorker {
             switch result.outcome {
             case .success:
                 try await self.repo.markSucceeded(queueID: result.queueID, providerID: self.provider.id, at: self.now())
+
             case let .ignored(reason):
                 try await self.repo.markIgnored(queueID: result.queueID, providerID: self.provider.id, reason: reason)
+
             case let .retry(reason, after):
                 let attempts = row.attempts + 1
                 if self.policy.isExhausted(attempts: attempts) {
@@ -202,6 +204,7 @@ public actor ScrobbleQueueWorker {
                         reason: reason
                     )
                 }
+
             case let .permanentFailure(reason):
                 try await self.repo.markDead(queueID: result.queueID, providerID: self.provider.id, reason: reason)
             }

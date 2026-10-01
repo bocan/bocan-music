@@ -100,9 +100,11 @@ public actor ArtistEnrichmentService {
                         consecutiveBackoffs = 0
                         cursor = max(cursor, id)
                         resolved.insert(mbid)
+
                     case .skipped:
                         cursor = max(cursor, id)
                         resolved.insert(mbid)
+
                     case .abort:
                         // Retry this artist after a growing pause; give up on
                         // the pass after a run of failures. Leaving the loop

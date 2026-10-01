@@ -41,8 +41,10 @@ public struct FeedParser: Sendable {
         switch feed {
         case let .rss(rss):
             parsed = try Self.parseRSS(rss, sourceURL: sourceURL)
+
         case let .atom(atom):
             parsed = try Self.parseAtom(atom, sourceURL: sourceURL)
+
         case .json, .rdf:
             // RSS 1.0 (RDF) has no enclosures, so it cannot carry a podcast.
             // FeedKit before 10.9 rejected it as an unknown format; keep that outcome.

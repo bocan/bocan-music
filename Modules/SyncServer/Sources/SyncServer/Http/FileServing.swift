@@ -135,12 +135,14 @@ struct FileServing {
         switch Self.resolveRange(request, totalSize: size) {
         case .unsatisfiable:
             return .error(.notFound, message: "Range not satisfiable", status: 416)
+
         case let .full(fullSize):
             return .streamed(status: 200, headers: headers, length: Int(fullSize)) { write in
                 try await SecurityScope.withAccess(bookmark) { url in
                     try await Self.streamFile(url, offset: 0, length: fullSize, write: write)
                 }
             }
+
         case let .partial(start, length, contentRange):
             headers["content-range"] = contentRange
             return .streamed(status: 206, headers: headers, length: Int(length)) { write in
@@ -274,10 +276,12 @@ struct FileServing {
             switch Self.resolveRange(request, totalSize: size) {
             case .unsatisfiable:
                 return .error(.notFound, message: "Range not satisfiable", status: 416)
+
             case let .full(fullSize):
                 return .streamed(status: 200, headers: headers, length: Int(fullSize)) { write in
                     try await Self.streamFile(fileURL, offset: 0, length: fullSize, write: write)
                 }
+
             case let .partial(start, length, contentRange):
                 var rangeHeaders = headers
                 rangeHeaders["content-range"] = contentRange

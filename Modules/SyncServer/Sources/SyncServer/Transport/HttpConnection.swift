@@ -38,8 +38,10 @@ actor HttpConnection {
             switch state {
             case .ready:
                 Task { await self.onReady() }
+
             case .failed, .cancelled:
                 self.connection.stateUpdateHandler = nil
+
             default:
                 break
             }
@@ -92,9 +94,11 @@ actor HttpConnection {
                 if await self.ingest(data) {
                     return
                 }
+
             case let .final(data):
                 _ = await self.ingest(data)
                 return
+
             case .end:
                 return
             }
@@ -122,9 +126,11 @@ actor HttpConnection {
         switch self.parser.feed(data) {
         case .incomplete:
             return false
+
         case let .failure(response):
             await self.send(response)
             return true
+
         case let .request(request, leftover):
             let response = await self.router.dispatch(request, context: self.context)
             await self.send(response)

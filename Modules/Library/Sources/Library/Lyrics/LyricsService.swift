@@ -127,6 +127,7 @@ public actor LyricsService {
         case let .unsynced(text):
             isSynced = false
             rawText = text
+
         case let .synced(lines, _):
             isSynced = true
             rawText = doc.toLRC()
@@ -317,6 +318,7 @@ public actor LyricsService {
             switch doc {
             case let .synced(lines, existingOffset):
                 doc = .synced(lines: lines, offsetMS: existingOffset + row.offsetMS)
+
             case .unsynced:
                 break
             }
@@ -328,6 +330,7 @@ public actor LyricsService {
         let lyricsText: String = switch doc {
         case let .unsynced(text):
             text
+
         case .synced:
             doc.toLRC()
         }
@@ -341,6 +344,7 @@ public actor LyricsService {
             switch doc {
             case .unsynced:
                 patch.lyrics = .some(lyricsText)
+
             case .synced:
                 patch.syncedLyrics = .some(lyricsText)
                 patch.lyrics = .some(nil) // documented pairing: clear the plain field

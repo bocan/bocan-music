@@ -26,12 +26,16 @@ public enum MetadataError: Error, Sendable, CustomStringConvertible, LocalizedEr
         switch self {
         case let .unreadableFile(url, reason):
             "Metadata: cannot read \(url.lastPathComponent): \(reason)"
+
         case let .unsupportedFormat(url):
             "Metadata: unsupported format \(url.pathExtension) at \(url.lastPathComponent)"
+
         case let .bridgeFailure(msg):
             "Metadata bridge failure: \(msg)"
+
         case let .writeFailed(url, reason):
             "Metadata: cannot write \(url.lastPathComponent): \(reason)"
+
         case let .readOnlyFile(url):
             "Metadata: file is read-only: \(url.lastPathComponent)"
         }
