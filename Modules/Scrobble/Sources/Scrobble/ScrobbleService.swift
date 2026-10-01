@@ -58,7 +58,10 @@ public actor ScrobbleService: ScrobbleSink {
 
     // MARK: Public API
 
-    /// Called by `PlayHistoryRecorder` after a play passes the eligibility threshold.
+    /// Called by `PlayHistoryRecorder` after it records a play. Play history has
+    /// its own, looser threshold (no minimum length), so the scrobble decision is
+    /// made here with `ScrobbleRules`: a 20-second track played in full is a
+    /// play, not a scrobble (#606).
     /// Inserts into `scrobble_queue` and signals all workers to drain.
     public func recordPlay(
         trackID: Int64,
@@ -75,6 +78,19 @@ public actor ScrobbleService: ScrobbleSink {
             return
         }
         do {
+            // The sink call carries no track length, so read it from the same
+            // `tracks` row the queue worker later builds the `PlayEvent` from.
+            guard let row = try await self.repository.fetchTrackMetadata(trackID: trackID) else {
+                self.log.debug("scrobble.service.skip", ["reason": "track not found", "trackID": trackID])
+                return
+            }
+            guard Self.isEligible(durationPlayed: durationPlayed, duration: row.duration) else {
+                self.log.debug("scrobble.service.skip", [
+                    "reason": "not eligible", "trackID": trackID,
+                    "played": durationPlayed, "duration": row.duration,
+                ])
+                return
+            }
             let queueID = try await self.repository.enqueue(
                 trackID: trackID,
                 playedAt: playedAt,
@@ -147,6 +163,13 @@ public actor ScrobbleService: ScrobbleSink {
         }
         guard ScrobbleRules.isWithinBackdateWindow(playedAt) else {
             self.log.warning("scrobble.service.backdated.subsonic", ["played_at": playedAt.timeIntervalSince1970])
+            return
+        }
+        guard Self.isEligible(durationPlayed: durationPlayed, duration: context.duration) else {
+            self.log.debug("scrobble.service.skip.subsonic", [
+                "reason": "not eligible", "song": context.songID,
+                "played": durationPlayed, "duration": context.duration,
+            ])
             return
         }
         do {
@@ -249,6 +272,16 @@ public actor ScrobbleService: ScrobbleSink {
         for worker in self.workers.values {
             await worker.kick()
         }
+    }
+
+    /// The scrobble decision for a recorded play: `ScrobbleRules.isEligible`.
+    ///
+    /// A track with no known length (a `tracks` row or a Subsonic song that
+    /// carries 0) is measured by the time played instead, because the track is
+    /// at least that long. Such a play still needs 30 seconds to qualify.
+    static func isEligible(durationPlayed: TimeInterval, duration: TimeInterval) -> Bool {
+        let length = duration > 0 ? duration : durationPlayed
+        return ScrobbleRules.isEligible(elapsed: durationPlayed, duration: length)
     }
 
     private func activeProviderIDs() async -> [String] {
