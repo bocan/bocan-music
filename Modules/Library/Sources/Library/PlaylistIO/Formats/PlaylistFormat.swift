@@ -45,7 +45,7 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     }
 
     /// Best-effort detection from a file extension.
-    public static func fromExtension(_ ext: String) -> PlaylistFormat? {
+    public static func fromExtension(_ ext: String) -> Self? {
         switch ext.lowercased() {
         case "m3u":
             .m3u
@@ -68,7 +68,7 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     }
 
     /// Sniff a format from a buffer. Looks at the first ~512 bytes.
-    public static func sniff(data: Data, fallback ext: String? = nil) -> PlaylistFormat? {
+    public static func sniff(data: Data, fallback ext: String? = nil) -> Self? {
         // Try to read up to the first 512 bytes as UTF-8 (BOM-tolerant) or Latin-1 fallback.
         let head = Self.headSnippet(data: data)
         let trimmed = head.drop { $0 == "\u{FEFF}" || $0.isWhitespace || $0.isNewline }

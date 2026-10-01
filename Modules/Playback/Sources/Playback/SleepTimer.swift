@@ -70,7 +70,7 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
         }
     }
 
-    public static let allCases: [SleepTimerPreset] = [
+    public static let allCases: [Self] = [
         .off, .minutes15, .minutes30, .minutes45, .minutes60, .minutes90, .minutes120,
     ]
 }

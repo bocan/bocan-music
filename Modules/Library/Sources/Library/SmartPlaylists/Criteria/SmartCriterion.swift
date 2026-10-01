@@ -9,7 +9,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     /// A single field / comparator / value leaf.
     case rule(Rule)
     /// A logical group of child criteria combined with `op`.
-    case group(LogicalOp, [SmartCriterion])
+    case group(LogicalOp, [Self])
     /// A leaf produced when persisted criteria reference something this
     /// build cannot model (typically a field name removed in a later
     /// version). The playlist still loads and renders, but `Validator`
@@ -73,7 +73,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         if container.contains(.group) {
             let inner = try container.nestedContainer(keyedBy: GroupAssoc.self, forKey: .group)
             let op = try inner.decode(LogicalOp.self, forKey: ._0)
-            let children = try inner.decode([SmartCriterion].self, forKey: ._1)
+            let children = try inner.decode([Self].self, forKey: ._1)
             self = .group(op, children)
             return
         }

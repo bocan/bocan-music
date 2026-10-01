@@ -60,8 +60,8 @@ struct E2ESession {
 
     // MARK: Setup
 
-    static func make(named name: String) -> E2ESession {
-        E2ESession(runID: "\(name)-\(UUID().uuidString.prefix(8))")
+    static func make(named name: String) -> Self {
+        Self(runID: "\(name)-\(UUID().uuidString.prefix(8))")
     }
 
     // MARK: Launch

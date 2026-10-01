@@ -16,7 +16,7 @@ public struct PlaylistNode: Sendable, Identifiable, Hashable {
     public let trackCount: Int
     public let totalDuration: TimeInterval
     public let sortOrder: Int?
-    public let children: [PlaylistNode]
+    public let children: [Self]
 
     public init(
         id: Int64,
@@ -28,7 +28,7 @@ public struct PlaylistNode: Sendable, Identifiable, Hashable {
         trackCount: Int,
         totalDuration: TimeInterval,
         sortOrder: Int?,
-        children: [PlaylistNode]
+        children: [Self]
     ) {
         self.id = id
         self.name = name

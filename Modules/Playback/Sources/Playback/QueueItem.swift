@@ -22,7 +22,7 @@ public struct AudioSourceFormat: Sendable, Hashable, Codable {
     /// - Same sample rate (AVAudioPlayerNode resamples only at the graph level)
     /// - Same channel count
     /// Bit depth does not matter because the engine uses Float32 internally.
-    public func isGaplessCompatible(with other: AudioSourceFormat) -> Bool {
+    public func isGaplessCompatible(with other: Self) -> Bool {
         self.sampleRate == other.sampleRate && self.channelCount == other.channelCount
     }
 
@@ -182,7 +182,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
     // MARK: - Hashable / Equatable (identity only)
 
-    public static func == (lhs: QueueItem, rhs: QueueItem) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id
     }
 

@@ -41,30 +41,30 @@ struct HttpResponse {
         headers: [String: String],
         length: Int,
         producer: @escaping @Sendable (_ write: @Sendable (Data) async throws -> Void) async throws -> Void
-    ) -> HttpResponse {
-        var response = HttpResponse(status: status, headers: headers)
+    ) -> Self {
+        var response = Self(status: status, headers: headers)
         response.stream = StreamBody(length: length, producer: producer)
         return response
     }
 
     // MARK: - Convenience constructors
 
-    static func noContent() -> HttpResponse {
-        HttpResponse(status: 204)
+    static func noContent() -> Self {
+        Self(status: 204)
     }
 
-    static func json(status: Int = 200, data: Data) -> HttpResponse {
-        HttpResponse(status: status, headers: ["content-type": "application/json"], body: data)
+    static func json(status: Int = 200, data: Data) -> Self {
+        Self(status: status, headers: ["content-type": "application/json"], body: data)
     }
 
     /// The section-5 error envelope. Built by hand (two known string fields) so no
     /// encoding can fail; `message` is JSON-string-escaped.
-    static func error(_ code: ErrorCode, message: String, status: Int) -> HttpResponse {
+    static func error(_ code: ErrorCode, message: String, status: Int) -> Self {
         let escaped = message
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
         let json = "{\"error\":\"\(code.rawValue)\",\"message\":\"\(escaped)\"}"
-        return HttpResponse(
+        return Self(
             status: status,
             headers: ["content-type": "application/json"],
             body: Data(json.utf8)

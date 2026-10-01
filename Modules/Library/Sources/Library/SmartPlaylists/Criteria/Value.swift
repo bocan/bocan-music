@@ -12,7 +12,7 @@ public indirect enum Value: Sendable, Hashable {
     case date(Date)
     case duration(TimeInterval)
     /// Inclusive numeric or date range stored as two `Value` scalars.
-    case range(Value, Value)
+    case range(Self, Self)
     /// Reference to a playlist by ID.
     case playlistRef(Int64)
     /// A string drawn from a fixed enumeration (e.g. file format).

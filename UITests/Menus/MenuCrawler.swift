@@ -7,7 +7,7 @@ struct ObservedMenuItem {
     let title: String
     let enabled: Bool
     /// Submenu items, populated by hovering the parent during the crawl.
-    var children: [ObservedMenuItem]
+    var children: [Self]
 
     /// Multi-line dump used in failure messages so a structural mismatch
     /// shows the whole observed tree, not just the first difference.

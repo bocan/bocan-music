@@ -17,5 +17,5 @@ public struct SyncServerConfig: Sendable {
         self.prepareWindowBytes = prepareWindowBytes
     }
 
-    public static let `default` = SyncServerConfig()
+    public static let `default` = Self()
 }

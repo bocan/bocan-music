@@ -57,7 +57,7 @@ struct MenuItemSpec: Sendable {
     /// Expected enablement per matrix state; unlisted states are not
     /// asserted (dynamic or irrelevant there).
     var enablement: [MenuState: Bool] = [:]
-    var submenu: [MenuItemSpec] = []
+    var submenu: [Self] = []
 
     var canonicalTitle: String {
         self.titles[0]
@@ -72,9 +72,9 @@ struct MenuItemSpec: Sendable {
         rowDisplay: String? = nil,
         conditional: String? = nil,
         enablement: [MenuState: Bool] = [:],
-        submenu: [MenuItemSpec] = []
-    ) -> MenuItemSpec {
-        MenuItemSpec(
+        submenu: [Self] = []
+    ) -> Self {
+        Self(
             titles: titles,
             shortcut: key.map { MenuShortcut.fromDisplay($0)! },
             binding: binding,
@@ -93,8 +93,8 @@ struct MenuItemSpec: Sendable {
         _ titles: String...,
         ignoreChildren: Bool = false,
         conditional: String? = nil
-    ) -> MenuItemSpec {
-        MenuItemSpec(
+    ) -> Self {
+        Self(
             titles: titles,
             system: true,
             conditional: conditional,

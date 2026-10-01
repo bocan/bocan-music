@@ -34,12 +34,12 @@ public struct LastFmConfig: Sendable, Equatable {
 
     /// Production config built from `Info.plist` build constants. Returns
     /// `nil` if the keys are missing — the app should hide the Last.fm UI.
-    public static func fromBundle(_ bundle: Bundle = .main) -> LastFmConfig? {
+    public static func fromBundle(_ bundle: Bundle = .main) -> Self? {
         guard
             let apiKey = bundle.object(forInfoDictionaryKey: "BocanLastFmApiKey") as? String,
             let secret = bundle.object(forInfoDictionaryKey: "BocanLastFmSharedSecret") as? String,
             !apiKey.isEmpty, !secret.isEmpty else { return nil }
-        return LastFmConfig(apiKey: apiKey, sharedSecret: secret)
+        return Self(apiKey: apiKey, sharedSecret: secret)
     }
 }
 

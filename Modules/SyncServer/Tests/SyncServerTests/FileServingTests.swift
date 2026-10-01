@@ -236,7 +236,7 @@ private struct LoopbackFileServer {
     let scratch: URL
     let downloadRoot: URL
 
-    static func make() async throws -> LoopbackFileServer {
+    static func make() async throws -> Self {
         let database = try await Database(location: .inMemory)
         let serverStore = KeychainIdentityStore(service: "io.cloudcauldron.bocan.sync.test.server.\(UUID().uuidString)")
         let clientStore = KeychainIdentityStore(service: "io.cloudcauldron.bocan.sync.test.client.\(UUID().uuidString)")
@@ -256,7 +256,7 @@ private struct LoopbackFileServer {
         let listener = SyncListener(identity: serverIdentity, router: router, trusted: trusted) { false }
         let port = try await listener.start()
 
-        return LoopbackFileServer(
+        return Self(
             database: database, port: port, client: LoopbackClient(clientIdentity: clientIdentity),
             listener: listener, serverStore: serverStore, clientStore: clientStore,
             scratch: scratch, downloadRoot: downloadRoot

@@ -73,7 +73,7 @@ final class StubProtocol: URLProtocol {
     }
 
     override func startLoading() {
-        StubProtocol.capturedRequests.append(self.request)
+        Self.capturedRequests.append(self.request)
         if let stream = request.httpBodyStream {
             stream.open()
             var body = Data()
@@ -87,11 +87,11 @@ final class StubProtocol: URLProtocol {
                 body.append(buf, count: read)
             }
             stream.close()
-            StubProtocol.capturedBodies.append(body)
+            Self.capturedBodies.append(body)
         } else {
-            StubProtocol.capturedBodies.append(self.request.httpBody ?? Data())
+            Self.capturedBodies.append(self.request.httpBody ?? Data())
         }
-        for route in StubProtocol.routes where route.matches(self.request) {
+        for route in Self.routes where route.matches(self.request) {
             let (data, response) = route.response()
             self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             self.client?.urlProtocol(self, didLoad: data)

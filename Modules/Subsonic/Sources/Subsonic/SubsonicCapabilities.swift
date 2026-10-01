@@ -95,7 +95,7 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
 
     /// Converts a `ServerCapabilities` value from SwiftSonic into our model.
     public static func from(_ caps: ServerCapabilities) -> Self {
-        SubsonicCapabilities(
+        Self(
             serverType: caps.serverType,
             serverVersion: caps.serverVersion,
             apiVersion: caps.apiVersion,
@@ -152,7 +152,7 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
     /// Returns `true` when the user-visible capability flags match `other`,
     /// ignoring `fetchedAt`. Used by the capability refresh path to decide
     /// whether a sidebar redraw is needed.
-    public func hasSameCapabilityFlags(as other: SubsonicCapabilities) -> Bool {
+    public func hasSameCapabilityFlags(as other: Self) -> Bool {
         self.serverType == other.serverType
             && self.serverVersion == other.serverVersion
             && self.apiVersion == other.apiVersion

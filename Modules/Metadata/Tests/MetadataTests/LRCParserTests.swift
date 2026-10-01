@@ -489,7 +489,7 @@ struct LRCParserPropertyTests {
 
     // MARK: - Properties
 
-    @Test("randomized [mm:ss.cs] timestamps parse to the exact seconds value", arguments: LRCParserPropertyTests.timestampCases())
+    @Test("randomized [mm:ss.cs] timestamps parse to the exact seconds value", arguments: Self.timestampCases())
     func timestampMathIsExact(_ c: TimestampCase) {
         let raw = String(format: "[%02d:%02d.%02d]Lyric", c.mm, c.ss, c.cs)
         let doc = LRCParser.parseDocument(raw)
@@ -502,7 +502,7 @@ struct LRCParserPropertyTests {
         #expect(first.text == "Lyric")
     }
 
-    @Test("randomized synced documents round-trip through toLRC → parseDocument", arguments: LRCParserPropertyTests.documentCases())
+    @Test("randomized synced documents round-trip through toLRC → parseDocument", arguments: Self.documentCases())
     func roundTripPreservesTimingTextAndOffset(_ c: DocumentCase) {
         let original = c.lines
             .map { LyricsDocument.LyricsLine(start: Double($0.cs) / 100.0, text: $0.text) }

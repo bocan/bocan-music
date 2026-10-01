@@ -2,7 +2,7 @@ import Foundation
 
 /// Errors produced by the Acoustics module.
 public enum AcousticsError: Error, Sendable, Equatable {
-    public static func == (lhs: AcousticsError, rhs: AcousticsError) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case let (.fpcalcFailed(lc, ls), .fpcalcFailed(rc, rs)):
             lc == rc && ls == rs
