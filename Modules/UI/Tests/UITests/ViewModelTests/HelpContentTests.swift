@@ -67,6 +67,23 @@ struct HelpContentTests {
         }
     }
 
+    /// Statements the 2026-10 audit found in the help and the code contradicts.
+    @Test(
+        "A statement the audit proved wrong does not come back",
+        arguments: [
+            "Window → Toggle Miniplayer", // the item is in the View menu
+            "CAF", // the scanner does not accept .caf
+            "range requests", // Subsonic tracks download completely first
+            "up to nine", // the code has no server limit
+            "blue pulsing", // connecting shows a spinner
+            "Settings → Podcasts → Refresh", // auto-download is not in that section
+        ]
+    )
+    func provenWrongStatementsStayOut(statement: String) {
+        let offenders = HelpContent.allKeys.filter { $0.contains(statement) }
+        #expect(offenders.isEmpty, "help text says \"\(statement)\" again: \(offenders)")
+    }
+
     @Test("Podcasts and Internet Radio have their own pages")
     func podcastsAndRadioArePages() {
         #expect(HelpSection.allCases.contains(.podcasts))

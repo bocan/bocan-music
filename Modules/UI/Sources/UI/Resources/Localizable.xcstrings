@@ -5824,24 +5824,35 @@
         }
       }
     },
-    "Click any show in the Podcasts sidebar section to open the episode list. Episodes are sorted newest first. A download button appears next to each undownloaded episode." : {
+    "Click any show in the Podcasts sidebar section to open the episode list. Episodes are listed newest first, or oldest first for a serial show; change the order in the show's settings. A download button appears next to each undownloaded episode." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Çĺíçķ áñý šĥóŵ íñ ţĥé Ƥóđçášţš šíđéƀáŕ šéçţíóñ ţó óƥéñ ţĥé éƥíšóđé ĺíšţ. Éƥíšóđéš áŕé šóŕţéđ ñéŵéšţ ƒíŕšţ. Á đóŵñĺóáđ ƀúţţóñ áƥƥéáŕš ñéxţ ţó éáçĥ úñđóŵñĺóáđéđ éƥíšóđé. one two three four five six seven eight nine ten one"
+            "value" : "Çĺíçķ áñý šĥóŵ íñ ţĥé Ƥóđçášţš šíđéƀáŕ šéçţíóñ ţó óƥéñ ţĥé éƥíšóđé ĺíšţ. Éƥíšóđéš áŕé ĺíšţéđ ñéŵéšţ ƒíŕšţ, óŕ óĺđéšţ ƒíŕšţ ƒóŕ á šéŕíáĺ šĥóŵ; çĥáñĝé ţĥé óŕđéŕ íñ ţĥé šĥóŵ'š šéţţíñĝš. Á đóŵñĺóáđ ƀúţţóñ áƥƥéáŕš ñéxţ ţó éáçĥ úñđóŵñĺóáđéđ éƥíšóđé. one two three four five six seven eight nine ten one two three four five"
           }
         }
       }
     },
-    "Click the download button on an episode row to save it locally. Downloaded episodes play from disk and are available offline. Bòcan can auto-download the newest episodes of subscribed shows; set the count under Settings → Podcasts → Refresh." : {
+    "Click the Podcasts item in the sidebar. Type a show name into the field at the top, or paste a feed URL there. Bòcan checks Podcast Index and the Apple iTunes catalogue." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Çĺíçķ ţĥé đóŵñĺóáđ ƀúţţóñ óñ áñ éƥíšóđé ŕóŵ ţó šávé íţ ĺóçáĺĺý. Đóŵñĺóáđéđ éƥíšóđéš ƥĺáý ƒŕóḿ đíšķ áñđ áŕé áváíĺáƀĺé óƒƒĺíñé. Ɓòçáñ çáñ áúţó-đóŵñĺóáđ ţĥé ñéŵéšţ éƥíšóđéš óƒ šúƀšçŕíƀéđ šĥóŵš; šéţ ţĥé çóúñţ úñđéŕ Šéţţíñĝš → Ƥóđçášţš → Ŕéƒŕéšĥ. one two three four five six seven eight nine ten one two three four five"
+            "value" : "Çĺíçķ ţĥé Ƥóđçášţš íţéḿ íñ ţĥé šíđéƀáŕ. Ţýƥé á šĥóŵ ñáḿé íñţó ţĥé ƒíéĺđ áţ ţĥé ţóƥ, óŕ ƥášţé á ƒééđ ÚŔĹ ţĥéŕé. Ɓòçáñ çĥéçķš Ƥóđçášţ Íñđéx áñđ ţĥé Áƥƥĺé íŢúñéš çáţáĺóĝúé. one two three four five six seven eight nine ten one"
+          }
+        }
+      }
+    },
+    "Click the download button on an episode row to save it locally. Downloaded episodes play from disk and are available offline. Bòcan can download new episodes of a show by itself: switch that on in the show's settings, and set how many under Settings → Podcasts." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çĺíçķ ţĥé đóŵñĺóáđ ƀúţţóñ óñ áñ éƥíšóđé ŕóŵ ţó šávé íţ ĺóçáĺĺý. Đóŵñĺóáđéđ éƥíšóđéš ƥĺáý ƒŕóḿ đíšķ áñđ áŕé áváíĺáƀĺé óƒƒĺíñé. Ɓòçáñ çáñ đóŵñĺóáđ ñéŵ éƥíšóđéš óƒ á šĥóŵ ƀý íţšéĺƒ: šŵíţçĥ ţĥáţ óñ íñ ţĥé šĥóŵ'š šéţţíñĝš, áñđ šéţ ĥóŵ ḿáñý úñđéŕ Šéţţíñĝš → Ƥóđçášţš. one two three four five six seven eight nine ten one two three four five six seven"
           }
         }
       }
@@ -9215,24 +9226,24 @@
         }
       }
     },
-    "Each server contributes its own sidebar section listing only the buckets it advertises: Albums, Artists, Genres, Years, Random, Recently Added, Recently Played, Most Played, Starred, Playlists, Podcasts, Radio. New buckets appear automatically when the server's capabilities change." : {
+    "Each server has its own sidebar section: Songs, Albums, Artists, Genres, Playlists, Starred, Random, Recently Added and Most Played, plus Internet Radio, Podcasts and Bookmarks when the server supports them. Bòcan checks what a server supports at launch, at most once a day, and when you click Test Connection in Settings → Sources." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Éáçĥ šéŕvéŕ çóñţŕíƀúţéš íţš óŵñ šíđéƀáŕ šéçţíóñ ĺíšţíñĝ óñĺý ţĥé ƀúçķéţš íţ áđvéŕţíšéš: Áĺƀúḿš, Áŕţíšţš, Ĝéñŕéš, Ýéáŕš, Ŕáñđóḿ, Ŕéçéñţĺý Áđđéđ, Ŕéçéñţĺý Ƥĺáýéđ, Ḿóšţ Ƥĺáýéđ, Šţáŕŕéđ, Ƥĺáýĺíšţš, Ƥóđçášţš, Ŕáđíó. Ñéŵ ƀúçķéţš áƥƥéáŕ áúţóḿáţíçáĺĺý ŵĥéñ ţĥé šéŕvéŕ'š çáƥáƀíĺíţíéš çĥáñĝé. one two three four five six seven eight nine ten one two three four five six seven eight"
+            "value" : "Éáçĥ šéŕvéŕ ĥáš íţš óŵñ šíđéƀáŕ šéçţíóñ: Šóñĝš, Áĺƀúḿš, Áŕţíšţš, Ĝéñŕéš, Ƥĺáýĺíšţš, Šţáŕŕéđ, Ŕáñđóḿ, Ŕéçéñţĺý Áđđéđ áñđ Ḿóšţ Ƥĺáýéđ, ƥĺúš Íñţéŕñéţ Ŕáđíó, Ƥóđçášţš áñđ Ɓóóķḿáŕķš ŵĥéñ ţĥé šéŕvéŕ šúƥƥóŕţš ţĥéḿ. Ɓòçáñ çĥéçķš ŵĥáţ á šéŕvéŕ šúƥƥóŕţš áţ ĺáúñçĥ, áţ ḿóšţ óñçé á đáý, áñđ ŵĥéñ ýóú çĺíçķ Ţéšţ Çóññéçţíóñ íñ Šéţţíñĝš → Šóúŕçéš. one two three four five six seven eight nine ten one two three four five six seven eight nine ten one"
           }
         }
       }
     },
-    "Each server in the sidebar shows a coloured dot: green = online, blue pulsing = connecting, orange = authentication failed, grey = unreachable, red = server error. Every dot has a VoiceOver label announcing the server name and current state." : {
+    "Each server in the sidebar shows its state: a spinner = connecting, green = online, orange = authentication failed, red = unreachable or server error, grey = not checked yet. Every dot has a VoiceOver label announcing the server name and current state." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Éáçĥ šéŕvéŕ íñ ţĥé šíđéƀáŕ šĥóŵš á çóĺóúŕéđ đóţ: ĝŕééñ = óñĺíñé, ƀĺúé ƥúĺšíñĝ = çóññéçţíñĝ, óŕáñĝé = áúţĥéñţíçáţíóñ ƒáíĺéđ, ĝŕéý = úñŕéáçĥáƀĺé, ŕéđ = šéŕvéŕ éŕŕóŕ. Évéŕý đóţ ĥáš á VóíçéÓvéŕ ĺáƀéĺ áññóúñçíñĝ ţĥé šéŕvéŕ ñáḿé áñđ çúŕŕéñţ šţáţé. one two three four five six seven eight nine ten one two three four five"
+            "value" : "Éáçĥ šéŕvéŕ íñ ţĥé šíđéƀáŕ šĥóŵš íţš šţáţé: á šƥíññéŕ = çóññéçţíñĝ, ĝŕééñ = óñĺíñé, óŕáñĝé = áúţĥéñţíçáţíóñ ƒáíĺéđ, ŕéđ = úñŕéáçĥáƀĺé óŕ šéŕvéŕ éŕŕóŕ, ĝŕéý = ñóţ çĥéçķéđ ýéţ. Évéŕý đóţ ĥáš á VóíçéÓvéŕ ĺáƀéĺ áññóúñçíñĝ ţĥé šéŕvéŕ ñáḿé áñđ çúŕŕéñţ šţáţé. one two three four five six seven eight nine ten one two three four five six"
           }
         }
       }
@@ -10117,13 +10128,13 @@
         }
       }
     },
-    "FLAC, ALAC/M4A, MP3, AAC, AIFF, WAV, CAF" : {
+    "FLAC, ALAC/M4A, MP3, AAC, AIFF, WAV" : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ƑĹÁÇ, ÁĹÁÇ/Ḿ4Á, ḾƤ3, ÁÁÇ, ÁÍƑƑ, ŴÁV, ÇÁƑ one two three"
+            "value" : "ƑĹÁÇ, ÁĹÁÇ/Ḿ4Á, ḾƤ3, ÁÁÇ, ÁÍƑƑ, ŴÁV one two three"
           }
         }
       }
@@ -16647,24 +16658,13 @@
         }
       }
     },
-    "Open Bòcan → Settings… → Podcasts or click the Podcasts item in the sidebar. Paste a feed URL into the subscribe field, or search by show name. Bòcan checks Podcast Index and the Apple iTunes catalogue." : {
+    "Open Bòcan → Settings… → Sources, then click Add Server. Enter the server URL (including https://), a username, and a password. Credentials are stored in the macOS Keychain; the password is never written to the library or to preferences. You can add more than one Subsonic, Navidrome, or Airsonic server." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Óƥéñ Ɓòçáñ → Šéţţíñĝš… → Ƥóđçášţš óŕ çĺíçķ ţĥé Ƥóđçášţš íţéḿ íñ ţĥé šíđéƀáŕ. Ƥášţé á ƒééđ ÚŔĹ íñţó ţĥé šúƀšçŕíƀé ƒíéĺđ, óŕ šéáŕçĥ ƀý šĥóŵ ñáḿé. Ɓòçáñ çĥéçķš Ƥóđçášţ Íñđéx áñđ ţĥé Áƥƥĺé íŢúñéš çáţáĺóĝúé. one two three four five six seven eight nine ten one two three"
-          }
-        }
-      }
-    },
-    "Open Bòcan → Settings… → Sources, then click Add Server. Enter the server URL (including https://), a username, and a password. Credentials are stored in the macOS Keychain; the password is never written to disk. You can connect up to nine Subsonic, Navidrome, or Airsonic servers." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Óƥéñ Ɓòçáñ → Šéţţíñĝš… → Šóúŕçéš, ţĥéñ çĺíçķ Áđđ Šéŕvéŕ. Éñţéŕ ţĥé šéŕvéŕ ÚŔĹ (íñçĺúđíñĝ ĥţţƥš://), á úšéŕñáḿé, áñđ á ƥáššŵóŕđ. Çŕéđéñţíáĺš áŕé šţóŕéđ íñ ţĥé ḿáçÓŠ Ķéýçĥáíñ; ţĥé ƥáššŵóŕđ íš ñévéŕ ŵŕíţţéñ ţó đíšķ. Ýóú çáñ çóññéçţ úƥ ţó ñíñé Šúƀšóñíç, Ñávíđŕóḿé, óŕ Áíŕšóñíç šéŕvéŕš. one two three four five six seven eight nine ten one two three four five six seven eight"
+            "value" : "Óƥéñ Ɓòçáñ → Šéţţíñĝš… → Šóúŕçéš, ţĥéñ çĺíçķ Áđđ Šéŕvéŕ. Éñţéŕ ţĥé šéŕvéŕ ÚŔĹ (íñçĺúđíñĝ ĥţţƥš://), á úšéŕñáḿé, áñđ á ƥáššŵóŕđ. Çŕéđéñţíáĺš áŕé šţóŕéđ íñ ţĥé ḿáçÓŠ Ķéýçĥáíñ; ţĥé ƥáššŵóŕđ íš ñévéŕ ŵŕíţţéñ ţó ţĥé ĺíƀŕáŕý óŕ ţó ƥŕéƒéŕéñçéš. Ýóú çáñ áđđ ḿóŕé ţĥáñ óñé Šúƀšóñíç, Ñávíđŕóḿé, óŕ Áíŕšóñíç šéŕvéŕ. one two three four five six seven eight nine ten one two three four five six seven eight nine"
           }
         }
       }
@@ -18507,13 +18507,13 @@
         }
       }
     },
-    "Press ⌘F and start typing. Bòcan queries every connected server in parallel alongside your local library and groups the results by source." : {
+    "Press ⌘F in a server's Songs, Albums or Artists view and start typing. Bòcan searches every server that has Include in global search switched on, in parallel, and a Source column shows which server each result is from." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ƥŕéšš ⌘Ƒ áñđ šţáŕţ ţýƥíñĝ. Ɓòçáñ qúéŕíéš évéŕý çóññéçţéđ šéŕvéŕ íñ ƥáŕáĺĺéĺ áĺóñĝšíđé ýóúŕ ĺóçáĺ ĺíƀŕáŕý áñđ ĝŕóúƥš ţĥé ŕéšúĺţš ƀý šóúŕçé. one two three four five six seven eight nine"
+            "value" : "Ƥŕéšš ⌘Ƒ íñ á šéŕvéŕ'š Šóñĝš, Áĺƀúḿš óŕ Áŕţíšţš víéŵ áñđ šţáŕţ ţýƥíñĝ. Ɓòçáñ šéáŕçĥéš évéŕý šéŕvéŕ ţĥáţ ĥáš Íñçĺúđé íñ ĝĺóƀáĺ šéáŕçĥ šŵíţçĥéđ óñ, íñ ƥáŕáĺĺéĺ, áñđ á Šóúŕçé çóĺúḿñ šĥóŵš ŵĥíçĥ šéŕvéŕ éáçĥ ŕéšúĺţ íš ƒŕóḿ. one two three four five six seven eight nine ten one two three four"
           }
         }
       }
@@ -23915,13 +23915,13 @@
         }
       }
     },
-    "Switch to the compact window with ⌘⌥M or Window → Toggle Miniplayer." : {
+    "Switch to the compact window with ⌘⌥M or View → Toggle Miniplayer." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Šŵíţçĥ ţó ţĥé çóḿƥáçţ ŵíñđóŵ ŵíţĥ ⌘⌥Ḿ óŕ Ŵíñđóŵ → Ţóĝĝĺé Ḿíñíƥĺáýéŕ. one two three four five"
+            "value" : "Šŵíţçĥ ţó ţĥé çóḿƥáçţ ŵíñđóŵ ŵíţĥ ⌘⌥Ḿ óŕ Víéŵ → Ţóĝĝĺé Ḿíñíƥĺáýéŕ. one two three four five"
           }
         }
       }
@@ -25336,6 +25336,17 @@
         }
       }
     },
+    "Tracks play through the same gapless audio engine as local files. Bòcan downloads each track completely before it starts, so seeking is exact. Scrobbles are sent both to the server's own scrobble endpoint and to your configured Last.fm, ListenBrainz, or Rocksky accounts." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţŕáçķš ƥĺáý ţĥŕóúĝĥ ţĥé šáḿé ĝáƥĺéšš áúđíó éñĝíñé áš ĺóçáĺ ƒíĺéš. Ɓòçáñ đóŵñĺóáđš éáçĥ ţŕáçķ çóḿƥĺéţéĺý ƀéƒóŕé íţ šţáŕţš, šó šééķíñĝ íš éxáçţ. Šçŕóƀƀĺéš áŕé šéñţ ƀóţĥ ţó ţĥé šéŕvéŕ'š óŵñ šçŕóƀƀĺé éñđƥóíñţ áñđ ţó ýóúŕ çóñƒíĝúŕéđ Ĺášţ.ƒḿ, ĹíšţéñƁŕáíñž, óŕ Ŕóçķšķý áççóúñţš. one two three four five six seven eight nine ten one two three four five six seven"
+          }
+        }
+      }
+    },
     "Tracks span multiple albums" : {
       "localizations" : {
         "en-XA" : {
@@ -25358,17 +25369,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţŕáçķš šţáý íñ ýóúŕ ĺíƀŕáŕý áñđ íñ óţĥéŕ ƥĺáýĺíšţš. one two three four"
-          }
-        }
-      }
-    },
-    "Tracks stream through the same gapless audio engine as local files, with HTTP range requests for accurate seeking. Scrobbles are sent both to the server's own scrobble endpoint and to your configured Last.fm, ListenBrainz, or Rocksky accounts." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ţŕáçķš šţŕéáḿ ţĥŕóúĝĥ ţĥé šáḿé ĝáƥĺéšš áúđíó éñĝíñé áš ĺóçáĺ ƒíĺéš, ŵíţĥ ĤŢŢƤ ŕáñĝé ŕéqúéšţš ƒóŕ áççúŕáţé šééķíñĝ. Šçŕóƀƀĺéš áŕé šéñţ ƀóţĥ ţó ţĥé šéŕvéŕ'š óŵñ šçŕóƀƀĺé éñđƥóíñţ áñđ ţó ýóúŕ çóñƒíĝúŕéđ Ĺášţ.ƒḿ, ĹíšţéñƁŕáíñž, óŕ Ŕóçķšķý áççóúñţš. one two three four five six seven eight nine ten one two three four five"
           }
         }
       }

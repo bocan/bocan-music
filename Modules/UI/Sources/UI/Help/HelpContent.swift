@@ -99,7 +99,7 @@ enum HelpContent {
         ),
         HelpTopic(
             title: "Miniplayer",
-            body: "Switch to the compact window with ⌘⌥M or Window → Toggle Miniplayer."
+            body: "Switch to the compact window with ⌘⌥M or View → Toggle Miniplayer."
         ),
         HelpTopic(
             title: "Scrobbling",
@@ -119,21 +119,23 @@ enum HelpContent {
     static let podcasts: [HelpTopic] = [
         HelpTopic(
             title: "Subscribing to a podcast",
-            body: "Open Bòcan → Settings… → Podcasts or click the Podcasts item in the sidebar."
-                + " Paste a feed URL into the subscribe field, or search by show name."
+            body: "Click the Podcasts item in the sidebar. Type a show name into the field at the top,"
+                + " or paste a feed URL there."
                 + " Bòcan checks Podcast Index and the Apple iTunes catalogue."
         ),
         HelpTopic(
             title: "Browsing episodes",
             body: "Click any show in the Podcasts sidebar section to open the episode list."
-                + " Episodes are sorted newest first. A download button appears next to each"
+                + " Episodes are listed newest first, or oldest first for a serial show; change the"
+                + " order in the show's settings. A download button appears next to each"
                 + " undownloaded episode."
         ),
         HelpTopic(
             title: "Downloading episodes",
             body: "Click the download button on an episode row to save it locally. Downloaded episodes"
-                + " play from disk and are available offline. Bòcan can auto-download the newest"
-                + " episodes of subscribed shows; set the count under Settings → Podcasts → Refresh."
+                + " play from disk and are available offline. Bòcan can download new episodes of a show"
+                + " by itself: switch that on in the show's settings, and set how many under"
+                + " Settings → Podcasts."
         ),
         HelpTopic(
             title: "Resuming playback",
@@ -209,15 +211,16 @@ enum HelpContent {
             title: "Adding a server",
             body: "Open Bòcan → Settings… → Sources, then click Add Server."
                 + " Enter the server URL (including https://), a username, and a password."
-                + " Credentials are stored in the macOS Keychain; the password is never written to disk."
-                + " You can connect up to nine Subsonic, Navidrome, or Airsonic servers."
+                + " Credentials are stored in the macOS Keychain; the password is never written to"
+                + " the library or to preferences."
+                + " You can add more than one Subsonic, Navidrome, or Airsonic server."
         ),
         HelpTopic(
             title: "Connection status dots",
-            body: "Each server in the sidebar shows a coloured dot:"
-                + " green = online, blue pulsing = connecting, orange = authentication failed,"
-                + " grey = unreachable, red = server error. Every dot has a VoiceOver label"
-                + " announcing the server name and current state."
+            body: "Each server in the sidebar shows its state:"
+                + " a spinner = connecting, green = online, orange = authentication failed,"
+                + " red = unreachable or server error, grey = not checked yet. Every dot has a"
+                + " VoiceOver label announcing the server name and current state."
         ),
         HelpTopic(
             title: "Offline banner",
@@ -227,15 +230,16 @@ enum HelpContent {
         ),
         HelpTopic(
             title: "Browsing",
-            body: "Each server contributes its own sidebar section listing only the buckets"
-                + " it advertises: Albums, Artists, Genres, Years, Random, Recently Added,"
-                + " Recently Played, Most Played, Starred, Playlists, Podcasts, Radio."
-                + " New buckets appear automatically when the server's capabilities change."
+            body: "Each server has its own sidebar section: Songs, Albums, Artists, Genres, Playlists,"
+                + " Starred, Random, Recently Added and Most Played, plus Internet Radio, Podcasts and"
+                + " Bookmarks when the server supports them. Bòcan checks what a server supports at"
+                + " launch, at most once a day, and when you click Test Connection in Settings → Sources."
         ),
         HelpTopic(
             title: "Federated search",
-            body: "Press ⌘F and start typing. Bòcan queries every connected server in parallel"
-                + " alongside your local library and groups the results by source."
+            body: "Press ⌘F in a server's Songs, Albums or Artists view and start typing. Bòcan searches"
+                + " every server that has Include in global search switched on, in parallel, and a"
+                + " Source column shows which server each result is from."
         ),
         HelpTopic(
             title: "Stars and ratings",
@@ -245,8 +249,8 @@ enum HelpContent {
         ),
         HelpTopic(
             title: "Streaming and scrobbling",
-            body: "Tracks stream through the same gapless audio engine as local files,"
-                + " with HTTP range requests for accurate seeking."
+            body: "Tracks play through the same gapless audio engine as local files."
+                + " Bòcan downloads each track completely before it starts, so seeking is exact."
                 + " Scrobbles are sent both to the server's own scrobble endpoint and to your"
                 + " configured Last.fm, ListenBrainz, or Rocksky accounts."
         ),
@@ -264,7 +268,7 @@ enum HelpContent {
     static let formatRows: [HelpTopic] = [
         HelpTopic(
             title: "Core Audio",
-            body: "FLAC, ALAC/M4A, MP3, AAC, AIFF, WAV, CAF"
+            body: "FLAC, ALAC/M4A, MP3, AAC, AIFF, WAV"
         ),
         HelpTopic(
             title: "FFmpeg engine",
