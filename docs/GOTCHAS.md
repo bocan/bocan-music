@@ -330,7 +330,9 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/ToastBanner.swift`
 
-A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label comes from the SF Symbol in the label view (the sleep timer's label is "do not disturb", from `moon.fill`, whatever its state). Setting `.accessibilityLabel` on the label view as well does not change that; checked 2026-09-27. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. Whether VoiceOver speaks the symbol's description for such a button has not been checked.
+A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label (the AX description) is the label image's own accessibility description. For `Image(systemName:)` that is the symbol's name ("do not disturb" for `moon.fill`). No SwiftUI modifier changes it: a label on the `Menu`, on the label view, or on the image, an icon-only `Label`, and a hidden image were all tried in 2026-09. What works is an AppKit symbol image that carries the text, `Image(nsImage: NSImage(systemSymbolName:accessibilityDescription:))`, sized with `NSImage.SymbolConfiguration` because `.font` does not reach it. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. A borderless `Menu` also ignores `.foregroundStyle` on its label image: AppKit draws the symbol in its own colour.
+
+**Canonical file for the `Menu` case:** `Modules/UI/Sources/UI/Transport/SleepTimerMenu.swift` (`moonImage`)
 
 ### On macOS 27 a coordinate `tap()` does nothing; click
 

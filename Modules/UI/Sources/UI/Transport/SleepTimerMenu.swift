@@ -1,3 +1,4 @@
+import AppKit
 import Playback
 import SwiftUI
 
@@ -11,6 +12,7 @@ public struct SleepTimerMenu: View {
     public var vm: NowPlayingViewModel
     @State private var customMinutes = 30
     @State private var showCustomField = false
+    @ScaledMetric(relativeTo: .body) private var moonPointSize: CGFloat = 13
 
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
@@ -139,8 +141,7 @@ public struct SleepTimerMenu: View {
 
     private var menuLabel: some View {
         HStack(spacing: 3) {
-            Image(systemName: "moon.fill")
-                .scaledSystemFont(size: 13, weight: .medium)
+            Image(nsImage: Self.moonImage(description: self.accessibilityLabel, pointSize: self.moonPointSize))
                 .foregroundStyle(self.vm.sleepTimerRemaining != nil ? Color.accentColor : Color.textTertiary)
 
             if let remaining = self.vm.sleepTimerRemaining {
@@ -152,6 +153,17 @@ public struct SleepTimerMenu: View {
     }
 
     // MARK: - Helpers
+
+    /// The moon symbol as an AppKit image that carries `description`.
+    ///
+    /// A borderless `Menu` hands its label image to AppKit, and the button's
+    /// accessibility description is that image's own. For
+    /// `Image(systemName: "moon.fill")` that is the symbol's name, "do not
+    /// disturb", and no SwiftUI accessibility modifier replaces it (#586).
+    static func moonImage(description: String, pointSize: CGFloat) -> NSImage {
+        let symbol = NSImage(systemSymbolName: "moon.fill", accessibilityDescription: description) ?? NSImage()
+        return symbol.withSymbolConfiguration(.init(pointSize: pointSize, weight: .medium)) ?? symbol
+    }
 
     /// UI-side labels for ``SleepTimerPreset``. The Playback-owned
     /// `displayName` raw values stay English; translation happens here.
