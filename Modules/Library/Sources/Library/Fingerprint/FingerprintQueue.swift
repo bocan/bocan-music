@@ -14,6 +14,7 @@ import Persistence
 public actor FingerprintQueue {
     private let service: FingerprintService
 
+    /// Creates a queue that passes each identify request to `service`.
     public init(service: FingerprintService) {
         self.service = service
     }

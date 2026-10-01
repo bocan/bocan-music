@@ -35,6 +35,15 @@ public actor ScrobbleQueueWorker {
     /// backoff short (#548).
     private var timeoutTask: Task<Void, Never>?
 
+    /// Creates a stopped worker for one provider; call `start()` to begin draining.
+    ///
+    /// - Parameters:
+    ///   - provider: The service this worker submits to.
+    ///   - repository: The queue the pending rows are read from and marked in.
+    ///   - policy: The retry and backoff schedule for failed submissions.
+    ///   - reachability: Network state; the worker waits while it reports offline.
+    ///   - batchSize: The most rows fetched in one drain pass.
+    ///   - now: Clock used to pick the rows that are due; injectable for tests.
     public init(
         provider: any ScrobbleProvider,
         repository: ScrobbleQueueRepository,
@@ -52,6 +61,7 @@ public actor ScrobbleQueueWorker {
         self.log = AppLogger.make(.scrobble)
     }
 
+    /// Starts the drain loop. Does nothing when the loop already runs.
     public func start() {
         guard self.task == nil else { return }
         self.log.info("scrobble.worker.start", ["provider": self.provider.id])
@@ -60,6 +70,8 @@ public actor ScrobbleQueueWorker {
         }
     }
 
+    /// Cancels the drain loop, its reachability subscription and any wait in
+    /// progress. `start()` can run the worker again afterwards.
     public func stop() {
         self.task?.cancel()
         self.task = nil

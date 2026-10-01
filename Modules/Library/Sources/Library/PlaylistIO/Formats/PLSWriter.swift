@@ -12,6 +12,9 @@ public enum PLSWriter {
         }
     }
 
+    /// The PLS text for `payload`, entries numbered from 1. `TitleN` falls
+    /// back to the artist when there is no title, and `LengthN` is -1 when
+    /// the duration is unknown.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var lines: [String] = []
         lines.append("[playlist]")

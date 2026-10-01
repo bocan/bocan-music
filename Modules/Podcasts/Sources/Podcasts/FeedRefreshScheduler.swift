@@ -24,6 +24,8 @@ public actor FeedRefreshScheduler {
     private var wait: Task<Void, Error>?
     private let log = AppLogger.make(.podcasts)
 
+    /// Creates a stopped scheduler; nothing runs until `start()`. `sleep`
+    /// takes seconds and is injectable so tests do not wait in real time.
     public init(
         service: PodcastService,
         settings: PodcastSettings = PodcastSettings(),

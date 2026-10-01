@@ -9,6 +9,7 @@ public actor ITunesSearchClient {
     private let http: any HTTPClient
     private let log = AppLogger.make(.network)
 
+    /// Creates a client. `http` is the network seam for tests.
     public init(http: any HTTPClient = URLSession.shared) {
         self.http = http
     }

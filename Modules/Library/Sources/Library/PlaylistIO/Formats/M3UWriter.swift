@@ -27,6 +27,9 @@ public enum M3UWriter {
         }
     }
 
+    /// The extended M3U text for `payload`: `#EXTM3U`, a `#PLAYLIST` line
+    /// when the name is not empty, then each entry with the directives that
+    /// `options` turns on. An unknown duration is written as -1.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var lines: [String] = []
         lines.append("#EXTM3U")

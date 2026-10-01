@@ -193,6 +193,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
 // MARK: - QueueItem + Track factory
 
+/// Factory that builds a queue item from a library `Track` row.
 public extension QueueItem {
     /// Build a `QueueItem` from a `Track` row.
     static func make(from track: Track, artistName: String? = nil) -> QueueItem {

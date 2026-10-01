@@ -36,6 +36,7 @@ public actor LibraryScanner {
 
     // MARK: - Init
 
+    /// Creates a scanner over `database`. No scan or folder watching starts here.
     public init(database: Database) {
         self.database = database
         self.rootRepo = LibraryRootRepository(database: database)

@@ -22,6 +22,9 @@ public actor PlaylistImportService {
     private let cueMarkers: CueMarkerService?
     private let log = AppLogger.make(.library)
 
+    /// Creates the service. `libraryRoots` and `cueMarkers` are optional
+    /// and only change CUE sheet imports: without them, the root-scope access
+    /// check and the marker attach are skipped.
     public init(
         resolver: TrackResolver,
         playlists: PlaylistService,
@@ -180,6 +183,9 @@ public actor PlaylistImportService {
 
     // MARK: - Format-specific entry points
 
+    /// Reads the playlist file at `url`, picks the format from its content
+    /// (then its extension, then M3U) and imports it under `parentID`. Throws
+    /// when the file cannot be read or parsed.
     public func importFile(at url: URL, parentID: Int64? = nil) async throws -> ImportReport {
         let data = try Data(contentsOf: url)
         let format = PlaylistFormat.sniff(data: data, fallback: url.pathExtension) ??

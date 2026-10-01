@@ -89,7 +89,10 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
 public actor SleepTimer {
     // MARK: - Types
 
+    /// Called once when the timer expires, to stop playback.
     public typealias StopAction = @Sendable () async -> Void
+    /// Called about once a second during the fade-out with the volume
+    /// fraction, which falls from 1.0 towards 0 as the deadline nears.
     public typealias SetVolumeAction = @Sendable (Float) async -> Void
 
     // MARK: - Public state
@@ -121,6 +124,8 @@ public actor SleepTimer {
 
     // MARK: - Init
 
+    /// Creates an idle timer. Nothing counts down until `set(minutes:fadeOut:)`
+    /// or `restoreIfNeeded()` starts it.
     public init(onStop: @escaping StopAction, onSetVolume: @escaping SetVolumeAction) {
         self.onStop = onStop
         self.onSetVolume = onSetVolume

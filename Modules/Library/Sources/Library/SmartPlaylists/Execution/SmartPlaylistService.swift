@@ -20,6 +20,7 @@ public actor SmartPlaylistService {
 
     // MARK: - Init
 
+    /// Creates a service over `database`. `logger` is injectable for tests.
     public init(database: Persistence.Database, logger: AppLogger = .make(.library)) {
         self.database = database
         self.log = logger

@@ -145,6 +145,8 @@ public actor SubsonicService {
 
     // MARK: - Init
 
+    /// Creates a service with an empty client pool. Until `reloadClients()` or
+    /// `refreshClient(for:)` adds a client, requests throw `SubsonicError.unknownServer`.
     public init(store: SubsonicServerStore) {
         self.store = store
     }
@@ -291,24 +293,34 @@ public actor SubsonicService {
 
     // MARK: - Browsing
 
+    // Every endpoint method below throws `SubsonicError.unknownServer` when
+    // `serverID` has no client, and `SubsonicError.transport` when the request
+    // fails.
+
+    /// Calls the server's `getArtists` endpoint.
     public func getArtists(serverID: UUID) async throws -> [ArtistIndex] {
         try await self.withClient(serverID) { try await $0.getArtists() }
     }
 
+    /// Calls `getArtist` for the artist with the server-side ID `id`.
     public func getArtist(serverID: UUID, id: String) async throws -> ArtistID3 {
         try await self.withClient(serverID) { try await $0.getArtist(id: id) }
     }
 
+    /// Calls `getAlbum` for the album with the server-side ID `id`.
     public func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
         try await self.withClient(serverID) { try await $0.getAlbum(id: id) }
     }
 
+    /// Calls the server's `getGenres` endpoint.
     public func getGenres(serverID: UUID) async throws -> [Genre] {
         try await self.withClient(serverID) { try await $0.getGenres() }
     }
 
     // MARK: - Lists
 
+    /// Calls `getAlbumList2`: one page of at most `size` albums of the list
+    /// `type`, starting at `offset`.
     public func getAlbumList2(
         serverID: UUID,
         type: AlbumListType,
@@ -318,10 +330,13 @@ public actor SubsonicService {
         try await self.withClient(serverID) { try await $0.getAlbumList2(type: type, size: size, offset: offset) }
     }
 
+    /// Calls `getRandomSongs`, asking for at most `size` songs.
     public func getRandomSongs(serverID: UUID, size: Int = 50) async throws -> [Song] {
         try await self.withClient(serverID) { try await $0.getRandomSongs(size: size) }
     }
 
+    /// Calls `getSongsByGenre`: one page of at most `count` songs in `genre`,
+    /// starting at `offset`.
     public func getSongsByGenre(
         serverID: UUID,
         genre: String,
@@ -331,22 +346,27 @@ public actor SubsonicService {
         try await self.withClient(serverID) { try await $0.getSongsByGenre(genre, count: count, offset: offset) }
     }
 
+    /// Calls the server's `getStarred2` endpoint.
     public func getStarred2(serverID: UUID) async throws -> Starred2 {
         try await self.withClient(serverID) { try await $0.getStarred2() }
     }
 
     // MARK: - Playlists
 
+    /// Calls the server's `getPlaylists` endpoint.
     public func getPlaylists(serverID: UUID) async throws -> [Playlist] {
         try await self.withClient(serverID) { try await $0.getPlaylists() }
     }
 
+    /// Calls `getPlaylist` for the playlist with the server-side ID `id`.
     public func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs {
         try await self.withClient(serverID) { try await $0.getPlaylist(id: id) }
     }
 
     // MARK: - Search
 
+    /// Calls `search3` with `query`. The three counts cap how many artists,
+    /// albums and songs the request asks for.
     public func search3(
         serverID: UUID,
         query: String,
@@ -366,12 +386,16 @@ public actor SubsonicService {
 
     // MARK: - Podcasts (capability-gated)
 
+    /// Calls `getPodcasts`. A 404, 501 or API "not found" answer also revokes
+    /// the server's `podcasts` capability before the error is thrown.
     public func getPodcasts(serverID: UUID) async throws -> [PodcastChannel] {
         try await self.withCapabilityGatedClient(serverID, feature: "podcasts") { try await $0.getPodcasts() }
     }
 
     // MARK: - Internet radio (capability-gated)
 
+    /// Calls `getInternetRadioStations`. A 404, 501 or API "not found" answer
+    /// also revokes the server's `internetRadio` capability before the error is thrown.
     public func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation] {
         try await self.withCapabilityGatedClient(serverID, feature: "internetRadio") {
             try await $0.getInternetRadioStations()
@@ -380,18 +404,23 @@ public actor SubsonicService {
 
     // MARK: - Bookmarks (capability-gated)
 
+    /// Calls `getBookmarks`. A 404, 501 or API "not found" answer also revokes
+    /// the server's `bookmarks` capability before the error is thrown.
     public func getBookmarks(serverID: UUID) async throws -> [Bookmark] {
         try await self.withCapabilityGatedClient(serverID, feature: "bookmarks") { try await $0.getBookmarks() }
     }
 
     // MARK: - Now Playing
 
+    /// Calls the server's `getNowPlaying` endpoint.
     public func getNowPlaying(serverID: UUID) async throws -> [NowPlayingEntry] {
         try await self.withClient(serverID) { try await $0.getNowPlaying() }
     }
 
     // MARK: - Annotations
 
+    /// Stars the song on the server at once, with no retry and no `syncStars`
+    /// check. `SubsonicAnnotations` adds both.
     public func star(serverID: UUID, songID: String) async throws {
         try await self.withClient(serverID) { client in
             try await client.star(songId: songID)
@@ -399,6 +428,8 @@ public actor SubsonicService {
         }
     }
 
+    /// Removes the star from the song on the server at once, with no retry
+    /// and no `syncStars` check. `SubsonicAnnotations` adds both.
     public func unstar(serverID: UUID, songID: String) async throws {
         try await self.withClient(serverID) { client in
             try await client.unstar(songId: songID)
@@ -406,6 +437,8 @@ public actor SubsonicService {
         }
     }
 
+    /// Sends `rating` for the song to the server's `setRating` endpoint at
+    /// once, with no retry and no `syncRatings` check. `SubsonicAnnotations` adds both.
     public func setRating(serverID: UUID, songID: String, rating: Int) async throws {
         try await self.withClient(serverID) { client in
             try await client.setRating(id: songID, rating: rating)
@@ -418,6 +451,8 @@ public actor SubsonicService {
 
     // MARK: - Scrobble
 
+    /// Calls the server's `scrobble` endpoint for the song. `submission` is
+    /// passed through as the endpoint's `submission` parameter.
     public func scrobble(serverID: UUID, songID: String, submission: Bool = true) async throws {
         try await self.withClient(serverID) { client in
             try await client.scrobble(id: songID, submission: submission)

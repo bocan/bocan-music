@@ -48,6 +48,8 @@ public actor SubsonicServerStore {
 
     // MARK: - Init
 
+    /// Creates a store whose server rows live in `repository`. Credentials
+    /// always go to the Keychain, whatever repository is passed.
     public init(repository: SubsonicServerRepository) {
         self.repository = repository
     }

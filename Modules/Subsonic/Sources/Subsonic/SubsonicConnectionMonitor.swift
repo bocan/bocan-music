@@ -18,6 +18,7 @@ import Observability
 public actor SubsonicConnectionMonitor {
     // MARK: - Types
 
+    /// One element of `updates`: a server and the status it has just changed to.
     public typealias StatusUpdate = (serverID: UUID, status: SubsonicConnectionStatus)
 
     // MARK: - Constants
@@ -36,6 +37,8 @@ public actor SubsonicConnectionMonitor {
 
     // MARK: - Init
 
+    /// Creates a monitor that pings through `service` and starts its network
+    /// path monitor. No server is pinged until `startMonitoring(serverID:)`.
     public init(service: SubsonicService) {
         self.service = service
         // All stored properties initialised; safe to capture self.

@@ -54,6 +54,8 @@ public actor EpisodeDownloadManager {
 
     // MARK: - Init
 
+    /// Creates a manager that downloads through `session`, two episodes at a
+    /// time, and keeps the files in `store`.
     public init(
         stateRepo: EpisodeStateRepository,
         episodeRepo: EpisodeRepository,

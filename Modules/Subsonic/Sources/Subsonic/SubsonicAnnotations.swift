@@ -67,6 +67,8 @@ public actor SubsonicAnnotations {
 
     // MARK: - Init
 
+    /// Creates a queue that delivers through `service`, which also supplies
+    /// each server's `syncStars` and `syncRatings` flags.
     public init(service: SubsonicService) {
         self.service = service
     }

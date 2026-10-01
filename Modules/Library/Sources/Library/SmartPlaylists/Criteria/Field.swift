@@ -72,7 +72,10 @@ public enum Field: Sendable, Codable, Hashable, CaseIterable {
 
 // MARK: - Raw representable
 
+/// String form of a field, as stored in the criteria JSON.
 public extension Field {
+    /// The field named `rawValue`. Never fails: a name this build does not
+    /// know becomes `.unknown(rawValue)`.
     init(rawValue: String) {
         switch rawValue {
         case "title":
@@ -170,6 +173,8 @@ public extension Field {
         }
     }
 
+    /// The case name as written to JSON; for `.unknown`, the original string
+    /// unchanged, so a newer app's value survives a round trip.
     var rawValue: String {
         switch self {
         case .title:
@@ -270,12 +275,16 @@ public extension Field {
 
 // MARK: - Codable
 
+/// Codes a field as a single JSON string, its `rawValue`.
 public extension Field {
+    /// Decodes from a single string. Throws only when the value is not a
+    /// string; an unrecognised name decodes as `.unknown`.
     init(from decoder: any Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
         self = Self(rawValue: raw)
     }
 
+    /// Encodes `rawValue` as a single string.
     func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
@@ -284,7 +293,10 @@ public extension Field {
 
 // MARK: - CaseIterable
 
+/// Hand-written because the `unknown` payload case blocks synthesis.
 public extension Field {
+    /// Every field this build knows, in declaration order. `.unknown` is not
+    /// included.
     static var allCases: [Field] {
         [
             .title,

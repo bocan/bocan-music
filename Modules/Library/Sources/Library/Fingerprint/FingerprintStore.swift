@@ -13,6 +13,7 @@ public actor FingerprintStore {
     private let database: Database
     private let log = AppLogger.make(.library)
 
+    /// Creates a store that writes fingerprints to the `tracks` table of `database`.
     public init(database: Database) {
         self.database = database
     }

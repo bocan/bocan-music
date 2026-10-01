@@ -35,6 +35,8 @@ public actor MetadataEditService {
 
     // MARK: - Init
 
+    /// Creates the service and opens its undo backup ring. Throws when the
+    /// ring directory cannot be created.
     public init(database: Persistence.Database) throws {
         self.database = database
         self.trackRepo = TrackRepository(database: database)

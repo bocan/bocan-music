@@ -28,6 +28,8 @@ public actor FeedFetcher {
     private let maxBytes: Int
     private let log = AppLogger.make(.podcasts)
 
+    /// Creates a fetcher. `maxBytes` is the size cap for a feed body, 50 MB
+    /// by default; `http` is the network seam for tests.
     public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 50 * 1024 * 1024) {
         self.http = http
         self.maxBytes = maxBytes

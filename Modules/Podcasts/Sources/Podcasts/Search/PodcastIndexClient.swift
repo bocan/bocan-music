@@ -13,6 +13,9 @@ public actor PodcastIndexClient {
 
     private static let baseURL = "https://api.podcastindex.org/api/1.0"
 
+    /// Creates a client that signs requests with `credentials`. `now`
+    /// supplies the time that goes into each request's auth headers,
+    /// injectable for tests.
     public init(
         credentials: PodcastIndexCredentials,
         http: any HTTPClient = URLSession.shared,

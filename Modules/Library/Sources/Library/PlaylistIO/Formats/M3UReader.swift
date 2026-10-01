@@ -12,6 +12,10 @@ import Observability
 ///   `#EXTART:<artist>`  — per-entry artist.
 ///   `#EXTALB:<album>`   — per-entry album.
 public enum M3UReader {
+    /// Parses M3U `data` into a payload, one entry per path or URL line.
+    /// `sourceURL` names the playlist and is the base for relative paths.
+    /// Throws `PlaylistIOError.unreadable` when the bytes decode as no
+    /// supported text encoding.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> PlaylistPayload {
         let (text, _) = try Self.decode(data: data, sourceURL: sourceURL)
         let playlistName = sourceURL?.deletingPathExtension().lastPathComponent ?? "Imported Playlist"

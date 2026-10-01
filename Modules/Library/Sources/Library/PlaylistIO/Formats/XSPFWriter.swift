@@ -9,6 +9,9 @@ public enum XSPFWriter {
         }
     }
 
+    /// The XSPF document for `payload`, with XML-escaped text. File entries
+    /// are written as `file://` URLs, or as paths relative to the root in
+    /// `options.pathMode`; durations are in milliseconds.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var out = #"<?xml version="1.0" encoding="UTF-8"?>"# + "\n"
         out += #"<playlist version="1" xmlns="http://xspf.org/ns/0/">"# + "\n"

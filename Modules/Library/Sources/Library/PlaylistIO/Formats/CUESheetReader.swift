@@ -77,6 +77,11 @@ public enum CUESheetReader {
         }
     }
 
+    /// Parses CUE `data` into its `FILE` blocks and their tracks. A track
+    /// belongs to the file that holds its `INDEX 01`; a track without one is
+    /// dropped. `sourceURL` is the base for relative audio paths. Throws
+    /// `PlaylistIOError.unreadable` when the bytes decode as no supported
+    /// text encoding.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> CUESheet {
         guard let text = String(data: data, encoding: .utf8)
             ?? String(data: data, encoding: .windowsCP1252)

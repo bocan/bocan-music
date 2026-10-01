@@ -126,6 +126,8 @@ public actor TranscodeCoordinator {
         self.schedulePass()
     }
 
+    /// Stops observing and cancels the scheduled or running pass task. No new
+    /// pass is scheduled until `start()` is called again.
     public func stop() {
         self.running = false
         self.observationTask?.cancel()

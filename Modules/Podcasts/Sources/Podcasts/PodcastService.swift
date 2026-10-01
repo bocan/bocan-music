@@ -39,6 +39,10 @@ public actor PodcastService {
     /// Cached transcripts are deleted 30 days after their episode is played.
     private static let transcriptRetentionSeconds: TimeInterval = 30 * 24 * 60 * 60
 
+    /// Creates the service over its repositories. `search` is optional and
+    /// `nil` by default. `transcriptHTTP` is the network seam of the
+    /// transcript fetcher the service builds; `now` is the clock used for
+    /// timestamps, injectable for tests.
     public init(
         podcastRepo: PodcastRepository,
         episodeRepo: EpisodeRepository,
@@ -101,6 +105,12 @@ public actor PodcastService {
         return try await self.subscribe(feedURL: feedURL, indexHints: hints)
     }
 
+    /// Fetches and parses the feed, upserts the show and its episodes, and
+    /// returns the podcast row id. The stored address is the one that
+    /// answered the request, not a redirect target. `indexHints` supplies the
+    /// directory identifiers for the new row. Throws
+    /// `PodcastsError.invalidFeedURL` for a URL that cannot be normalised, and
+    /// passes on fetch and parse errors.
     public func subscribe(feedURL: URL, indexHints: PodcastSearchResult? = nil) async throws -> Int64 {
         guard let given = FeedURL.normalizedStorageURL(feedURL) else {
             throw PodcastsError.invalidFeedURL(feedURL.absoluteString)
@@ -432,10 +442,13 @@ public actor PodcastService {
 
     // MARK: - Reads
 
+    /// Every subscribed show, ordered by title.
     public func subscribedPodcasts() async throws -> [Podcast] {
         try await self.podcastRepo.fetchAllSubscribed()
     }
 
+    /// The show's episodes, newest first, each joined with its play state
+    /// (`state` is `nil` for an episode never played).
     public func episodes(podcastID: Int64) async throws -> [EpisodeListItem] {
         try await self.episodeRepo.fetchListItems(podcastID: podcastID)
     }
@@ -445,10 +458,14 @@ public actor PodcastService {
         try await self.episodeRepo.fetchListItems(podcastID: podcastID, order: order)
     }
 
+    /// Live list of subscribed shows, ordered by title. Emits at once and
+    /// again after every change to the `podcasts` table.
     public func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error> {
         await self.podcastRepo.observeSubscribed()
     }
 
+    /// Live episode list for the show, newest first. Emits at once and again
+    /// when the show's episodes or their play state change.
     public func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
         await self.episodeRepo.observeListItems(podcastID: podcastID)
     }
@@ -461,6 +478,8 @@ public actor PodcastService {
         await self.episodeRepo.observeListItems(podcastID: podcastID, order: order)
     }
 
+    /// Total episode counts keyed by podcast ID. A show with no episode rows
+    /// is absent.
     public func episodeCounts() async throws -> [Int64: Int] {
         try await self.episodeRepo.fetchAllPodcastCounts()
     }

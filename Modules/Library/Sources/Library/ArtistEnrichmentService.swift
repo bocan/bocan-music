@@ -26,6 +26,14 @@ public actor ArtistEnrichmentService {
     private let log = AppLogger.make(.library)
     private var runningPass: Task<Void, Never>?
 
+    /// Creates the service; no lookup runs until `start(after:)`.
+    ///
+    /// - Parameters:
+    ///   - batchSize: Artists fetched per database query.
+    ///   - pacing: Pause between two MusicBrainz lookups.
+    ///   - backoff: First pause after a 503 or network error; it doubles on each repeat.
+    ///   - maxBackoffs: Failures in a row before the pass gives up.
+    ///   - now: Clock for the `musicbrainz_fetched_at` stamp, injectable for tests.
     public init(
         artists: ArtistRepository,
         client: MusicBrainzClient = MusicBrainzClient(),
@@ -58,6 +66,8 @@ public actor ArtistEnrichmentService {
         }
     }
 
+    /// Cancels the pass in progress, if any. Artists not yet stamped stay
+    /// pending for the next pass.
     public func stop() {
         self.runningPass?.cancel()
         self.runningPass = nil

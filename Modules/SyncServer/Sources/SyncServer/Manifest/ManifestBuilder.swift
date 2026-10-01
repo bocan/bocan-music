@@ -481,6 +481,7 @@ public struct ManifestBuilder: Sendable {
 
 // MARK: - Size estimate
 
+/// Size and transcode-progress figures for the sync settings pane.
 public extension ManifestBuilder {
     /// The on-disk cost of a sync profile, for the Settings size estimate. Summed
     /// from the manifest the profile produces so it matches what would actually
@@ -491,6 +492,8 @@ public extension ManifestBuilder {
         public let episodeCount: Int
     }
 
+    /// The estimate for `profile` at Original quality: the `nil`-preset entry
+    /// of `sizeEstimates(for:)`.
     func sizeEstimate(for profile: SyncProfile) async throws -> SizeEstimate {
         try await self.sizeEstimates(for: profile)[nil] ?? SizeEstimate(bytes: 0, trackCount: 0, episodeCount: 0)
     }

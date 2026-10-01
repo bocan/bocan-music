@@ -10,6 +10,8 @@ public actor PodcastSearchService {
     private let itunes: ITunesSearchClient
     private let log: AppLogger
 
+    /// Creates the service. Pass `nil` for `podcastIndex` when there are no
+    /// Podcast Index credentials; search then uses iTunes only.
     public init(
         podcastIndex: PodcastIndexClient?,
         itunes: ITunesSearchClient,

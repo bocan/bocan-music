@@ -106,6 +106,7 @@ extension LyricsDocument: Codable {
 
 // MARK: - Helpers
 
+/// Derived properties and LRC serialisation.
 public extension LyricsDocument {
     /// Returns `true` when the document contains at least one non-empty line / non-empty text.
     var isEmpty: Bool {

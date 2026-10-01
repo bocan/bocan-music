@@ -189,6 +189,8 @@ public actor QueuePersistence {
     private let debounce: Duration
     private var pendingSave: Task<Void, Never>?
 
+    /// Creates a persistence actor that reads and writes the `settings` table
+    /// of `database`. `debounce` is how long `scheduleSave` waits before it writes.
     public init(database: Database, debounce: Duration = .seconds(2)) {
         self.repo = SettingsRepository(database: database)
         self.debounce = debounce

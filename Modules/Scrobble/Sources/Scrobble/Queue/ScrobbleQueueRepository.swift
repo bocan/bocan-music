@@ -116,6 +116,7 @@ public actor ScrobbleQueueRepository {
 
     private let db: Persistence.Database
 
+    /// Creates a repository over the scrobble tables of `database`.
     public init(database: Persistence.Database) {
         self.db = database
     }

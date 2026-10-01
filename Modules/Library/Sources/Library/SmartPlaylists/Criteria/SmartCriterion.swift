@@ -141,6 +141,7 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
 
 // MARK: - Convenience constructors
 
+/// Shorthand for building `and` / `or` groups.
 public extension SmartCriterion {
     /// Wraps multiple rules in an `and` group.
     static func all(_ rules: [SmartCriterion]) -> SmartCriterion {

@@ -12,13 +12,21 @@ import Observability
 public final class RemoteCommands {
     // MARK: - Handlers (set by QueuePlayer after init)
 
+    /// Called when the system sends the play command.
     public var onPlay: (@Sendable () async -> Void)?
+    /// Called when the system sends the pause command.
     public var onPause: (@Sendable () async -> Void)?
+    /// Called when the system sends the toggle play/pause command.
     public var onTogglePlayPause: (@Sendable () async -> Void)?
+    /// Called when the system sends the next-track command.
     public var onNextTrack: (@Sendable () async -> Void)?
+    /// Called when the system sends the previous-track command.
     public var onPreviousTrack: (@Sendable () async -> Void)?
+    /// Called with the requested position, in seconds, when the system scrubs.
     public var onSeek: (@Sendable (TimeInterval) async -> Void)?
+    /// Called with the skip interval, in seconds, for the skip-backward command.
     public var onSkipBack: (@Sendable (TimeInterval) async -> Void)?
+    /// Called with the skip interval, in seconds, for the skip-forward command.
     public var onSkipForward: (@Sendable (TimeInterval) async -> Void)?
 
     private let log = AppLogger.make(.playback)

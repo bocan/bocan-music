@@ -21,6 +21,8 @@ public actor DeepDiveService {
     private let now: @Sendable () -> Date
     private let log = AppLogger.make(.library)
 
+    /// Creates the service over the library in `database`. The clients, the
+    /// cache and the `now` clock are injectable for tests.
     public init(
         database: Database,
         musicBrainz: MusicBrainzClient = MusicBrainzClient(),

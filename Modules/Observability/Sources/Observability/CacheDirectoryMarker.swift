@@ -18,6 +18,7 @@ import Foundation
 /// Never mark a folder Bòcan cannot rebuild (the library database, `CoverArt`,
 /// `EditBackups`, `Backups`, podcast downloads, playlist covers); see #569.
 public enum CacheDirectoryMarker {
+    /// Name of the tag file written at the top of a marked folder.
     public static let tagFileName = "CACHEDIR.TAG"
 
     /// The line a tag must begin with, byte for byte.

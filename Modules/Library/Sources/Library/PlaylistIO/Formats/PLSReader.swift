@@ -16,6 +16,11 @@ import Foundation
 /// Recovers from a wrong/missing `NumberOfEntries` by trusting the highest
 /// `File<n>` index found.
 public enum PLSReader {
+    /// Parses PLS `data` into a payload, entries ordered by their `File<n>`
+    /// index. `sourceURL` names the playlist and is the base for relative
+    /// paths. Throws `PlaylistIOError.unreadable` when the bytes decode as no
+    /// supported text encoding, and `malformed` when there is neither a
+    /// `[playlist]` header nor any entry.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> PlaylistPayload {
         guard let text = String(data: stripBOM(data), encoding: .utf8)
             ?? String(data: stripBOM(data), encoding: .windowsCP1252)

@@ -27,6 +27,9 @@ public actor PodcastArtworkCache {
     /// past 5 MB, so the cap is generous; it still bounds a hostile or runaway URL.
     public static let defaultMaxBytes = 15 * 1024 * 1024
 
+    /// Creates the cache and marks its folder as excluded from backups.
+    /// `root` defaults to the Application Support artwork folder; `maxBytes`
+    /// is the largest image the cache accepts.
     public init(http: any HTTPClient = URLSession.shared, root: URL? = nil, maxBytes: Int = defaultMaxBytes) {
         self.http = http
         self.root = root ?? Self.defaultRoot

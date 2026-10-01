@@ -19,6 +19,8 @@ public actor WikipediaClient {
     private let rateLimiter: RateLimiter
     private let log = AppLogger.make(.network)
 
+    /// Creates a client. `userAgent` is sent on every request; a `nil`
+    /// `httpClient` means `URLSession.shared`.
     public init(
         userAgent: String = UserAgent.string,
         rateLimiter: RateLimiter = WikipediaClient.sharedRateLimiter,

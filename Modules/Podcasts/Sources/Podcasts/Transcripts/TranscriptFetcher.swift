@@ -14,6 +14,9 @@ public actor TranscriptFetcher {
     private let now: @Sendable () -> Date
     private let log = AppLogger.make(.podcasts)
 
+    /// Creates a fetcher that stores into `repo`. `maxBytes` is the size cap
+    /// for a transcript body, 5 MB by default; `now` is the clock, injectable
+    /// for tests.
     public init(
         http: any HTTPClient = URLSession.shared,
         repo: TranscriptRepository,

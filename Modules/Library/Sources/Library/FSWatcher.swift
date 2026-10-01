@@ -43,6 +43,8 @@ public actor FSWatcher {
 
     // MARK: - Init / deinit
 
+    /// Creates a watcher that reports changed URLs to `onChange`. Nothing is
+    /// watched until `watch(_:bookmark:)` adds a directory.
     public init(onChange: @Sendable @escaping ([URL]) -> Void) {
         self.onChange = onChange
     }

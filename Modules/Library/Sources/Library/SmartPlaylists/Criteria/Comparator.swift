@@ -99,7 +99,10 @@ public enum Comparator: Sendable, Codable, Hashable, CaseIterable {
 
 // MARK: - Raw representable
 
+/// String form of a comparator, as stored in the criteria JSON.
 public extension Comparator {
+    /// The comparator named `rawValue`. Never fails: a name this build does
+    /// not know becomes `.unknown(rawValue)`.
     init(rawValue: String) {
         switch rawValue {
         case "is":
@@ -194,6 +197,8 @@ public extension Comparator {
         }
     }
 
+    /// The case name as written to JSON; for `.unknown`, the original string
+    /// unchanged, so a newer app's value survives a round trip.
     var rawValue: String {
         switch self {
         case .is:
@@ -291,12 +296,16 @@ public extension Comparator {
 
 // MARK: - Codable
 
+/// Codes a comparator as a single JSON string, its `rawValue`.
 public extension Comparator {
+    /// Decodes from a single string. Throws only when the value is not a
+    /// string; an unrecognised name decodes as `.unknown`.
     init(from decoder: any Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
         self = Self(rawValue: raw)
     }
 
+    /// Encodes `rawValue` as a single string.
     func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
@@ -305,7 +314,10 @@ public extension Comparator {
 
 // MARK: - CaseIterable
 
+/// Hand-written because the `unknown` payload case blocks synthesis.
 public extension Comparator {
+    /// Every comparator this build knows, in declaration order. `.unknown`
+    /// is not included.
     static var allCases: [Comparator] {
         [
             .is,
