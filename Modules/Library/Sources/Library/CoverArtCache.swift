@@ -6,6 +6,41 @@ import Observability
 import Persistence
 import UniformTypeIdentifiers
 
+// MARK: - CoverArtFiles
+
+/// Where a cover's full-size image lives on disk.
+///
+/// Working art is capped at 4096 px on its longest side. A larger cover keeps
+/// its full-size bytes in `originals/`, beside the two-character working
+/// folders, under the same file name (ADR-010 "Show original", #583).
+public enum CoverArtFiles {
+    /// The full-size image for the working art at `workingPath`: the kept
+    /// original when there is one, otherwise the working file itself (which
+    /// is then the full image, or the best copy left after an original was
+    /// evicted), or `nil` when neither exists on disk.
+    public static func fullSizeURL(forWorkingPath workingPath: String) -> URL? {
+        let working = URL(fileURLWithPath: workingPath)
+        let original = self.originalURL(forWorking: working)
+        let fm = FileManager.default
+        if fm.fileExists(atPath: original.path) {
+            return original
+        }
+        return fm.fileExists(atPath: working.path) ? working : nil
+    }
+
+    /// `<cacheRoot>/originals/<hash>.<ext>` for working art at
+    /// `<cacheRoot>/<hash[0..<2]>/<hash>.<ext>`. The single place that knows
+    /// the layout, shared by the writer (`CoverArtCache.persist`) and readers.
+    static func originalURL(forWorking working: URL) -> URL {
+        working.deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("originals", isDirectory: true)
+            .appendingPathComponent(working.lastPathComponent)
+    }
+}
+
+// MARK: - CoverArtCache
+
 /// Manages the cover art cache directory and persists cover-art rows.
 ///
 /// Cache layout:
@@ -44,7 +79,10 @@ actor CoverArtCache {
     ///   use evicted each new cover as soon as it was written.
     ///
     /// So what the sweep evicts is art nothing shows any more, and the
-    /// full-size originals of rebuildable art, which nothing reads.
+    /// full-size originals of rebuildable art. Those originals are what an
+    /// album page's "Show Original Cover" opens (`CoverArtFiles`, #583);
+    /// once one is evicted it opens the working copy instead, and the
+    /// full-size bytes are still in the audio file or the sidecar.
     private let totalBytesLimit: Int
 
     /// How long after it is written (or refreshed by a dedup hit) working art
@@ -129,8 +167,8 @@ actor CoverArtCache {
                 ])
 
                 if resized.didDownsample {
-                    let originalsDir = self.cacheRoot.appendingPathComponent("originals", isDirectory: true)
-                    let originalURL = originalsDir.appendingPathComponent("\(hash).\(art.fileExtension)")
+                    let originalURL = CoverArtFiles.originalURL(forWorking: fileURL)
+                    let originalsDir = originalURL.deletingLastPathComponent()
                     if !fm.fileExists(atPath: originalURL.path) {
                         try fm.createDirectory(at: originalsDir, withIntermediateDirectories: true)
                         try art.data.write(to: originalURL, options: .atomic)
@@ -219,9 +257,11 @@ actor CoverArtCache {
             if total <= self.totalBytesLimit {
                 break
             }
-            // An original is kept only for unrebuildable art: nothing reads the
-            // original of an embedded or sidecar cover. Working art is kept
-            // while in use, or while new enough that its link may be pending.
+            // An original is kept only for unrebuildable art. The original of
+            // an embedded or sidecar cover can go: its full-size bytes are
+            // still in the file, and "Show Original Cover" then opens the
+            // working copy. Working art is kept while in use, or while new
+            // enough that its link may be pending.
             let keepWorking = !entry.isOriginal && (inUse.contains(entry.hash) || entry.mtime > linkCutoff)
             if unrebuildable.contains(entry.hash) || keepWorking {
                 protectedCount += 1

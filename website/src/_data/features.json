@@ -25,7 +25,7 @@
   },
   {
     "title": "Tags it knows; tags you don't.",
-    "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours. Pick the exact release you own, then write Picard-compatible IDs, ISRC and totals back to the file. Artwork lands as JPEG, PNG, HEIC, or AVIF, and sidecar covers (cover.jpg and friends) are picked up straight from the folder."
+    "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours. Pick the exact release you own, then write Picard-compatible IDs, ISRC and totals back to the file. Artwork lands as JPEG, PNG, HEIC, or AVIF, and sidecar covers (cover.jpg and friends) are picked up straight from the folder. Right-click an album's cover to open it at full size."
   },
   {
     "title": "Deep Dive on any artist, album or track. Off until you say so.",

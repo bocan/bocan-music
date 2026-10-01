@@ -55,11 +55,18 @@ struct LibraryViewModelToastTests {
         #expect(vm.toast == nil)
     }
 
-    /// Polls `condition` until true or `timeout` elapses, then returns. A
+    /// Polls `condition` until true or the allowance runs out, then returns. A
     /// subsequent `#expect` turns a timeout into an explicit failure.
+    ///
+    /// The allowance is counted in turns of 20 ms, not against the wall clock.
+    /// The dismiss task and this test both need the main actor, so when other
+    /// suites hold it for longer than `timeout` (seen in CI, 2026-10-01), a
+    /// wall-clock deadline was already past when this resumed and the wait
+    /// ended before the dismiss task had its turn. Each turn here yields the
+    /// main actor, so time spent blocked uses none of the allowance.
     private func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) async throws {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
+        let turns = Int(timeout / 0.02)
+        for _ in 0 ..< turns {
             if condition() {
                 return
             }

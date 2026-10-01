@@ -15,6 +15,8 @@ public struct AlbumDetailView: View {
     @State private var album: Album?
     @State private var artistName = ""
     @State private var artwork: NSImage?
+    /// The cached cover's working path, for "Show Original Cover".
+    @State private var coverPath: String?
 
     public init(albumID: Int64, library: LibraryViewModel) {
         self.albumID = albumID
@@ -152,6 +154,13 @@ public struct AlbumDetailView: View {
         .frame(width: 180, height: 180)
         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
         .shadow(radius: 8, y: 4)
+        .contextMenu {
+            if let path = self.coverPath ?? self.album?.coverArtPath {
+                Button(L10n.string("Show Original Cover")) {
+                    OriginalCoverOpener.open(workingPath: path, albumID: self.albumID, library: self.library)
+                }
+            }
+        }
     }
 
     // MARK: - Data loading
@@ -163,6 +172,11 @@ public struct AlbumDetailView: View {
     }
 
     private func load() async {
+        // This view's identity survives a switch between albums (see the
+        // task(id:) note), so the previous album's cover would otherwise stay
+        // on screen, and behind "Show Original Cover", when the next has none.
+        self.artwork = nil
+        self.coverPath = nil
         await self.library.tracks.load(albumID: self.albumID)
 
         // Resolve album record
@@ -188,6 +202,7 @@ public struct AlbumDetailView: View {
                     try await artRepo.fetch(hash: hash)
                 }.flatMap(\.self)
                 if let artRec {
+                    self.coverPath = artRec.path
                     self.artwork = await ArtworkLoader.shared.image(at: artRec.path)
                 }
             }
