@@ -124,6 +124,18 @@ struct FileServing {
             return Self.notFound
         }
 
+        return Self.sourceFileResponse(request, track: track, bookmark: bookmark, size: size)
+    }
+
+    /// The streamed response for a track served from its source file: the
+    /// whole file, the requested range, or `416`. The body opens the file
+    /// under the bookmark's security scope when it is sent.
+    private static func sourceFileResponse(
+        _ request: HttpRequest,
+        track: Track,
+        bookmark: Data,
+        size: Int64
+    ) -> HttpResponse {
         var headers: [String: String] = [
             "content-type": Self.audioMIME(track.fileFormat),
             "accept-ranges": "bytes",
@@ -135,12 +147,14 @@ struct FileServing {
         switch Self.resolveRange(request, totalSize: size) {
         case .unsatisfiable:
             return .error(.notFound, message: "Range not satisfiable", status: 416)
+
         case let .full(fullSize):
             return .streamed(status: 200, headers: headers, length: Int(fullSize)) { write in
                 try await SecurityScope.withAccess(bookmark) { url in
                     try await Self.streamFile(url, offset: 0, length: fullSize, write: write)
                 }
             }
+
         case let .partial(start, length, contentRange):
             headers["content-range"] = contentRange
             return .streamed(status: 206, headers: headers, length: Int(length)) { write in
@@ -194,7 +208,19 @@ struct FileServing {
             return response
         }
         let url = self.transcodeStore.artifactURL(trackID: trackId, sourceContentHash: sourceHash, preset: preset)
+        return self.artifactResponse(request, url: url, row: row, trackId: trackId, preset: preset)
+    }
 
+    /// The streamed response for a prepared artifact: the whole file, the
+    /// requested range, or `416`. A body that delivers the artifact through
+    /// EOF stamps `served_at` after the last byte.
+    private func artifactResponse(
+        _ request: HttpRequest,
+        url: URL,
+        row: SyncTranscode,
+        trackId: Int64,
+        preset: TranscodePreset
+    ) -> HttpResponse {
         var headers: [String: String] = [
             "content-type": Self.audioMIME(preset.formatName),
             "accept-ranges": "bytes",
@@ -274,10 +300,12 @@ struct FileServing {
             switch Self.resolveRange(request, totalSize: size) {
             case .unsatisfiable:
                 return .error(.notFound, message: "Range not satisfiable", status: 416)
+
             case let .full(fullSize):
                 return .streamed(status: 200, headers: headers, length: Int(fullSize)) { write in
                     try await Self.streamFile(fileURL, offset: 0, length: fullSize, write: write)
                 }
+
             case let .partial(start, length, contentRange):
                 var rangeHeaders = headers
                 rangeHeaders["content-range"] = contentRange
@@ -346,8 +374,11 @@ struct FileServing {
         do {
             guard let document = try await self.lyricsService.lyrics(for: trackId) else { return Self.notFound }
             let kind = switch document {
-            case .synced: "synced"
-            case .unsynced: "unsynced"
+            case .synced:
+                "synced"
+
+            case .unsynced:
+                "unsynced"
             }
             // The same serialization the manifest hashed for lyricsHash.
             let payload = LyricsPayload(trackId: trackId, kind: kind, text: document.toLRC())
@@ -441,29 +472,6 @@ struct FileServing {
             guard let chunk = try handle.read(upToCount: chunkSize), !chunk.isEmpty else { break }
             try await write(chunk)
             remaining -= Int64(chunk.count)
-        }
-    }
-
-    private static func audioMIME(_ format: String) -> String {
-        switch format.lowercased() {
-        case "flac": "audio/flac"
-        case "mp3", "audio/mpeg": "audio/mpeg"
-        case "m4a", "aac", "mp4", "audio/mp4": "audio/mp4"
-        case "ogg", "oga": "audio/ogg"
-        case "opus": "audio/opus"
-        case "wav": "audio/wav"
-        case "aiff", "aif": "audio/aiff"
-        default: "application/octet-stream"
-        }
-    }
-
-    private static func imageMIME(_ format: String?) -> String {
-        switch format?.lowercased() {
-        case "jpg", "jpeg": "image/jpeg"
-        case "png": "image/png"
-        case "gif": "image/gif"
-        case "webp": "image/webp"
-        default: "application/octet-stream"
         }
     }
 }

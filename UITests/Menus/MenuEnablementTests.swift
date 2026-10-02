@@ -72,12 +72,14 @@ final class MenuEnablementTests: XCTestCase {
         app.typeKey("a", modifierFlags: .command)
         self.settle()
         XCTAssertEqual(
-            try self.selectedTrackRowCount(app: app), selectedBefore,
+            try self.selectedTrackRowCount(app: app),
+            selectedBefore,
             "⌘A in the search field must not change the track selection (#379)"
         )
         app.typeText("x")
         XCTAssertEqual(
-            field.value as? String, "x",
+            field.value as? String,
+            "x",
             "⌘A must select the search field's text so typing replaces it (#379)"
         )
     }
@@ -110,7 +112,7 @@ final class MenuEnablementTests: XCTestCase {
             for (menuTitle, specs) in interesting {
                 let observed = try crawler.crawl(menuTitled: menuTitle)
                 for spec in specs {
-                    let expected = spec.enablement[state]!
+                    let expected = try XCTUnwrap(spec.enablement[state])
                     guard let item = Self.find(spec, in: observed.items) else {
                         mismatches.append(
                             "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): not found"
@@ -118,8 +120,10 @@ final class MenuEnablementTests: XCTestCase {
                         continue
                     }
                     if item.enabled != expected {
+                        let wanted = expected ? "enabled" : "disabled"
+                        let observedState = item.enabled ? "enabled" : "disabled"
                         mismatches.append(
-                            "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): expected \(expected ? "enabled" : "disabled"), observed \(item.enabled ? "enabled" : "disabled")"
+                            "[\(state.rawValue)] \(menuTitle) ▸ \(spec.canonicalTitle): expected \(wanted), observed \(observedState)"
                         )
                     }
                 }

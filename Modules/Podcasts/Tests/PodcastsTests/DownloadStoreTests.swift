@@ -13,14 +13,14 @@ struct DownloadStoreTests {
     @Test("fileURL is deterministic and lives under the show directory")
     func fileURLDeterministic() {
         let (store, root) = self.makeStore()
-        let a = store.fileURL(podcastID: 7, guid: "https://example.com/ep/1", mime: "audio/mpeg")
-        let b = store.fileURL(podcastID: 7, guid: "https://example.com/ep/1", mime: "audio/mpeg")
-        #expect(a == b, "same inputs map to the same path")
-        #expect(a.pathExtension == "mp3")
-        #expect(a.deletingLastPathComponent().lastPathComponent == "7")
-        #expect(a.path.hasPrefix(root.path))
+        let first = store.fileURL(podcastID: 7, guid: "https://example.com/ep/1", mime: "audio/mpeg")
+        let second = store.fileURL(podcastID: 7, guid: "https://example.com/ep/1", mime: "audio/mpeg")
+        #expect(first == second, "same inputs map to the same path")
+        #expect(first.pathExtension == "mp3")
+        #expect(first.deletingLastPathComponent().lastPathComponent == "7")
+        #expect(first.path.hasPrefix(root.path))
         // A guid containing slashes must not leak into the filename.
-        #expect(!a.lastPathComponent.contains("/"))
+        #expect(!first.lastPathComponent.contains("/"))
     }
 
     @Test("contentHash is the file's SHA-256 (#484)")

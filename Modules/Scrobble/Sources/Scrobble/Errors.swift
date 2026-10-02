@@ -33,22 +33,31 @@ extension ScrobbleError: CustomStringConvertible {
         switch self {
         case let .notAuthenticated(provider):
             "\(provider): not signed in."
+
         case let .invalidCredentials(provider):
             "\(provider) rejected the saved credentials. Sign in again."
+
         case let .transient(provider, reason, _):
             "\(provider) is temporarily unavailable: \(reason). It will be retried."
+
         case let .permanent(provider, reason):
             "\(provider) rejected this play: \(reason)"
+
         case .offline:
             "No network connection. Plays are queued until it returns."
+
         case .timestampOutOfRange:
             "This play is too far in the past to submit."
+
         case let .keychain(status, message):
             "Keychain access failed: \(message) (status \(status))"
+
         case let .malformedResponse(provider, reason):
             "\(provider) returned an unexpected response: \(reason)"
+
         case .authTimeout:
             "The sign-in window closed before it was authorised."
+
         case .authCancelled:
             "Sign-in was cancelled."
         }

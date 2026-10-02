@@ -29,13 +29,13 @@ public actor ScrobbleService: ScrobbleSink {
     ) {
         var providerMap: [String: any ScrobbleProvider] = [:]
         var workerMap: [String: ScrobbleQueueWorker] = [:]
-        for p in providers {
-            providerMap[p.id] = p
-            workerMap[p.id] = ScrobbleQueueWorker(
-                provider: p,
+        for provider in providers {
+            providerMap[provider.id] = provider
+            workerMap[provider.id] = ScrobbleQueueWorker(
+                provider: provider,
                 repository: repository,
-                policy: policy,
-                reachability: reachability
+                reachability: reachability,
+                policy: policy
             )
         }
         self.providers = providerMap
@@ -109,17 +109,20 @@ public actor ScrobbleService: ScrobbleSink {
     /// Best-effort "now playing" notification.
     public func nowPlaying(
         trackID: Int64,
-        artist: String,
+        track: TrackIdentity,
         albumArtist: String?,
         album: String?,
-        title: String,
-        duration: TimeInterval,
-        mbid: String?
+        duration: TimeInterval
     ) async {
         let event = PlayEvent(
-            queueID: -1, trackID: trackID,
-            artist: artist, albumArtist: albumArtist, album: album,
-            title: title, duration: duration, mbid: mbid,
+            queueID: -1,
+            trackID: trackID,
+            artist: track.artist,
+            albumArtist: albumArtist,
+            album: album,
+            title: track.title,
+            duration: duration,
+            mbid: track.mbid,
             playedAt: Date()
         )
         await self.dispatchNowPlaying(event)
@@ -136,9 +139,14 @@ public actor ScrobbleService: ScrobbleSink {
                 return
             }
             let event = PlayEvent(
-                queueID: -1, trackID: row.trackID,
-                artist: row.artist, albumArtist: row.albumArtist, album: row.album,
-                title: row.title, duration: row.duration, mbid: row.mbid,
+                queueID: -1,
+                trackID: row.trackID,
+                artist: row.artist,
+                albumArtist: row.albumArtist,
+                album: row.album,
+                title: row.title,
+                duration: row.duration,
+                mbid: row.mbid,
                 playedAt: Date()
             )
             await self.dispatchNowPlaying(event)
@@ -174,15 +182,9 @@ public actor ScrobbleService: ScrobbleSink {
         }
         do {
             let queueID = try await self.repository.enqueueSubsonic(
-                serverID: context.serverID,
-                songID: context.songID,
+                context: context,
                 playedAt: playedAt,
                 durationPlayed: durationPlayed,
-                title: context.title,
-                artist: context.artist,
-                album: context.album,
-                albumArtist: context.albumArtist,
-                duration: context.duration,
                 providerIDs: activeProviders
             )
             self.log.info("scrobble.service.enqueued.subsonic", [
@@ -203,9 +205,14 @@ public actor ScrobbleService: ScrobbleSink {
     public func nowPlayingSubsonic(context: SubsonicPlayContext) async {
         guard await !(self.activeProviderIDs().isEmpty) else { return }
         let event = PlayEvent(
-            queueID: -1, trackID: -1,
-            artist: context.artist, albumArtist: context.albumArtist, album: context.album,
-            title: context.title, duration: context.duration, mbid: nil,
+            queueID: -1,
+            trackID: -1,
+            artist: context.artist,
+            albumArtist: context.albumArtist,
+            album: context.album,
+            title: context.title,
+            duration: context.duration,
+            mbid: nil,
             playedAt: Date(),
             subsonicServerID: context.serverID,
             subsonicSongID: context.songID
@@ -286,10 +293,8 @@ public actor ScrobbleService: ScrobbleSink {
 
     private func activeProviderIDs() async -> [String] {
         var out: [String] = []
-        for (pid, p) in self.providers {
-            if await p.isAuthenticated() {
-                out.append(pid)
-            }
+        for (pid, provider) in self.providers where await provider.isAuthenticated() {
+            out.append(pid)
         }
         return out.sorted()
     }

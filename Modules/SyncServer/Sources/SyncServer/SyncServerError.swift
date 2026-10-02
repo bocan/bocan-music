@@ -27,12 +27,14 @@ extension SyncServerError: CustomStringConvertible {
         switch self {
         case let .pairing(reason):
             "Pairing failed: \(reason)"
+
         case let .identity(reason, status):
             if let status {
                 "The sync server's identity could not be prepared: \(reason) (status \(status))"
             } else {
                 "The sync server's identity could not be prepared: \(reason)"
             }
+
         case let .transcodeSourceUnavailable(trackID):
             "The source file for track \(trackID) could not be found."
         }

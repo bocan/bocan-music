@@ -11,16 +11,22 @@ private enum AnnotationAction {
 
     var serverID: UUID {
         switch self {
-        case let .star(s, _), let .unstar(s, _), let .setRating(s, _, _): s
+        case let .star(s, _), let .unstar(s, _), let .setRating(s, _, _):
+            s
         }
     }
 
     /// Log-only name for the action kind.
     var name: String {
         switch self {
-        case .star: "star"
-        case .unstar: "unstar"
-        case .setRating: "setRating"
+        case .star:
+            "star"
+
+        case .unstar:
+            "unstar"
+
+        case .setRating:
+            "setRating"
         }
     }
 }
@@ -61,6 +67,8 @@ public actor SubsonicAnnotations {
 
     // MARK: - Init
 
+    /// Creates a queue that delivers through `service`, which also supplies
+    /// each server's `syncStars` and `syncRatings` flags.
     public init(service: SubsonicService) {
         self.service = service
     }
@@ -104,6 +112,7 @@ public actor SubsonicAnnotations {
         let enabled = switch action {
         case .star, .unstar:
             await self.service.syncsStars(serverID: action.serverID)
+
         case .setRating:
             await self.service.syncsRatings(serverID: action.serverID)
         }
@@ -123,8 +132,10 @@ public actor SubsonicAnnotations {
             switch action {
             case let .star(sid, songID):
                 try await self.service.star(serverID: sid, songID: songID)
+
             case let .unstar(sid, songID):
                 try await self.service.unstar(serverID: sid, songID: songID)
+
             case let .setRating(sid, songID, rating):
                 try await self.service.setRating(serverID: sid, songID: songID, rating: rating)
             }
@@ -151,7 +162,8 @@ public actor SubsonicAnnotations {
             } else {
                 // Extract song ID for the event.
                 let songID: String = switch action {
-                case let .star(_, s), let .unstar(_, s), let .setRating(_, s, _): s
+                case let .star(_, s), let .unstar(_, s), let .setRating(_, s, _):
+                    s
                 }
                 self.log.error(
                     "subsonic.annotation.exhausted",

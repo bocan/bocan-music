@@ -4,41 +4,9 @@ import Testing
 @testable import Persistence
 
 @Suite("PlaylistService")
-struct PlaylistServiceTests {
-    // MARK: - Helpers
-
-    private func makeDatabase() async throws -> Persistence.Database {
-        try await Persistence.Database(location: .inMemory)
-    }
-
-    private func makeTrack(
-        in db: Persistence.Database,
-        fileURL: String,
-        title: String = "Track"
-    ) async throws -> Int64 {
-        let now = Int64(Date().timeIntervalSince1970)
-        let track = Track(
-            fileURL: fileURL,
-            fileSize: 1024,
-            fileMtime: now,
-            fileFormat: "mp3",
-            duration: 180,
-            title: title,
-            addedAt: now,
-            updatedAt: now
-        )
-        let repo = TrackRepository(database: db)
-        return try await repo.insert(track)
-    }
-
-    private func tracks(_ count: Int, in db: Persistence.Database) async throws -> [Int64] {
-        var ids: [Int64] = []
-        for i in 0 ..< count {
-            let id = try await self.makeTrack(in: db, fileURL: "file:///tmp/t\(i).mp3", title: "T\(i)")
-            ids.append(id)
-        }
-        return ids
-    }
+struct PlaylistServiceTests: PlaylistServiceFixtures {
+    // The fixture builders are in `PlaylistServiceTestSupport.swift`. The
+    // sort tests are in `PlaylistServiceSortTests`.
 
     // MARK: - CRUD
 
@@ -46,11 +14,11 @@ struct PlaylistServiceTests {
     func createManual() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Favourites")
-        #expect(p.id != nil)
-        #expect(p.kind == .manual)
+        let playlist = try await service.create(name: "Favourites")
+        #expect(playlist.id != nil)
+        #expect(playlist.kind == .manual)
         let list = try await service.list()
-        #expect(list.contains { $0.id == p.id })
+        #expect(list.contains { $0.id == playlist.id })
     }
 
     @Test("create rejects empty name")
@@ -85,8 +53,8 @@ struct PlaylistServiceTests {
     func rename() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Old")
-        guard let id = p.id else { return }
+        let playlist = try await service.create(name: "Old")
+        guard let id = playlist.id else { return }
         try await service.rename(id, to: "New")
         let repo = PlaylistRepository(database: db)
         let updated = try await repo.fetch(id: id)
@@ -126,8 +94,8 @@ struct PlaylistServiceTests {
     func deletePlaylistKeepsTracks() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let trackIDs = try await self.tracks(3, in: db)
         try await service.addTracks(trackIDs, to: pid)
         try await service.delete(pid)
@@ -170,8 +138,8 @@ struct PlaylistServiceTests {
     func addAndCount() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let trackIDs = try await self.tracks(4, in: db)
         try await service.addTracks(trackIDs, to: pid)
         let nodes = try await service.list()
@@ -184,8 +152,8 @@ struct PlaylistServiceTests {
     func addTracksIncreasing() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(3, in: db)
         try await service.addTracks(ids, to: pid)
         let repo = PlaylistRepository(database: db)
@@ -200,8 +168,8 @@ struct PlaylistServiceTests {
     func addTracksMiddle() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let firstA = try await self.makeTrack(in: db, fileURL: "file:///tmp/midA.mp3")
         let firstB = try await self.makeTrack(in: db, fileURL: "file:///tmp/midB.mp3")
         try await service.addTracks([firstA, firstB], to: pid)
@@ -217,8 +185,8 @@ struct PlaylistServiceTests {
     func repackOnCollision() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         // Manually seed tight positions to force a repack path.
         let trackIDs = try await self.tracks(3, in: db)
         let repo = PlaylistRepository(database: db)
@@ -244,8 +212,8 @@ struct PlaylistServiceTests {
     func removeTracks() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(4, in: db)
         try await service.addTracks(ids, to: pid)
         try await service.removeTracks(at: IndexSet([1, 3]), from: pid)
@@ -257,8 +225,8 @@ struct PlaylistServiceTests {
     func moveTracksMirrorsSwiftUI() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(5, in: db)
         try await service.addTracks(ids, to: pid)
         // Move element at offset 1 to offset 4 -> expected order [0, 2, 3, 1, 4]
@@ -271,8 +239,8 @@ struct PlaylistServiceTests {
     func duplicate() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Original")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "Original")
+        guard let pid = playlist.id else { return }
         let ids = try await self.tracks(3, in: db)
         try await service.addTracks(ids, to: pid)
         let copy = try await service.duplicate(pid)
@@ -298,8 +266,8 @@ struct PlaylistServiceTests {
     func accentColor() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let id = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let id = playlist.id else { return }
         try await service.setAccentColor(id, hex: "#FF9500")
         try await service.setAccentColor(id, hex: nil)
         await #expect(throws: PlaylistError.self) {
@@ -313,8 +281,8 @@ struct PlaylistServiceTests {
     func oracleParity() async throws {
         let db = try await self.makeDatabase()
         let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
+        let playlist = try await service.create(name: "P")
+        guard let pid = playlist.id else { return }
 
         var oracle: [Int64] = []
         var pool: [Int64] = []
@@ -365,157 +333,5 @@ struct PlaylistServiceTests {
 
         let actualIDs = try await service.tracks(in: pid).map { $0.id ?? -1 }
         #expect(actualIDs == oracle)
-    }
-
-    // MARK: - Sort contents
-
-    @Test("sortContents by title reorders tracks alphabetically")
-    func sortByTitle() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
-        let charlie = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_c.mp3", title: "Charlie")
-        let alpha = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_a.mp3", title: "Alpha")
-        let bravo = try await self.makeTrack(in: db, fileURL: "file:///tmp/st_b.mp3", title: "Bravo")
-        // Add in C, A, B order; after sort expect A, B, C.
-        try await service.addTracks([charlie, alpha, bravo], to: pid)
-        try await service.sortContents(pid, by: .title)
-        let titles = try await service.tracks(in: pid).map { $0.title ?? "" }
-        #expect(titles == ["Alpha", "Bravo", "Charlie"])
-    }
-
-    @Test("sortContents by title is case-insensitive")
-    func sortByTitleCaseInsensitive() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
-        let lower = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_a.mp3", title: "alpha")
-        let mixed = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_b.mp3", title: "Bravo")
-        let caps = try await self.makeTrack(in: db, fileURL: "file:///tmp/ci_c.mp3", title: "AARDVARK")
-        try await service.addTracks([lower, mixed, caps], to: pid)
-        try await service.sortContents(pid, by: .title)
-        let titles = try await service.tracks(in: pid).map { $0.title ?? "" }
-        // LOWER("AARDVARK") < LOWER("alpha") < LOWER("Bravo")
-        #expect(titles == ["AARDVARK", "alpha", "Bravo"])
-    }
-
-    @Test("sortContents by dateAdded orders oldest first")
-    func sortByDateAdded() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
-        let repo = TrackRepository(database: db)
-        let old = Track(
-            fileURL: "file:///tmp/da_old.mp3",
-            fileFormat: "mp3",
-            duration: 1,
-            title: "Old",
-            addedAt: 1000,
-            updatedAt: 1000
-        )
-        let mid = Track(
-            fileURL: "file:///tmp/da_mid.mp3",
-            fileFormat: "mp3",
-            duration: 1,
-            title: "Mid",
-            addedAt: 2000,
-            updatedAt: 2000
-        )
-        let newTrack = Track(
-            fileURL: "file:///tmp/da_new.mp3",
-            fileFormat: "mp3",
-            duration: 1,
-            title: "New",
-            addedAt: 3000,
-            updatedAt: 3000
-        )
-        let idOld = try await repo.insert(old)
-        let idMid = try await repo.insert(mid)
-        let idNew = try await repo.insert(newTrack)
-        // Add newest first; sort should flip to oldest first.
-        try await service.addTracks([idNew, idMid, idOld], to: pid)
-        try await service.sortContents(pid, by: .dateAdded)
-        let titles = try await service.tracks(in: pid).map { $0.title ?? "" }
-        #expect(titles == ["Old", "Mid", "New"])
-    }
-
-    @Test("sortContents by artist sorts by artist name then title")
-    func sortByArtist() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
-        let artistRepo = ArtistRepository(database: db)
-        let trackRepo = TrackRepository(database: db)
-        let now = Int64(Date().timeIntervalSince1970)
-        let zoeID = try await artistRepo.insert(Artist(name: "Zoe"))
-        let andyID = try await artistRepo.insert(Artist(name: "Andy"))
-        let t1 = Track(
-            fileURL: "file:///tmp/ar_z.mp3",
-            fileFormat: "mp3",
-            duration: 1,
-            title: "ZoeSong",
-            artistID: zoeID,
-            addedAt: now,
-            updatedAt: now
-        )
-        let t2 = Track(
-            fileURL: "file:///tmp/ar_a.mp3",
-            fileFormat: "mp3",
-            duration: 1,
-            title: "AndySong",
-            artistID: andyID,
-            addedAt: now,
-            updatedAt: now
-        )
-        let id1 = try await trackRepo.insert(t1)
-        let id2 = try await trackRepo.insert(t2)
-        // Add Zoe first, Andy second; after artist sort Andy should be first.
-        try await service.addTracks([id1, id2], to: pid)
-        try await service.sortContents(pid, by: .artist)
-        let titles = try await service.tracks(in: pid).map { $0.title ?? "" }
-        #expect(titles == ["AndySong", "ZoeSong"])
-    }
-
-    @Test("sortContents rejects smart playlists")
-    func sortRejectsSmart() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let pRepo = PlaylistRepository(database: db)
-        let now = Int64(Date().timeIntervalSince1970)
-        let smart = Playlist(name: "Smart", isSmart: true, createdAt: now, updatedAt: now, kind: .smart)
-        let id = try await pRepo.insert(smart)
-        await #expect(throws: PlaylistError.self) {
-            try await service.sortContents(id, by: .title)
-        }
-    }
-
-    @Test("sortContents on empty playlist is a no-op")
-    func sortEmpty() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "Empty")
-        guard let pid = p.id else { return }
-        try await service.sortContents(pid, by: .title)
-        let tracks = try await service.tracks(in: pid)
-        #expect(tracks.isEmpty)
-    }
-
-    @Test("sortContents positions are on the 1024 grid after sorting")
-    func sortProducesCleanPositions() async throws {
-        let db = try await self.makeDatabase()
-        let service = PlaylistService(database: db)
-        let p = try await service.create(name: "P")
-        guard let pid = p.id else { return }
-        let ids = try await self.tracks(5, in: db)
-        try await service.addTracks(ids, to: pid)
-        try await service.sortContents(pid, by: .title)
-        let repo = PlaylistRepository(database: db)
-        let membership = try await repo.fetchMembership(playlistID: pid)
-        #expect(membership.allSatisfy { $0.position % 1024 == 0 })
-        #expect(membership.count == 5)
     }
 }

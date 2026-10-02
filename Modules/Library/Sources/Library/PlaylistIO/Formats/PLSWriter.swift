@@ -12,6 +12,9 @@ public enum PLSWriter {
         }
     }
 
+    /// The PLS text for `payload`, entries numbered from 1. `TitleN` falls
+    /// back to the artist when there is no title, and `LengthN` is -1 when
+    /// the duration is unknown.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var lines: [String] = []
         lines.append("[playlist]")
@@ -20,8 +23,8 @@ public enum PLSWriter {
             lines.append("File\(n)=\(M3UWriter.renderPath(for: entry, mode: options.pathMode))")
             if let t = entry.titleHint, !t.isEmpty {
                 lines.append("Title\(n)=\(t)")
-            } else if let a = entry.artistHint, !a.isEmpty {
-                lines.append("Title\(n)=\(a)")
+            } else if let artist = entry.artistHint, !artist.isEmpty {
+                lines.append("Title\(n)=\(artist)")
             }
             let dur = entry.durationHint.map { Int($0.rounded()) } ?? -1
             lines.append("Length\(n)=\(dur)")

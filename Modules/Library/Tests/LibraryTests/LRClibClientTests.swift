@@ -51,7 +51,7 @@ struct LRClibClientTests {
 
     @Test("get returns nil on 404")
     func getReturnsNilOn404() async throws {
-        let session = URLSession.stubbed(
+        let session = try URLSession.stubbed(
             for: "lrclib.net",
             body: Data(),
             statusCode: 404
@@ -65,7 +65,7 @@ struct LRClibClientTests {
 
     @Test("get retries on 429 and eventually returns nil after max attempts")
     func getRetriesOn429() async throws {
-        let session = URLSession.stubbed(
+        let session = try URLSession.stubbed(
             for: "lrclib.net",
             body: Data(),
             statusCode: 429
@@ -140,16 +140,17 @@ private class StubURLProtocol: URLProtocol {
 }
 
 extension URLSession {
-    static func stubbed(for host: String, body: Data, statusCode: Int) -> URLSession {
-        StubURLProtocol.handler = { req in
-            let resp = HTTPURLResponse(
-                url: req.url!,
-                statusCode: statusCode,
-                httpVersion: nil,
-                headerFields: nil
-            )!
-            return (body, resp)
-        }
+    /// The response is built here, in the test's own context, so a failure to
+    /// build it fails the test instead of crashing on the URL loading thread.
+    static func stubbed(for host: String, body: Data, statusCode: Int) throws -> URLSession {
+        let url = try #require(URL(string: "https://\(host)/"))
+        let resp = try #require(HTTPURLResponse(
+            url: url,
+            statusCode: statusCode,
+            httpVersion: nil,
+            headerFields: nil
+        ))
+        StubURLProtocol.handler = { _ in (body, resp) }
         StubURLProtocol.errorHandler = nil
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [StubURLProtocol.self]

@@ -32,11 +32,15 @@ struct LimitSortCodableTests {
 
     @Test("Multi-key descriptors survive an encode/decode roundtrip in order")
     func multiKeyRoundtrips() throws {
-        let original = LimitSort(sortDescriptors: [
-            SmartSortDescriptor(key: .artist, ascending: true),
-            SmartSortDescriptor(key: .trackNumber, ascending: true),
-            SmartSortDescriptor(key: .title, ascending: false),
-        ], limit: 100, liveUpdate: true)
+        let original = LimitSort(
+            sortDescriptors: [
+                SmartSortDescriptor(key: .artist, ascending: true),
+                SmartSortDescriptor(key: .trackNumber, ascending: true),
+                SmartSortDescriptor(key: .title, ascending: false),
+            ],
+            limit: 100,
+            liveUpdate: true
+        )
 
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(LimitSort.self, from: data)

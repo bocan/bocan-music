@@ -179,7 +179,7 @@ struct FileWalkerTests {
         }
 
         // Baseline: an uncancelled walk finds every file.
-        let all = FileWalker._collectForTesting(dir, extensions: ["mp3"])
+        let all = FileWalker.collectForTesting(dir, extensions: ["mp3"])
         #expect(all.count == 60, "baseline walk should find all 60 files, got \(all.count)")
 
         // Inside an already-cancelled task, enumeration must bail immediately.
@@ -189,7 +189,7 @@ struct FileWalkerTests {
             while !Task.isCancelled {
                 await Task.yield()
             }
-            return FileWalker._collectForTesting(dir, extensions: ["mp3"]).count
+            return FileWalker.collectForTesting(dir, extensions: ["mp3"]).count
         }
         task.cancel()
         let countWhenCancelled = await task.value

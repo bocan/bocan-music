@@ -40,14 +40,27 @@ public struct ExtractedCoverArt: Sendable {
     /// File extension inferred from `mimeType`.
     public var fileExtension: String {
         switch self.mimeType.lowercased() {
-        case "image/jpeg", "image/jpg": "jpg"
-        case "image/png": "png"
-        case "image/webp": "webp"
-        case "image/gif": "gif"
+        case "image/jpeg", "image/jpg":
+            "jpg"
+
+        case "image/png":
+            "png"
+
+        case "image/webp":
+            "webp"
+
+        case "image/gif":
+            "gif"
+
         // image/heif tolerated: taggers use it interchangeably with heic (#389).
-        case "image/heic", "image/heif": "heic"
-        case "image/avif": "avif"
-        default: "bin"
+        case "image/heic", "image/heif":
+            "heic"
+
+        case "image/avif":
+            "avif"
+
+        default:
+            "bin"
         }
     }
 }

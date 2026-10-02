@@ -70,7 +70,9 @@ struct ListenBrainzCompatibleTransport {
         payload: [String: Any],
         providerID: String
     ) async throws -> [String: Any] {
-        var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true)!
+        guard var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true) else {
+            throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")
+        }
         components.path = path
         guard let url = components.url else {
             throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")
@@ -105,10 +107,13 @@ struct ListenBrainzCompatibleTransport {
         switch status {
         case 401, 403:
             throw ScrobbleError.invalidCredentials(provider: providerID)
+
         case 429:
             throw ScrobbleError.transient(provider: providerID, reason: "rate limited", retryAfter: retryAfter ?? 60)
+
         case 500 ... 599:
             throw ScrobbleError.transient(provider: providerID, reason: "http \(status)", retryAfter: retryAfter)
+
         default:
             let body = String(data: data, encoding: .utf8) ?? "<binary>"
             throw ScrobbleError.permanent(provider: providerID, reason: "http \(status): \(body.prefix(200))")

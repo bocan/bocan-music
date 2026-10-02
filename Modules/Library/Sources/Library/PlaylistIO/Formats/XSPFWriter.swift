@@ -4,11 +4,15 @@ import Foundation
 public enum XSPFWriter {
     public struct Options: Sendable {
         public var pathMode: PathMode
+
         public init(pathMode: PathMode = .absolute) {
             self.pathMode = pathMode
         }
     }
 
+    /// The XSPF document for `payload`, with XML-escaped text. File entries
+    /// are written as `file://` URLs, or as paths relative to the root in
+    /// `options.pathMode`; durations are in milliseconds.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var out = #"<?xml version="1.0" encoding="UTF-8"?>"# + "\n"
         out += #"<playlist version="1" xmlns="http://xspf.org/ns/0/">"# + "\n"
@@ -44,6 +48,7 @@ public enum XSPFWriter {
                 return url.absoluteString
             }
             return entry.path
+
         case let .relative(root):
             guard let url = entry.absoluteURL, url.isFileURL else { return entry.path }
             if let rel = M3UWriter.relativePath(of: url, to: root) {
@@ -58,12 +63,23 @@ public enum XSPFWriter {
         out.reserveCapacity(s.count)
         for c in s {
             switch c {
-            case "&": out.append("&amp;")
-            case "<": out.append("&lt;")
-            case ">": out.append("&gt;")
-            case "\"": out.append("&quot;")
-            case "'": out.append("&apos;")
-            default: out.append(c)
+            case "&":
+                out.append("&amp;")
+
+            case "<":
+                out.append("&lt;")
+
+            case ">":
+                out.append("&gt;")
+
+            case "\"":
+                out.append("&quot;")
+
+            case "'":
+                out.append("&apos;")
+
+            default:
+                out.append(c)
             }
         }
         return out

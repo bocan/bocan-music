@@ -25,14 +25,14 @@ struct XSPFTests {
           </trackList>
         </playlist>
         """
-        let p = try XSPFReader.parse(data: Data(body.utf8))
-        #expect(p.name == "My Mix")
-        #expect(p.entries.count == 2)
-        #expect(p.entries[0].titleHint == "Alpha")
-        #expect(p.entries[0].artistHint == "X")
-        #expect(p.entries[0].albumHint == "Album1")
-        #expect(p.entries[0].durationHint == 120)
-        #expect(p.entries[1].titleHint == "Beta")
+        let parsed = try XSPFReader.parse(data: Data(body.utf8))
+        #expect(parsed.name == "My Mix")
+        #expect(parsed.entries.count == 2)
+        #expect(parsed.entries[0].titleHint == "Alpha")
+        #expect(parsed.entries[0].artistHint == "X")
+        #expect(parsed.entries[0].albumHint == "Album1")
+        #expect(parsed.entries[0].durationHint == 120)
+        #expect(parsed.entries[1].titleHint == "Beta")
     }
 
     @Test("Roundtrip preserves entries")

@@ -28,24 +28,24 @@ struct LogEntryTests {
     @Test("two entries with the same id and fields are equal")
     func equality() {
         let ts = Date(timeIntervalSinceReferenceDate: 500)
-        let a = self.makeEntry(id: 7, timestamp: ts)
-        let b = self.makeEntry(id: 7, timestamp: ts)
-        #expect(a == b)
+        let first = self.makeEntry(id: 7, timestamp: ts)
+        let second = self.makeEntry(id: 7, timestamp: ts)
+        #expect(first == second)
     }
 
     @Test("entries with different ids are not equal")
     func inequalityById() {
         let ts = Date(timeIntervalSinceReferenceDate: 500)
-        let a = self.makeEntry(id: 1, timestamp: ts)
-        let b = self.makeEntry(id: 2, timestamp: ts)
-        #expect(a != b)
+        let first = self.makeEntry(id: 1, timestamp: ts)
+        let second = self.makeEntry(id: 2, timestamp: ts)
+        #expect(first != second)
     }
 
     @Test("entries with different messages are not equal")
     func inequalityByMessage() {
-        let a = self.makeEntry(message: "alpha")
-        let b = self.makeEntry(message: "beta")
-        #expect(a != b)
+        let alpha = self.makeEntry(message: "alpha")
+        let beta = self.makeEntry(message: "beta")
+        #expect(alpha != beta)
     }
 
     @Test("Identifiable id is the UInt64 sequence number")
@@ -59,9 +59,9 @@ struct LogEntryTests {
     @Test("entry is usable as a Set element (Hashable)")
     func hashable() {
         let ts = Date(timeIntervalSinceReferenceDate: 0)
-        let a = self.makeEntry(id: 1, timestamp: ts)
-        let b = self.makeEntry(id: 2, timestamp: ts)
-        let set: Set<LogEntry> = [a, b, a]
+        let first = self.makeEntry(id: 1, timestamp: ts)
+        let second = self.makeEntry(id: 2, timestamp: ts)
+        let set: Set<LogEntry> = [first, second, first]
         #expect(set.count == 2)
     }
 }

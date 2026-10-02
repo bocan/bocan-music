@@ -41,15 +41,20 @@ public enum SubsonicConnectionStatus: Sendable, Equatable {
         switch self {
         case .unknown:
             return "Not yet connected"
+
         case .connecting:
             return "Connecting\u{2026}"
+
         case let .online(ping):
             let ago = RelativeDateTimeFormatter().localizedString(for: ping, relativeTo: Date())
             return "Online (last ping \(ago))"
+
         case let .authFailed(msg):
             return "Authentication failed: \(msg)"
+
         case let .unreachable(msg):
             return "Unreachable: \(msg)"
+
         case let .serverError(msg):
             return "Server error: \(msg)"
         }

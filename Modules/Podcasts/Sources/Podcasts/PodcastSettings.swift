@@ -74,6 +74,7 @@ public struct PodcastSettings: Sendable, Equatable {
 
 // MARK: - Change stream
 
+/// Observation of the Settings > Podcasts values in `UserDefaults`.
 public extension PodcastSettings {
     /// Emits the settings each time one of them changes in `defaults`, in the
     /// order the changes happened. Does not emit the current value on start.

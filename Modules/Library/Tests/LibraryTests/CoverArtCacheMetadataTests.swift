@@ -20,8 +20,13 @@ struct CoverArtCacheMetadataTests {
     private func png(side: Int, seed: UInt8) throws -> ExtractedCoverArt {
         let space = CGColorSpaceCreateDeviceRGB()
         let ctx = try #require(CGContext(
-            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
-            space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            data: nil,
+            width: side,
+            height: side,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: space,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ))
         ctx.setFillColor(CGColor(red: CGFloat(seed) / 255, green: 0.2, blue: 0.4, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))

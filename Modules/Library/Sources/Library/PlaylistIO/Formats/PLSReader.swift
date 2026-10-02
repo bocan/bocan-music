@@ -16,6 +16,11 @@ import Foundation
 /// Recovers from a wrong/missing `NumberOfEntries` by trusting the highest
 /// `File<n>` index found.
 public enum PLSReader {
+    /// Parses PLS `data` into a payload, entries ordered by their `File<n>`
+    /// index. `sourceURL` names the playlist and is the base for relative
+    /// paths. Throws `PlaylistIOError.unreadable` when the bytes decode as no
+    /// supported text encoding, and `malformed` when there is neither a
+    /// `[playlist]` header nor any entry.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> PlaylistPayload {
         guard let text = String(data: stripBOM(data), encoding: .utf8)
             ?? String(data: stripBOM(data), encoding: .windowsCP1252)
@@ -43,9 +48,14 @@ public enum PLSReader {
             let value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
             if let (kind, idx) = Self.parseKey(key) {
                 switch kind {
-                case .file: files[idx] = value
-                case .title: titles[idx] = value
-                case .length: lengths[idx] = TimeInterval(value).flatMap { $0 > 0 ? $0 : nil } ?? 0
+                case .file:
+                    files[idx] = value
+
+                case .title:
+                    titles[idx] = value
+
+                case .length:
+                    lengths[idx] = TimeInterval(value).flatMap { $0 > 0 ? $0 : nil } ?? 0
                 }
             }
         }
@@ -55,6 +65,19 @@ public enum PLSReader {
         }
 
         let baseDir = sourceURL?.deletingLastPathComponent()
+        let entries = Self.makeEntries(files: files, titles: titles, lengths: lengths, baseDir: baseDir)
+
+        let name = sourceURL?.deletingPathExtension().lastPathComponent ?? "Imported Playlist"
+        return PlaylistPayload(name: name, entries: entries)
+    }
+
+    /// Builds the entries in the order of their `File<n>` index.
+    private static func makeEntries(
+        files: [Int: String],
+        titles: [Int: String],
+        lengths: [Int: TimeInterval],
+        baseDir: URL?
+    ) -> [PlaylistPayload.Entry] {
         let sortedIndexes = files.keys.sorted()
         var entries: [PlaylistPayload.Entry] = []
         entries.reserveCapacity(sortedIndexes.count)
@@ -73,9 +96,7 @@ public enum PLSReader {
                 albumHint: nil
             ))
         }
-
-        let name = sourceURL?.deletingPathExtension().lastPathComponent ?? "Imported Playlist"
-        return PlaylistPayload(name: name, entries: entries)
+        return entries
     }
 
     private enum Kind { case file, title, length }

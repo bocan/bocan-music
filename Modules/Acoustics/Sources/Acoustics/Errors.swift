@@ -2,16 +2,31 @@ import Foundation
 
 /// Errors produced by the Acoustics module.
 public enum AcousticsError: Error, Sendable, Equatable {
-    public static func == (lhs: AcousticsError, rhs: AcousticsError) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case let (.fpcalcFailed(lc, ls), .fpcalcFailed(rc, rs)): lc == rc && ls == rs
-        case (.networkError, .networkError): true
-        case (.rateLimitExceeded, .rateLimitExceeded): true
-        case (.noResults, .noResults): true
-        case let (.invalidResponse(l), .invalidResponse(r)): l == r
-        case (.tagWritebackFailed, .tagWritebackFailed): true
-        case let (.invalidInput(l), .invalidInput(r)): l == r
-        default: false
+        case let (.fpcalcFailed(lc, ls), .fpcalcFailed(rc, rs)):
+            lc == rc && ls == rs
+
+        case (.networkError, .networkError):
+            true
+
+        case (.rateLimitExceeded, .rateLimitExceeded):
+            true
+
+        case (.noResults, .noResults):
+            true
+
+        case let (.invalidResponse(l), .invalidResponse(r)):
+            l == r
+
+        case (.tagWritebackFailed, .tagWritebackFailed):
+            true
+
+        case let (.invalidInput(l), .invalidInput(r)):
+            l == r
+
+        default:
+            false
         }
     }
 
@@ -38,16 +53,22 @@ extension AcousticsError: CustomStringConvertible {
         switch self {
         case let .fpcalcFailed(exitCode, stderr):
             "Fingerprinting failed: fpcalc exited with status \(exitCode). \(stderr)"
+
         case let .networkError(underlying):
             "The fingerprint lookup could not reach the service: \(underlying.localizedDescription)"
+
         case .rateLimitExceeded:
             "The fingerprint service is rate limiting requests. Try again shortly."
+
         case .noResults:
             "No matching recording was found for this track."
+
         case let .invalidResponse(reason):
             "The fingerprint service returned data that could not be read: \(reason)"
+
         case let .tagWritebackFailed(underlying):
             "The chosen match could not be written to the file: \(underlying.localizedDescription)"
+
         case let .invalidInput(reason):
             "This item cannot be fingerprinted: \(reason)"
         }

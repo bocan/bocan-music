@@ -14,7 +14,7 @@ struct CacheDirectoryMarkerTests {
 
     private static func tagText(in folder: URL) throws -> String {
         let data = try Data(contentsOf: folder.appendingPathComponent(CacheDirectoryMarker.tagFileName))
-        return String(decoding: data, as: UTF8.self)
+        return try #require(String(bytes: data, encoding: .utf8), "the tag file is not valid UTF-8")
     }
 
     /// Reads the flag from a new URL, so no cached resource value answers.

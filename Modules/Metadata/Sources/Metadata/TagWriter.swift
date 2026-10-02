@@ -68,8 +68,8 @@ public struct TagWriter: Sendable {
         } catch {
             do {
                 try fm.removeItem(at: tmpURL)
-            } catch let cleanupError {
-                self.log.warning("taglib.tmp.cleanup.failed", ["error": String(reflecting: cleanupError)])
+            } catch {
+                self.log.warning("taglib.tmp.cleanup.failed", ["error": String(reflecting: error)])
             }
             throw error
         }

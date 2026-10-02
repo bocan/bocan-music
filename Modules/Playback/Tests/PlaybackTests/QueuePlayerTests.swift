@@ -185,8 +185,11 @@ struct QueuePlayerTests {
 
         // Build 20 in-memory items — no DB needed.
         let sourceFormat = AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
         let items: [QueueItem] = (1 ... 20).map { i in
             QueueItem(
@@ -229,8 +232,11 @@ struct QueuePlayerTests {
         let player = QueuePlayer(engine: engine, database: db)
 
         let sourceFormat = AudioSourceFormat(
-            sampleRate: 44100, bitDepth: 16, channelCount: 2,
-            isInterleaved: false, codec: "flac"
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "flac"
         )
         let items: [QueueItem] = (1 ... 20).map { i in
             QueueItem(
@@ -279,12 +285,12 @@ struct QueuePlayerTests {
 
         // B must be disabled in the database.
         let allTracks = try await repo.fetchAllIncludingDisabled()
-        let trackB = allTracks.first(where: { $0.id == idB })
+        let trackB = allTracks.first { $0.id == idB }
         #expect(trackB?.disabled == true, "Track B must be disabled after file-not-found")
 
         // B must be removed from the queue.
         let queueItems = await player.queue.items
-        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idB }, "Track B must be removed from queue")
     }
 
     @Test("handleTrackEnded skips multiple consecutive missing-file tracks and ends cleanly")
@@ -311,8 +317,8 @@ struct QueuePlayerTests {
         #expect(disabledIDs.contains(idC), "Track C must be disabled")
 
         let queueItems = await player.queue.items
-        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
-        #expect(!queueItems.contains(where: { $0.trackID == idC }), "Track C must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idB }, "Track B must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idC }, "Track C must be removed from queue")
     }
 
     // MARK: - Helpers
@@ -351,8 +357,14 @@ struct QueuePlayerTests {
         let block = String(source[start.lowerBound ..< end.lowerBound])
 
         #expect(!block.contains("try?"), "a dropped error leaves the key looking dead with nothing logged")
-        for call in ["runRemote(.play)", "runRemote(.togglePlayPause)", "runRemote(.next)",
-                     "runRemote(.previous)", "runRemote(.seek("] {
+        let calls = [
+            "runRemote(.play)",
+            "runRemote(.togglePlayPause)",
+            "runRemote(.next)",
+            "runRemote(.previous)",
+            "runRemote(.seek(",
+        ]
+        for call in calls {
             #expect(block.contains(call), "missing \(call)")
         }
     }

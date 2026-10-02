@@ -22,7 +22,7 @@ public struct AudioSourceFormat: Sendable, Hashable, Codable {
     /// - Same sample rate (AVAudioPlayerNode resamples only at the graph level)
     /// - Same channel count
     /// Bit depth does not matter because the engine uses Float32 internally.
-    public func isGaplessCompatible(with other: AudioSourceFormat) -> Bool {
+    public func isGaplessCompatible(with other: Self) -> Bool {
         self.sampleRate == other.sampleRate && self.channelCount == other.channelCount
     }
 
@@ -123,6 +123,9 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
     // MARK: - Init
 
+    // Memberwise initialiser: the parameters keep the stored-property order,
+    // and `App` and `UI` call it with these labels.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         id: UUID = UUID(),
         trackID: Int64,
@@ -163,6 +166,8 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.playableSource = playableSource ?? .localBookmark(bookmark?.data ?? Data())
     }
 
+    // swiftlint:enable function_default_parameter_at_end
+
     // MARK: - Helpers
 
     /// Returns the playable URL, preferring the security-scoped bookmark.
@@ -182,7 +187,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
     // MARK: - Hashable / Equatable (identity only)
 
-    public static func == (lhs: QueueItem, rhs: QueueItem) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id
     }
 
@@ -193,6 +198,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
 // MARK: - QueueItem + Track factory
 
+/// Factory that builds a queue item from a library `Track` row.
 public extension QueueItem {
     /// Build a `QueueItem` from a `Track` row.
     static func make(from track: Track, artistName: String? = nil) -> QueueItem {

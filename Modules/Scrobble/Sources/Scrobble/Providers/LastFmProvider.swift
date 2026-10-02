@@ -34,12 +34,12 @@ public struct LastFmConfig: Sendable, Equatable {
 
     /// Production config built from `Info.plist` build constants. Returns
     /// `nil` if the keys are missing — the app should hide the Last.fm UI.
-    public static func fromBundle(_ bundle: Bundle = .main) -> LastFmConfig? {
+    public static func fromBundle(_ bundle: Bundle = .main) -> Self? {
         guard
             let apiKey = bundle.object(forInfoDictionaryKey: "BocanLastFmApiKey") as? String,
             let secret = bundle.object(forInfoDictionaryKey: "BocanLastFmSharedSecret") as? String,
             !apiKey.isEmpty, !secret.isEmpty else { return nil }
-        return LastFmConfig(apiKey: apiKey, sharedSecret: secret)
+        return Self(apiKey: apiKey, sharedSecret: secret)
     }
 }
 
@@ -235,8 +235,11 @@ public actor LastFmProvider: ScrobbleProvider {
 
     /// Browser URL the user needs to open to authorise the token.
     public nonisolated func authorisationURL(forToken token: String) -> URL {
-        var components = URLComponents(url: self.config.authPageBase, resolvingAgainstBaseURL: true)
-            ?? URLComponents(string: self.config.authPageBase.absoluteString)!
+        guard var components = URLComponents(url: self.config.authPageBase, resolvingAgainstBaseURL: true) else {
+            // Same fallback as an unbuildable result below: the bare auth page.
+            self.log.warning("scrobble.lastfm.authorisationURL.failed", ["base": self.config.authPageBase.absoluteString])
+            return self.config.authPageBase
+        }
         var items = components.queryItems ?? []
         items.append(URLQueryItem(name: "api_key", value: self.config.apiKey))
         items.append(URLQueryItem(name: "token", value: token))

@@ -35,11 +35,20 @@ public actor ScrobbleQueueWorker {
     /// backoff short (#548).
     private var timeoutTask: Task<Void, Never>?
 
+    /// Creates a stopped worker for one provider; call `start()` to begin draining.
+    ///
+    /// - Parameters:
+    ///   - provider: The service this worker submits to.
+    ///   - repository: The queue the pending rows are read from and marked in.
+    ///   - reachability: Network state; the worker waits while it reports offline.
+    ///   - policy: The retry and backoff schedule for failed submissions.
+    ///   - batchSize: The most rows fetched in one drain pass.
+    ///   - now: Clock used to pick the rows that are due; injectable for tests.
     public init(
         provider: any ScrobbleProvider,
         repository: ScrobbleQueueRepository,
-        policy: RetryPolicy = .default,
         reachability: any Reachability,
+        policy: RetryPolicy = .default,
         batchSize: Int = 50,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -52,6 +61,7 @@ public actor ScrobbleQueueWorker {
         self.log = AppLogger.make(.scrobble)
     }
 
+    /// Starts the drain loop. Does nothing when the loop already runs.
     public func start() {
         guard self.task == nil else { return }
         self.log.info("scrobble.worker.start", ["provider": self.provider.id])
@@ -60,6 +70,8 @@ public actor ScrobbleQueueWorker {
         }
     }
 
+    /// Cancels the drain loop, its reachability subscription and any wait in
+    /// progress. `start()` can run the worker again afterwards.
     public func stop() {
         self.task?.cancel()
         self.task = nil
@@ -181,8 +193,10 @@ public actor ScrobbleQueueWorker {
             switch result.outcome {
             case .success:
                 try await self.repo.markSucceeded(queueID: result.queueID, providerID: self.provider.id, at: self.now())
+
             case let .ignored(reason):
                 try await self.repo.markIgnored(queueID: result.queueID, providerID: self.provider.id, reason: reason)
+
             case let .retry(reason, after):
                 let attempts = row.attempts + 1
                 if self.policy.isExhausted(attempts: attempts) {
@@ -202,6 +216,7 @@ public actor ScrobbleQueueWorker {
                         reason: reason
                     )
                 }
+
             case let .permanentFailure(reason):
                 try await self.repo.markDead(queueID: result.queueID, providerID: self.provider.id, reason: reason)
             }

@@ -7,6 +7,7 @@ import Testing
 private actor SimpleSink: ScrobbleSink {
     private(set) var plays: [(Int64, TimeInterval)] = []
     private(set) var subsonicPlays: [SubsonicPlayContext] = []
+
     func recordPlay(trackID: Int64, playedAt _: Date, durationPlayed: TimeInterval) async {
         self.plays.append((trackID, durationPlayed))
     }

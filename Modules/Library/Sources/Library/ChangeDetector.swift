@@ -30,8 +30,24 @@ public actor ChangeDetector {
 
     // MARK: - API
 
+    /// One file the database already knows, as `seed(_:)` takes it.
+    public struct KnownFile: Sendable {
+        /// The stored file URL string.
+        public let url: String
+        /// The stored modification time.
+        public let mtime: Int64
+        /// The stored size in bytes.
+        public let size: Int64
+
+        public init(url: String, mtime: Int64, size: Int64) {
+            self.url = url
+            self.mtime = mtime
+            self.size = size
+        }
+    }
+
     /// Seeds the detector with the current DB state before a scan begins.
-    public func seed(_ entries: [(url: String, mtime: Int64, size: Int64)]) {
+    public func seed(_ entries: [KnownFile]) {
         // NFC-normalise stored URL strings — APFS may report decomposed UTF-8
         // for the same on-disk file, so without this two scans of a path with
         // accented characters could disagree.

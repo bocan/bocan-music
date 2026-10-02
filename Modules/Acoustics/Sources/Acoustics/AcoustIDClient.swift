@@ -24,6 +24,8 @@ public actor AcoustIDClient {
 
     // MARK: - Init
 
+    /// Creates a client. `apiKey` is the AcoustID application key, every
+    /// lookup waits on `rateLimiter`, and a `nil` `httpClient` means `URLSession.shared`.
     public init(
         apiKey: String,
         rateLimiter: RateLimiter,

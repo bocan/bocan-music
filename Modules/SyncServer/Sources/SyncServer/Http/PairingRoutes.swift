@@ -69,10 +69,13 @@ enum PairingRoutes {
         switch pairingError {
         case .expired:
             return .error(.pairingExpired, message: "Pairing expired", status: 410)
+
         case .badProof:
             return .error(.badProof, message: "Bad proof", status: 403)
+
         case .rateLimited:
             return .error(.rateLimited, message: "Too many attempts", status: 429)
+
         case .badRequest:
             return .error(.internal, message: "Bad request", status: 400)
         }

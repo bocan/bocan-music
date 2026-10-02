@@ -8,12 +8,12 @@ private final class RoutingHTTPClient: HTTPClient, @unchecked Sendable {
     private(set) var requestedURLs: [URL] = []
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let url = request.url!
+        let url = try #require(request.url)
         self.requestedURLs.append(url)
         let key = self.routes.keys.first { url.absoluteString.contains($0) }
         let data = key.flatMap { self.routes[$0] } ?? Data()
         let status = key == nil ? 404 : 200
-        return (data, HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)!)
+        return try (data, #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil)))
     }
 }
 

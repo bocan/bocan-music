@@ -29,19 +29,23 @@ enum TLSOptions {
         sec_protocol_options_set_peer_authentication_required(sec, true)
 
         let verifyQueue = DispatchQueue(label: "io.cloudcauldron.bocan.sync.verify")
-        sec_protocol_options_set_verify_block(sec, { _, trust, complete in
-            guard let leaf = Self.leafCertificate(from: trust) else {
-                complete(false)
-                return
-            }
-            let der = SecCertificateCopyData(leaf) as Data
-            let fingerprint = ServerFingerprint(certificateDER: der).hex
-            if pairingMode() {
-                complete(true)
-            } else {
-                complete(isTrusted(fingerprint))
-            }
-        }, verifyQueue)
+        sec_protocol_options_set_verify_block(
+            sec,
+            { _, trust, complete in
+                guard let leaf = Self.leafCertificate(from: trust) else {
+                    complete(false)
+                    return
+                }
+                let der = SecCertificateCopyData(leaf) as Data
+                let fingerprint = ServerFingerprint(certificateDER: der).hex
+                if pairingMode() {
+                    complete(true)
+                } else {
+                    complete(isTrusted(fingerprint))
+                }
+            },
+            verifyQueue
+        )
 
         return options
     }

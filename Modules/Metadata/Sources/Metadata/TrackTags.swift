@@ -152,6 +152,8 @@ public struct TrackTags: Sendable {
 
 // MARK: - Release type selection
 
+/// The MusicBrainz release-type vocabulary and the rule that picks one type
+/// from a multi-valued RELEASETYPE tag.
 public extension TrackTags {
     /// MusicBrainz release-group primary types, in preference order.
     static let primaryReleaseTypes: [String] = ["album", "single", "ep", "broadcast", "other"]
@@ -175,6 +177,6 @@ public extension TrackTags {
         if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) {
             return primary
         }
-        return lowered.first(where: { self.secondaryReleaseTypes.contains($0) })
+        return lowered.first { self.secondaryReleaseTypes.contains($0) }
     }
 }

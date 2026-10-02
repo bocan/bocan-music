@@ -16,31 +16,61 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
 
     public var displayName: String {
         switch self {
-        case .off: "Off"
-        case .minutes15: "15 min"
-        case .minutes30: "30 min"
-        case .minutes45: "45 min"
-        case .minutes60: "1 hr"
-        case .minutes90: "1 hr 30 min"
-        case .minutes120: "2 hr"
-        case let .custom(m): "\(m) min"
+        case .off:
+            "Off"
+
+        case .minutes15:
+            "15 min"
+
+        case .minutes30:
+            "30 min"
+
+        case .minutes45:
+            "45 min"
+
+        case .minutes60:
+            "1 hr"
+
+        case .minutes90:
+            "1 hr 30 min"
+
+        case .minutes120:
+            "2 hr"
+
+        case let .custom(customMinutes):
+            "\(customMinutes) min"
         }
     }
 
     public var minutes: Int? {
         switch self {
-        case .off: nil
-        case .minutes15: 15
-        case .minutes30: 30
-        case .minutes45: 45
-        case .minutes60: 60
-        case .minutes90: 90
-        case .minutes120: 120
-        case let .custom(m): m
+        case .off:
+            nil
+
+        case .minutes15:
+            15
+
+        case .minutes30:
+            30
+
+        case .minutes45:
+            45
+
+        case .minutes60:
+            60
+
+        case .minutes90:
+            90
+
+        case .minutes120:
+            120
+
+        case let .custom(customMinutes):
+            customMinutes
         }
     }
 
-    public static let allCases: [SleepTimerPreset] = [
+    public static let allCases: [Self] = [
         .off, .minutes15, .minutes30, .minutes45, .minutes60, .minutes90, .minutes120,
     ]
 }
@@ -59,7 +89,10 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
 public actor SleepTimer {
     // MARK: - Types
 
+    /// Called once when the timer expires, to stop playback.
     public typealias StopAction = @Sendable () async -> Void
+    /// Called about once a second during the fade-out with the volume
+    /// fraction, which falls from 1.0 towards 0 as the deadline nears.
     public typealias SetVolumeAction = @Sendable (Float) async -> Void
 
     // MARK: - Public state
@@ -91,6 +124,8 @@ public actor SleepTimer {
 
     // MARK: - Init
 
+    /// Creates an idle timer. Nothing counts down until `set(minutes:fadeOut:)`
+    /// or `restoreIfNeeded()` starts it.
     public init(onStop: @escaping StopAction, onSetVolume: @escaping SetVolumeAction) {
         self.onStop = onStop
         self.onSetVolume = onSetVolume

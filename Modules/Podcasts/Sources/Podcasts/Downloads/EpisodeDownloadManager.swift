@@ -54,6 +54,8 @@ public actor EpisodeDownloadManager {
 
     // MARK: - Init
 
+    /// Creates a manager that downloads through `session`, two episodes at a
+    /// time, and keeps the files in `store`.
     public init(
         stateRepo: EpisodeStateRepository,
         episodeRepo: EpisodeRepository,
@@ -408,6 +410,7 @@ public actor EpisodeDownloadManager {
                 self.log.error("download.move.failed", ["guid": key.guid, "error": String(reflecting: error)])
                 await self.fail(key)
             }
+
         case let .failure(error):
             self.log.warning("download.failed", ["guid": key.guid, "error": String(reflecting: error)])
             await self.fail(key)

@@ -142,20 +142,9 @@ missing_docs:
   excludes_inherited_types: true
   excludes_trivial_init: true
 
-included:
-  - App
-  - Modules/AudioEngine/Sources
-  - Modules/AudioEngine/Tests
-  - Modules/Persistence/Sources
-  - Modules/Persistence/Tests
-  - Modules/UI/Sources
-  - Modules/UI/Tests
-
 excluded:
-  - .build
+  - "**/.build"
   - DerivedData
+  - build
+  - .claude
   - Tests/Fixtures
-  - Modules/.build
-  - Modules/AudioEngine/.build
-  - Modules/Persistence/.build
-  - Modules/UI/.build

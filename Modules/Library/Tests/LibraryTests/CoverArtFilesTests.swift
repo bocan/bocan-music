@@ -28,8 +28,13 @@ struct CoverArtFilesTests {
     /// A real `width` x `height` PNG, so the cache reads its pixel size.
     private func png(width: Int, height: Int) throws -> ExtractedCoverArt {
         let ctx = try #require(CGContext(
-            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ))
         ctx.setFillColor(CGColor(red: 0.3, green: 0.2, blue: 0.4, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))

@@ -24,16 +24,20 @@ public enum EditError: Error, Sendable, CustomStringConvertible, LocalizedError 
         switch self {
         case let .trackNotFound(id):
             "Edit: track \(id) not found"
+
         case let .fileWriteFailed(url, reason):
             "Edit: write failed for \(url.lastPathComponent): \(reason)"
+
         case let .readOnlyFile(url):
             "Edit: file is read-only: \(url.lastPathComponent)"
+
         case .cancelled:
             "Edit: cancelled"
+
         case let .partial(errors):
             // Lead with one concrete reason: a batch that fails usually fails
             // every file the same way, and the count alone tells the user nothing.
-            if let first = errors.sorted(by: { $0.key < $1.key }).first?.value {
+            if let first = errors.min(by: { $0.key < $1.key })?.value {
                 "Edit: \(errors.count) file(s) failed. First: \(first)"
             } else {
                 "Edit: \(errors.count) file(s) failed"

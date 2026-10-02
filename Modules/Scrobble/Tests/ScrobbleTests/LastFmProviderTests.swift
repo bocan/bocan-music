@@ -25,9 +25,11 @@ struct LastFmProviderTests {
     func invalidSessionError() async {
         await withStubLock {
             StubProtocol.reset()
-            StubProtocol.registerJSON(matching: "audioscrobbler.com", status: 200, json: [
-                "error": 9, "message": "Invalid session key",
-            ])
+            StubProtocol.registerJSON(
+                matching: "audioscrobbler.com",
+                json: ["error": 9, "message": "Invalid session key"],
+                status: 200
+            )
             let creds = StubLastFmCreds(session: "bad", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
             await #expect(throws: ScrobbleError.self) {
@@ -40,9 +42,12 @@ struct LastFmProviderTests {
     func rateLimited() async throws {
         try await withStubLock {
             StubProtocol.reset()
-            StubProtocol.registerJSON(matching: "audioscrobbler.com", status: 200, headers: ["Retry-After": "30"], json: [
-                "error": 29, "message": "Rate limit",
-            ])
+            StubProtocol.registerJSON(
+                matching: "audioscrobbler.com",
+                json: ["error": 29, "message": "Rate limit"],
+                status: 200,
+                headers: ["Retry-After": "30"]
+            )
             let creds = StubLastFmCreds(session: "sk", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
             let results = try await provider.submit([self.makeEvent()])
@@ -59,10 +64,9 @@ struct LastFmProviderTests {
     func transient5xx() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 503)
             StubProtocol.register({ $0.url?.absoluteString.contains("audioscrobbler.com") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil)!
-                return (Data("server error".utf8), resp)
+                (Data("server error".utf8), resp)
             })
             let creds = StubLastFmCreds(session: "sk", user: "u")
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -93,9 +97,8 @@ struct LastFmProviderTests {
             let provider = LastFmProvider(
                 config: self.config,
                 http: URLSession.stubbed,
-                credentials: StubLastFmCreds(session: "sk"),
-                now: { now }
-            )
+                credentials: StubLastFmCreds(session: "sk")
+            ) { now }
             try await provider.nowPlaying(self.makeEvent())
             try await provider.nowPlaying(self.makeEvent())
             #expect(StubProtocol.capturedRequests.count == 1)
@@ -132,9 +135,13 @@ struct LastFmProviderTests {
 
     private func makeEvent(queueID: Int64 = 1) -> PlayEvent {
         PlayEvent(
-            queueID: queueID, trackID: 100,
-            artist: "Cher", album: "Believe", title: "Believe",
-            duration: 240, mbid: nil,
+            queueID: queueID,
+            trackID: 100,
+            artist: "Cher",
+            album: "Believe",
+            title: "Believe",
+            duration: 240,
+            mbid: nil,
             playedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
     }

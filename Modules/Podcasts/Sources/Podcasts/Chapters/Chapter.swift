@@ -19,6 +19,7 @@ public struct Chapter: Sendable, Hashable, Identifiable {
     }
 }
 
+/// Position lookup over a chapter list sorted by `startTime`.
 public extension [Chapter] {
     /// The chapter active at `position`: the last whose `startTime` is at or before
     /// `position`. Returns nil before the first chapter's start, or when empty.

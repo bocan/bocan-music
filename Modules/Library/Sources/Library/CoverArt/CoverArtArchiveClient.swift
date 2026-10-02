@@ -21,6 +21,8 @@ public actor CoverArtArchiveClient {
 
     // MARK: - Init
 
+    /// Creates a client with its own 2 requests/second limiter. `session` is
+    /// injectable so tests can stub the network.
     public init(session: URLSession = .shared) {
         self.session = session
         self.limiter = RateLimiter(maxRequests: 2, per: 1.0)

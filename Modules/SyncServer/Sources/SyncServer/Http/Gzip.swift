@@ -41,9 +41,12 @@ enum Gzip {
                     return 0
                 }
                 return compression_encode_buffer(
-                    destinationBase, capacity,
-                    sourceBase, data.count,
-                    nil, COMPRESSION_ZLIB
+                    destinationBase,
+                    capacity,
+                    sourceBase,
+                    data.count,
+                    nil,
+                    COMPRESSION_ZLIB
                 )
             }
         }

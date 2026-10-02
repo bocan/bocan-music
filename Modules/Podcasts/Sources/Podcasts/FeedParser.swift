@@ -41,14 +41,23 @@ public struct FeedParser: Sendable {
         switch feed {
         case let .rss(rss):
             parsed = try Self.parseRSS(rss, sourceURL: sourceURL)
+
         case let .atom(atom):
             parsed = try Self.parseAtom(atom, sourceURL: sourceURL)
+
         case .json, .rdf:
             // RSS 1.0 (RDF) has no enclosures, so it cannot carry a podcast.
             // FeedKit before 10.9 rejected it as an unknown format; keep that outcome.
             throw PodcastsError.notAFeed(url: sourceURL)
         }
 
+        Self.applyNamespaceSupplement(from: data, to: &parsed)
+        return parsed
+    }
+
+    /// Fills the values the `podcast:` namespace supplement reads from the
+    /// original feed bytes into `parsed`, only where the parse left them empty.
+    private static func applyNamespaceSupplement(from data: Data, to parsed: inout ParsedFeed) {
         // --- podcast: namespace supplement: fill podcast:funding, podcast:chapters,
         //     podcast:person and podcast:podroll. Non-fatal, and the single source of
         //     these values. FeedKit 10.8 and later model these tags too; moving
@@ -85,7 +94,6 @@ public struct FeedParser: Sendable {
                 return updated
             }
         }
-        return parsed
     }
 
     /// The retries for a feed FeedKit refused. Returns nil when none of them
@@ -145,9 +153,7 @@ public struct FeedParser: Sendable {
         var rootOffset: Int?
         for marker in ["<rss", "<feed"] {
             guard let needle = marker.data(using: .utf8), let range = window.range(of: needle) else { continue }
-            if rootOffset == nil || range.lowerBound < rootOffset! {
-                rootOffset = range.lowerBound
-            }
+            rootOffset = min(rootOffset ?? range.lowerBound, range.lowerBound)
         }
         guard let start = rootOffset, start > 0 else { return nil }
         let declaration = Data(#"<?xml version="1.0" encoding="UTF-8"?>"#.utf8) + Data("\n".utf8)
@@ -298,7 +304,7 @@ public struct FeedParser: Sendable {
         let artworkURL: URL? = atom.logo.flatMap { URL(string: $0) }
 
         let link = atom.links?
-            .first(where: { $0.attributes?.rel == "alternate" || $0.attributes?.rel == nil })?
+            .first { $0.attributes?.rel == "alternate" || $0.attributes?.rel == nil }?
             .attributes?.href
             .flatMap { URL(string: $0) }
 
@@ -364,7 +370,7 @@ public struct FeedParser: Sendable {
             chaptersURL: nil,
             transcriptURL: nil,
             link: entry.links?
-                .first(where: { $0.attributes?.rel == "alternate" })?
+                .first { $0.attributes?.rel == "alternate" }?
                 .attributes?.href
                 .flatMap { URL(string: $0) },
             explicit: false
@@ -376,16 +382,21 @@ public struct FeedParser: Sendable {
     private static func sortedNewestFirst(_ episodes: [ParsedEpisode]) -> [ParsedEpisode] {
         episodes.sorted { lhs, rhs in
             switch (lhs.publishedAt, rhs.publishedAt) {
-            case let (a?, b?): a > b
-            case (nil, _): false
-            case (_, nil): true
+            case let (lhsDate?, rhsDate?):
+                lhsDate > rhsDate
+
+            case (nil, _):
+                false
+
+            case (_, nil):
+                true
             }
         }
     }
 
     private static func parseExplicit(_ value: String?) -> Bool {
-        guard let v = value?.lowercased().trimmingCharacters(in: .whitespaces) else { return false }
-        return v == "yes" || v == "true" || v == "explicit"
+        guard let flag = value?.lowercased().trimmingCharacters(in: .whitespaces) else { return false }
+        return flag == "yes" || flag == "true" || flag == "explicit"
     }
 
     private static func parseITunesCategories(_ cats: [iTunesCategory]?) -> [String] {
@@ -420,12 +431,23 @@ public struct FeedParser: Sendable {
 
     private static func transcriptRank(_ type: String?) -> Int {
         switch type?.lowercased() {
-        case "text/vtt": 0
-        case "application/x-subrip", "application/srt", "text/srt": 1
-        case "text/html": 2
-        case "text/plain": 3
-        case "application/json": 4
-        default: 5
+        case "text/vtt":
+            0
+
+        case "application/x-subrip", "application/srt", "text/srt":
+            1
+
+        case "text/html":
+            2
+
+        case "text/plain":
+            3
+
+        case "application/json":
+            4
+
+        default:
+            5
         }
     }
 

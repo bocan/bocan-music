@@ -80,9 +80,9 @@ public actor TranscodeCoordinator {
     init(
         database: Database,
         store: TranscodeStore,
-        encoder: any ArtifactEncoding = AudioTranscoderEncoder(),
         prepareWindowBytes: Int64,
-        debounce: Duration
+        debounce: Duration,
+        encoder: any ArtifactEncoding = AudioTranscoderEncoder()
     ) {
         self.profileRepository = SyncProfileRepository(database: database)
         self.ledger = SyncTranscodeRepository(database: database)
@@ -126,6 +126,8 @@ public actor TranscodeCoordinator {
         self.schedulePass()
     }
 
+    /// Stops observing and cancels the scheduled or running pass task. No new
+    /// pass is scheduled until `start()` is called again.
     public func stop() {
         self.running = false
         self.observationTask?.cancel()
@@ -329,37 +331,17 @@ public actor TranscodeCoordinator {
     ) async throws {
         let urgent = self.urgentTrackIDs
         self.urgentTrackIDs.removeAll()
-        let validIDs = Set(valid.map(\.trackID))
-        let released = Set(valid.lazy
-            .filter { urgent.contains($0.trackID) }
-            .filter { !self.store.exists(trackID: $0.trackID, sourceContentHash: $0.sourceContentHash, preset: preset) }
-            .map(\.trackID))
-        var pending = targets.filter { track in
-            guard let id = track.id, let hash = track.contentHash else { return false }
-            guard !validIDs.contains(id) || released.contains(id) else { return false }
-            let memo = FailedEncode(trackID: id, preset: preset.rawValue, sourceContentHash: hash)
-            return !self.failedEncodes.contains(memo)
-        }
-        pending.sort { lhs, rhs in
-            let lhsUrgent = lhs.id.map { urgent.contains($0) } ?? false
-            let rhsUrgent = rhs.id.map { urgent.contains($0) } ?? false
-            if lhsUrgent != rhsUrgent {
-                return lhsUrgent
-            }
-            return (lhs.id ?? 0) < (rhs.id ?? 0)
-        }
+        let (pending, released) = self.pendingTargets(targets: targets, valid: valid, urgent: urgent, preset: preset)
         guard !pending.isEmpty else { return }
         if !released.isEmpty {
             self.log.debug("transcode.reencode.released", ["count": "\(released.count)", "preset": preset.rawValue])
         }
 
-        var unservedBytes = valid
-            .filter { $0.servedAt == nil }
-            .filter { self.store.exists(trackID: $0.trackID, sourceContentHash: $0.sourceContentHash, preset: preset) }
-            .reduce(Int64(0)) { $0 + $1.size }
+        var unservedBytes = self.unservedBytes(valid: valid, preset: preset)
 
         let artistName = try await Self.nameMap(self.artists.fetchAll().map { ($0.id, $0.name) })
         let albumTitle = try await Self.nameMap(self.albums.fetchAll().map { ($0.id, $0.title) })
+        let names = TagNames(artistName: artistName, albumTitle: albumTitle)
 
         var prepared = 0
         for track in pending {
@@ -379,8 +361,7 @@ public actor TranscodeCoordinator {
                     id: id,
                     sourceHash: sourceHash,
                     preset: preset,
-                    artistName: artistName,
-                    albumTitle: albumTitle
+                    names: names
                 )
                 unservedBytes += result.size
                 prepared += 1
@@ -403,17 +384,57 @@ public actor TranscodeCoordinator {
         }
     }
 
+    /// The targets to encode in this pass, in encode order (urgent first,
+    /// then by id), and the urgent track ids whose row is valid but whose
+    /// bytes were released. Skips targets with a valid row (unless released)
+    /// and targets with a failure memo. Synchronous: reads actor state only.
+    private func pendingTargets(
+        targets: [Track],
+        valid: [SyncTranscode],
+        urgent: [Int64],
+        preset: TranscodePreset
+    ) -> (pending: [Track], released: Set<Int64>) {
+        let validIDs = Set(valid.map(\.trackID))
+        let released = Set(valid.lazy
+            .filter { urgent.contains($0.trackID) }
+            .filter { !self.store.exists(trackID: $0.trackID, sourceContentHash: $0.sourceContentHash, preset: preset) }
+            .map(\.trackID))
+        var pending = targets.filter { track in
+            guard let id = track.id, let hash = track.contentHash else { return false }
+            guard !validIDs.contains(id) || released.contains(id) else { return false }
+            let memo = FailedEncode(trackID: id, preset: preset.rawValue, sourceContentHash: hash)
+            return !self.failedEncodes.contains(memo)
+        }
+        pending.sort { lhs, rhs in
+            let lhsUrgent = lhs.id.map { urgent.contains($0) } ?? false
+            let rhsUrgent = rhs.id.map { urgent.contains($0) } ?? false
+            if lhsUrgent != rhsUrgent {
+                return lhsUrgent
+            }
+            return (lhs.id ?? 0) < (rhs.id ?? 0)
+        }
+        return (pending, released)
+    }
+
+    /// The bytes of prepared artifacts not yet served that are still on
+    /// disk: what the prepare window counts.
+    private func unservedBytes(valid: [SyncTranscode], preset: TranscodePreset) -> Int64 {
+        valid
+            .filter { $0.servedAt == nil }
+            .filter { self.store.exists(trackID: $0.trackID, sourceContentHash: $0.sourceContentHash, preset: preset) }
+            .reduce(Int64(0)) { $0 + $1.size }
+    }
+
     private func encodeOne(
         _ track: Track,
         id: Int64,
         sourceHash: String,
         preset: TranscodePreset,
-        artistName: [Int64: String],
-        albumTitle: [Int64: String]
+        names: TagNames
     ) async throws -> TranscodeResult {
         try self.store.prepareDirectory(preset: preset)
         let destination = self.store.artifactURL(trackID: id, sourceContentHash: sourceHash, preset: preset)
-        let metadata = Self.metadata(for: track, artistName: artistName, albumTitle: albumTitle)
+        let metadata = Self.metadata(for: track, artistName: names.artistName, albumTitle: names.albumTitle)
 
         // Hoisted so the security-scope closure captures only Sendable values,
         // never the actor itself (strict concurrency).
@@ -440,51 +461,5 @@ public actor TranscodeCoordinator {
             bitrate: result.bitrateKbps
         ))
         return result
-    }
-
-    // MARK: - Helpers
-
-    private static func nameMap(_ pairs: [(Int64?, String)]) -> [Int64: String] {
-        var map: [Int64: String] = [:]
-        for (id, name) in pairs {
-            if let id {
-                map[id] = name
-            }
-        }
-        return map
-    }
-
-    /// The tags the artifact carries so the file is self-describing off-device.
-    static func metadata(
-        for track: Track,
-        artistName: [Int64: String],
-        albumTitle: [Int64: String]
-    ) -> [String: String] {
-        var tags: [String: String] = [:]
-        if let title = track.title {
-            tags["title"] = title
-        }
-        if let artistID = track.artistID, let name = artistName[artistID] {
-            tags["artist"] = name
-        }
-        if let albumArtistID = track.albumArtistID, let name = artistName[albumArtistID] {
-            tags["album_artist"] = name
-        }
-        if let albumID = track.albumID, let title = albumTitle[albumID] {
-            tags["album"] = title
-        }
-        if let trackNumber = track.trackNumber {
-            tags["track"] = "\(trackNumber)"
-        }
-        if let discNumber = track.discNumber {
-            tags["disc"] = "\(discNumber)"
-        }
-        if let year = track.year {
-            tags["date"] = "\(year)"
-        }
-        if let genre = track.genre {
-            tags["genre"] = genre
-        }
-        return tags
     }
 }

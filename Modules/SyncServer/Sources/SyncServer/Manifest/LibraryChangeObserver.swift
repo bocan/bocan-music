@@ -82,6 +82,8 @@ public actor LibraryChangeObserver {
         return false
     }
 
+    /// Stops observing and cancels a bump still waiting out its debounce, so
+    /// a change seen just before the stop may not reach the counter.
     public func stop() {
         self.observationTask?.cancel()
         self.observationTask = nil

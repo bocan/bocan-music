@@ -16,6 +16,8 @@ public struct SubsonicPlayContext: Sendable, Equatable {
     public let album: String?
     public let duration: TimeInterval
 
+    // Memberwise initialiser: the parameters keep the stored-property order.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         serverID: UUID,
         songID: String,
@@ -33,6 +35,7 @@ public struct SubsonicPlayContext: Sendable, Equatable {
         self.album = album
         self.duration = duration
     }
+    // swiftlint:enable function_default_parameter_at_end
 }
 
 /// Downstream consumer of recorded plays. The `Scrobble` module supplies the
@@ -55,13 +58,17 @@ public protocol ScrobbleSink: Sendable {
     func nowPlayingSubsonic(context: SubsonicPlayContext) async
 }
 
+/// No-op defaults for the optional `ScrobbleSink` requirements.
 public extension ScrobbleSink {
+    /// Default: does nothing.
     func nowPlaying(trackID _: Int64) async {}
+    /// Default: does nothing, so the Subsonic play is dropped.
     func recordSubsonicPlay(
         context _: SubsonicPlayContext,
         playedAt _: Date,
         durationPlayed _: TimeInterval
     ) async {}
+    /// Default: does nothing.
     func nowPlayingSubsonic(context _: SubsonicPlayContext) async {}
 }
 
@@ -100,6 +107,8 @@ public actor PlayHistoryRecorder {
 
     // MARK: - Init
 
+    /// Creates a recorder that writes plays and skips to `database`. With a
+    /// `nil` `scrobbleSink`, plays are recorded locally and sent nowhere else.
     public init(database: Database, scrobbleSink: (any ScrobbleSink)? = nil) {
         self.db = database
         self.trackRepo = TrackRepository(database: database)

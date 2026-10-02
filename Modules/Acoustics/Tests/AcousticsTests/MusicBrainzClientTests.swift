@@ -54,7 +54,7 @@ struct MusicBrainzClientTests {
         #expect(earliest.year == 1969)
         #expect(earliest.releaseGroup?.id == "9162580e-5df4-32de-80cc-f45a8d8a9b1d")
         #expect(earliest.releaseGroup?.primaryType == "Album")
-        #expect(earliest.releaseGroup?.secondaryTypes ?? [] == [])
+        #expect((earliest.releaseGroup?.secondaryTypes ?? []).isEmpty)
 
         let medium = try #require(earliest.media?.first { !($0.tracks ?? []).isEmpty })
         #expect(medium.format == "12\" Vinyl")

@@ -20,8 +20,11 @@ struct PlaybackQueueTests {
             fileURL: "/tmp/track\(trackID).flac",
             duration: 200,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             ),
             albumID: albumID
         )
@@ -152,7 +155,7 @@ struct PlaybackQueueTests {
         await queue.remove(ids: [idToRemove])
         let stored = await queue.items
         #expect(stored.count == 3)
-        #expect(!stored.contains(where: { $0.id == idToRemove }))
+        #expect(!stored.contains { $0.id == idToRemove })
     }
 
     @Test("remove after current keeps the current track")
@@ -291,15 +294,18 @@ struct PlaybackQueueTests {
             fileURL: "/tmp/track3.flac",
             duration: 200,
             sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
+                sampleRate: 44100,
+                bitDepth: 16,
+                channelCount: 2,
+                isInterleaved: false,
+                codec: "flac"
             ),
             excludedFromShuffle: true
         )
         await queue.replace(with: items, startAt: 0)
         await queue.setShuffle(true, seed: 12345)
         let shuffled = await queue.items
-        #expect(!shuffled.contains(where: { $0.trackID == 3 }))
+        #expect(!shuffled.contains { $0.trackID == 3 })
     }
 
     // MARK: - QueueChange stream

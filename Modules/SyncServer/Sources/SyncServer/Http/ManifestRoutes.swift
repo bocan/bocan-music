@@ -42,11 +42,11 @@ enum ManifestRoutes {
                     let generation = try await syncMeta.generation()
                     let manifest = try await builder.build(
                         profile: document.profile,
-                        transcode: document.transcode,
                         serverId: serverId,
                         serverName: serverName(),
                         generation: generation,
-                        generatedAt: now()
+                        generatedAt: now(),
+                        transcode: document.transcode
                     )
                     let data = try JSONEncoder().encode(manifest)
                     // Gzip the manifest when the client asks for it (protocol s7).

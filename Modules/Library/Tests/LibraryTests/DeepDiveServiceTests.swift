@@ -12,14 +12,16 @@ private final class RoutingHTTP: HTTPClient, @unchecked Sendable {
     private(set) var requests: [String] = []
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let url = request.url!.absoluteString.removingPercentEncoding ?? ""
+        let requestURL = try #require(request.url)
+        let url = requestURL.absoluteString.removingPercentEncoding ?? ""
         self.requests.append(url)
         if self.offline {
             throw URLError(.notConnectedToInternet)
         }
         let hit = self.routes.first { url.contains($0.match) }
         let status = hit == nil ? 404 : 200
-        return (Data((hit?.body ?? "").utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+        let response = try #require(HTTPURLResponse(url: requestURL, statusCode: status, httpVersion: nil, headerFields: nil))
+        return (Data((hit?.body ?? "").utf8), response)
     }
 }
 
@@ -31,8 +33,10 @@ private let artistJSON = """
  "relations":[
   {"type":"wikidata","direction":"forward","url":{"resource":"https://www.wikidata.org/wiki/Q1299"}},
   {"type":"discogs","direction":"forward","url":{"resource":"https://www.discogs.com/artist/82730"}},
-  {"type":"member of band","direction":"backward","begin":"1957-03","end":"1970-04-10","ended":true,"attributes":["guitar","lead vocals"],"artist":{"id":"4d5447d7","name":"John Lennon"}},
-  {"type":"member of band","direction":"backward","begin":"1960-08","end":"1962-08","ended":true,"attributes":["drums"],"artist":{"id":"f3bd7f47","name":"Pete Best"}}]}
+  {"type":"member of band","direction":"backward","begin":"1957-03","end":"1970-04-10","ended":true,
+   "attributes":["guitar","lead vocals"],"artist":{"id":"4d5447d7","name":"John Lennon"}},
+  {"type":"member of band","direction":"backward","begin":"1960-08","end":"1962-08","ended":true,
+   "attributes":["drums"],"artist":{"id":"f3bd7f47","name":"Pete Best"}}]}
 """
 private let browseJSON = """
 {"release-group-count":3,"release-group-offset":0,"release-groups":[
@@ -41,7 +45,10 @@ private let browseJSON = """
  {"id":"rg-abbey","title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26"}]}
 """
 private let wikidataJSON = #"{"entities":{"Q1299":{"id":"Q1299","sitelinks":{"enwiki":{"site":"enwiki","title":"The Beatles"}}}}}"#
-private let summaryJSON = #"{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}"#
+private let summaryJSON = #"""
+{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.",
+ "content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}
+"""#
 private let searchJSON = #"{"artists":[{"id":"b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d","name":"The Beatles","score":100,"type":"Group"}]}"#
 private let releaseJSON = """
 {"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","barcode":"077774644624",
@@ -56,14 +63,21 @@ private let groupLookupJSON = """
              {"id":"rel-a","title":"Abbey Road","date":"1969-09-26","status":"Official"},
              {"id":"rel-boot","title":"Abbey Road","date":"1969","status":"Bootleg"}]}
 """
-private let workJSON = #"{"id":"w-1","title":"Come Together","relations":[{"type":"composer","artist":{"id":"a-l","name":"John Lennon"}},{"type":"composer","artist":{"id":"a-m","name":"Paul McCartney"}},{"type":"lyricist","artist":{"id":"a-l","name":"John Lennon"}}]}"#
+private let workJSON = #"""
+{"id":"w-1","title":"Come Together","relations":[
+ {"type":"composer","artist":{"id":"a-l","name":"John Lennon"}},
+ {"type":"composer","artist":{"id":"a-m","name":"Paul McCartney"}},
+ {"type":"lyricist","artist":{"id":"a-l","name":"John Lennon"}}]}
+"""#
 private let recordingJSON = """
 {"id":"rec-1","title":"Come Together","length":259000,"isrcs":["GBAYE0601690"],
  "relations":[{"type":"performance","direction":"forward","work":{"id":"w-1","title":"Come Together"}}],
  "artist-credit":[{"name":"The Beatles","artist":{"id":"\(beatlesMBID)","name":"The Beatles"}}],
  "tags":[{"name":"rock","count":9},{"name":"pop","count":3}],
- "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","release-group":{"id":"rg-abbey","primary-type":"Album"}},
-             {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official","release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
+ "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official",
+              "release-group":{"id":"rg-abbey","primary-type":"Album"}},
+             {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official",
+              "release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
 """
 
 private let groupSearchJSON = """
@@ -77,6 +91,7 @@ private let recordingSearchJSON = """
 private final class SaverSpy: DeepDiveTagSaving, @unchecked Sendable {
     private(set) var recordings: [(mbid: String, trackID: Int64)] = []
     private(set) var groups: [(mbid: String, trackIDs: [Int64])] = []
+
     func saveRecordingID(_ mbid: String, trackID: Int64) async throws {
         self.recordings.append((mbid, trackID))
     }
@@ -117,9 +132,8 @@ private func makeBed(ttl: TimeInterval = 3600) async throws -> Bed {
         database: db,
         musicBrainz: MusicBrainzClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
         wikipedia: WikipediaClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
-        cache: DeepDiveCache(root: root, ttl: ttl),
-        now: { Date(timeIntervalSince1970: 1_720_000_000) }
-    )
+        cache: DeepDiveCache(root: root, ttl: ttl)
+    ) { Date(timeIntervalSince1970: 1_720_000_000) }
     return Bed(db: db, http: http, service: service, cacheRoot: root)
 }
 
@@ -296,10 +310,11 @@ struct DeepDiveServiceTests {
         let bed = try await makeBed()
         let albums = AlbumRepository(database: bed.db)
         let album = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: nil)
+        let albumID = try #require(album.id)
         try await bed.db.write { db in
-            try db.execute(sql: "UPDATE albums SET musicbrainz_release_group_id = 'rg-abbey' WHERE id = ?", arguments: [album.id!])
+            try db.execute(sql: "UPDATE albums SET musicbrainz_release_group_id = 'rg-abbey' WHERE id = ?", arguments: [albumID])
         }
-        let report = try await bed.service.albumReport(albumID: #require(album.id))
+        let report = try await bed.service.albumReport(albumID: albumID)
         #expect(report.releaseChosen)
         #expect(report.releaseMBID == "rel-a", "earliest official, not the 2019 reissue or the bootleg")
         #expect(bed.http.requests.contains { $0.contains("/ws/2/release-group/rg-abbey?") })

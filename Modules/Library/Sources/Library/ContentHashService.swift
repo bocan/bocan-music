@@ -27,6 +27,11 @@ public actor ContentHashService {
     private var pendingRun: Task<Void, Never>?
     private var runningPass: Task<Void, Never>?
 
+    /// Creates the service; nothing runs until `start()`.
+    ///
+    /// - Parameters:
+    ///   - debounce: Quiet time after a missing-hash emission before a pass starts.
+    ///   - batchSize: Tracks fetched per database query during a pass.
     public init(tracks: TrackRepository, debounce: Duration = .seconds(5), batchSize: Int = 64) {
         self.tracks = tracks
         self.debounce = debounce
@@ -51,6 +56,8 @@ public actor ContentHashService {
         }
     }
 
+    /// Stops observing and cancels any scheduled or running pass. Tracks left
+    /// unhashed are picked up after the next `start()`.
     public func stop() {
         self.observationTask?.cancel()
         self.observationTask = nil

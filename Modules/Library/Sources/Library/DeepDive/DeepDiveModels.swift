@@ -170,10 +170,13 @@ extension DeepDiveError: CustomStringConvertible {
         switch self {
         case .noIdentifier:
             "No MusicBrainz match was found for this artist."
+
         case .offline:
             "Deep Dive needs a network connection, and nothing is cached for this artist yet."
+
         case .rateLimited:
             "MusicBrainz is rate limiting requests. Try again shortly."
+
         case .notFound:
             "No Deep Dive information was found for this artist."
         }

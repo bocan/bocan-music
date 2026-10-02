@@ -40,8 +40,10 @@ struct SwallowedErrorLibraryConventionTests {
         #expect(!source.contains("try? await trackRepo.fetch("))
         #expect(!source.contains("try? await artistRepo.fetch("))
         #expect(!source.contains("try? await albumRepo.fetch("))
-        for event in ["lyrics.trackLookup.failed", "lyrics.artistLookup.failed",
-                      "lyrics.albumLookup.failed", "lyrics.root_scope.rootsUnavailable"] {
+        for event in [
+            "lyrics.trackLookup.failed", "lyrics.artistLookup.failed",
+            "lyrics.albumLookup.failed", "lyrics.root_scope.rootsUnavailable",
+        ] {
             #expect(source.contains(event), "missing \(event)")
         }
 
@@ -54,14 +56,18 @@ struct SwallowedErrorLibraryConventionTests {
     @Test("the scanner and the scan coordinator log the writes they used to drop (#492)")
     func scanWritesAreLogged() throws {
         let scanner = try self.source("Sources/Library/LibraryScanner.swift")
-        for event in ["library.root.markInaccessibleFailed", "fsevents.start.rootsUnavailable",
-                      "fsevents.file_removed.failed", "fsevents.dir_removed.failed"] {
+        for event in [
+            "library.root.markInaccessibleFailed", "fsevents.start.rootsUnavailable",
+            "fsevents.file_removed.failed", "fsevents.dir_removed.failed",
+        ] {
             #expect(scanner.contains(event), "missing \(event)")
         }
 
         let coordinator = try self.source("Sources/Library/ScanCoordinator.swift")
-        for event in ["scan.setting.readFailed", "scan.removal.failed", "scan.pruneOrphans.failed",
-                      "scan.conflict.updateFailed", "scan.bookmark.mintFailed"] {
+        for event in [
+            "scan.setting.readFailed", "scan.removal.failed", "scan.pruneOrphans.failed",
+            "scan.conflict.updateFailed", "scan.bookmark.mintFailed",
+        ] {
             #expect(coordinator.contains(event), "missing \(event)")
         }
     }
@@ -69,15 +75,19 @@ struct SwallowedErrorLibraryConventionTests {
     @Test("the tag editor logs the rows and stamps it could not read (#492)")
     func editorLookupsAreLogged() throws {
         let transaction = try self.source("Sources/Library/Edit/EditTransaction.swift")
-        for event in ["edit.albumArt.albumLookupFailed", "edit.perFileScope.bookmarkUnresolvable",
-                      "edit.mtimeStamp.failed", "edit.fallbackRow.albumLookupFailed",
-                      "edit.root_scope.rootsUnavailable"] {
+        for event in [
+            "edit.albumArt.albumLookupFailed", "edit.perFileScope.bookmarkUnresolvable",
+            "edit.mtimeStamp.failed", "edit.fallbackRow.albumLookupFailed",
+            "edit.root_scope.rootsUnavailable",
+        ] {
             #expect(transaction.contains(event), "missing \(event)")
         }
 
         let service = try self.source("Sources/Library/Edit/MetadataEditService.swift")
-        for event in ["edit.editID.lookupFailed", "undo.rowUpdateFailed", "edit.readTracks.lookupFailed",
-                      "edit.storedLyrics.lookupFailed", "conflict.clear.mtimeStampFailed"] {
+        for event in [
+            "edit.editID.lookupFailed", "undo.rowUpdateFailed", "edit.readTracks.lookupFailed",
+            "edit.storedLyrics.lookupFailed", "conflict.clear.mtimeStampFailed",
+        ] {
             #expect(service.contains(event), "missing \(event)")
         }
     }

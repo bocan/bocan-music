@@ -8,7 +8,9 @@ struct DeepDiveEnrichmentGateTests {
     @Test("BocanApp starts the pass only through the gate")
     func appUsesTheGate() throws {
         let url = URL(filePath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent() // AppTests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // repo root
             .appendingPathComponent("App/BocanApp.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         #expect(!source.contains("await artistEnrichment.start()"))

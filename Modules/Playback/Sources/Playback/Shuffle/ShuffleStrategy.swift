@@ -18,7 +18,15 @@ public protocol ShuffleStrategy: Sendable {
 /// State is initialised via SplitMix64 so a simple seed produces
 /// a well-mixed 256-bit state.
 struct Xoshiro256StarStar: RandomNumberGenerator {
-    private var s: (UInt64, UInt64, UInt64, UInt64)
+    /// The four 64-bit words of the generator's state.
+    private struct State {
+        var word0: UInt64
+        var word1: UInt64
+        var word2: UInt64
+        var word3: UInt64
+    }
+
+    private var s: State
 
     init(seed: UInt64) {
         // SplitMix64 initializer — distributes the seed into 4 state words.
@@ -30,18 +38,18 @@ struct Xoshiro256StarStar: RandomNumberGenerator {
             z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
             return z ^ (z >> 31)
         }
-        self.s = (sm64(), sm64(), sm64(), sm64())
+        self.s = State(word0: sm64(), word1: sm64(), word2: sm64(), word3: sm64())
     }
 
     mutating func next() -> UInt64 {
-        let result = self.s.1 &* 5
-        let t = self.s.1 << 17
-        self.s.2 ^= self.s.0
-        self.s.3 ^= self.s.1
-        self.s.1 ^= self.s.2
-        self.s.0 ^= self.s.3
-        self.s.2 ^= t
-        self.s.3 = (self.s.3 << 45) | (self.s.3 >> 19)
+        let result = self.s.word1 &* 5
+        let t = self.s.word1 << 17
+        self.s.word2 ^= self.s.word0
+        self.s.word3 ^= self.s.word1
+        self.s.word1 ^= self.s.word2
+        self.s.word0 ^= self.s.word3
+        self.s.word2 ^= t
+        self.s.word3 = (self.s.word3 << 45) | (self.s.word3 >> 19)
         return (result << 7) | (result >> 57)
     }
 }

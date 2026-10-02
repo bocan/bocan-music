@@ -54,9 +54,9 @@ struct SelfSignedCertTests {
 
     @Test("each generation yields a distinct identity")
     func generationsAreDistinct() throws {
-        let a = try SelfSignedCert.generate()
-        let b = try SelfSignedCert.generate()
-        #expect(a.certificateDER != b.certificateDER)
-        #expect(a.commonName != b.commonName || a.privateKeyX963 != b.privateKeyX963)
+        let first = try SelfSignedCert.generate()
+        let second = try SelfSignedCert.generate()
+        #expect(first.certificateDER != second.certificateDER)
+        #expect(first.commonName != second.commonName || first.privateKeyX963 != second.privateKeyX963)
     }
 }

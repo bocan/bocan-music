@@ -44,6 +44,13 @@ public actor PairingCoordinator {
     private var deadlineTask: Task<Void, Never>?
     private var pairingModeObserver: (@Sendable (Bool) -> Void)?
 
+    /// Creates a coordinator with pairing mode off.
+    ///
+    /// - Parameters:
+    ///   - serverName: Supplies this Mac's name for the pairing ceremony.
+    ///   - serverId: Supplies the server id; a throw fails the pairing.
+    ///   - timeout: Length of the pairing window, in seconds.
+    ///   - now: Clock, injectable for tests.
     public init(
         identity: ServerIdentity,
         trusted: TrustedDevices,

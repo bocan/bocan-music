@@ -79,6 +79,7 @@ public actor CrossfadeScheduler {
         self.config.durationSeconds
     }
 
+    /// `true` when the crossfade duration is above 0.
     public var isEnabled: Bool {
         self.config.durationSeconds > 0
     }

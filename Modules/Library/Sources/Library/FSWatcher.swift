@@ -43,6 +43,8 @@ public actor FSWatcher {
 
     // MARK: - Init / deinit
 
+    /// Creates a watcher that reports changed URLs to `onChange`. Nothing is
+    /// watched until `watch(_:bookmark:)` adds a directory.
     public init(onChange: @Sendable @escaping ([URL]) -> Void) {
         self.onChange = onChange
     }
@@ -165,8 +167,8 @@ public actor FSWatcher {
             info: selfPtr,
             retain: nil,
             release: { ptr in
-                if let p = ptr {
-                    Unmanaged<FSWatcher>.fromOpaque(p).release()
+                if let pointer = ptr {
+                    Unmanaged<FSWatcher>.fromOpaque(pointer).release()
                 }
             },
             copyDescription: nil
@@ -197,7 +199,7 @@ public actor FSWatcher {
     /// with an empty paths array) and reports whether it failed, without exposing
     /// the non-Sendable stream handle across the actor boundary. Used by the
     /// retain-balance regression test for #264.
-    func _forceStreamCreateFailureForTesting() -> Bool {
+    func forceStreamCreateFailureForTesting() -> Bool {
         guard let stream = self.makeStream(forPaths: []) else { return true }
         // Defensive: should not happen, but never leak a real stream.
         FSEventStreamInvalidate(stream)
@@ -228,8 +230,7 @@ public actor FSWatcher {
 
 // MARK: - C callback (file-scope)
 
-private let fsEventsCallback: FSEventStreamCallback = {
-    _, clientCallBackInfo, numEvents, eventPaths, eventFlags, _ in
+private let fsEventsCallback: FSEventStreamCallback = { _, clientCallBackInfo, numEvents, eventPaths, eventFlags, _ in
     guard let info = clientCallBackInfo else { return }
     let watcher = Unmanaged<FSWatcher>.fromOpaque(info).takeUnretainedValue()
 

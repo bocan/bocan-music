@@ -141,6 +141,8 @@ struct MusicBrainzEntityTests {
 
     @Test("the shared rate limiter is one instance")
     func sharedLimiter() {
-        #expect(MusicBrainzClient.sharedRateLimiter === MusicBrainzClient.sharedRateLimiter)
+        let first = MusicBrainzClient.sharedRateLimiter
+        let second = MusicBrainzClient.sharedRateLimiter
+        #expect(first === second)
     }
 }

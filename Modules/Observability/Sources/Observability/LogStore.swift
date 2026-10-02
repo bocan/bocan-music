@@ -26,6 +26,11 @@ public final class LogStore: Sendable {
         var subscribers: [UInt64: AsyncStream<LogEntry>.Continuation] = [:]
         var nextSubscriberID: UInt64 = 0
 
+        /// True when the ring holds no entry. `count` is a counter, not a collection.
+        var isEmpty: Bool {
+            self.count < 1
+        }
+
         init(capacity: Int) {
             self.buffer = Array(repeating: nil, count: capacity)
         }
@@ -115,13 +120,15 @@ public final class LogStore: Sendable {
     public func snapshot() -> [LogEntry] {
         let cap = self.capacity
         return self._state.withLock { s in
-            guard s.count > 0 else { return [] }
+            guard !s.isEmpty else { return [] }
             var result = [LogEntry]()
             result.reserveCapacity(s.count)
             for i in 0 ..< s.count {
-                let index = (s.head + i) % cap
-                // buffer[index] is guaranteed non-nil for indices within count.
-                result.append(s.buffer[index]!)
+                // `record` fills every slot within `count`, so the slot holds an
+                // entry; an empty one is skipped, because this file cannot log.
+                if let entry = s.buffer[(s.head + i) % cap] {
+                    result.append(entry)
+                }
             }
             return result
         }
@@ -161,10 +168,13 @@ public final class LogStore: Sendable {
         let (backfill, token): ([LogEntry], UInt64) = self._state.withLock { s in
             // Snapshot the current ring buffer.
             var result = [LogEntry]()
-            if s.count > 0 {
+            if !s.isEmpty {
                 result.reserveCapacity(s.count)
                 for i in 0 ..< s.count {
-                    result.append(s.buffer[(s.head + i) % cap]!)
+                    // Same invariant as `snapshot()`: slots within `count` are filled.
+                    if let entry = s.buffer[(s.head + i) % cap] {
+                        result.append(entry)
+                    }
                 }
             }
             // Register the subscriber atomically with the snapshot.

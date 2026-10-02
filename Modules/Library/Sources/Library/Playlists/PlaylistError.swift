@@ -21,12 +21,16 @@ public enum PlaylistError: Error, Sendable, CustomStringConvertible, Equatable {
         switch self {
         case let .notFound(id):
             "Playlist \(id) not found"
+
         case let .wrongKind(id, expected, actual):
             "Playlist \(id) is a \(actual); expected a \(expected)"
+
         case let .cycleDetected(id, newParent):
             "Moving \(id) under \(newParent) would create a cycle"
+
         case .emptyName:
             "Playlist name cannot be empty"
+
         case let .invalidAccentColor(hex):
             "Accent colour '\(hex)' is not a #RRGGBB hex string"
         }

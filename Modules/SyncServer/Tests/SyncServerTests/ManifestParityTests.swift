@@ -31,51 +31,18 @@ struct ManifestParityTests {
         _ = try await albums.insert(Album(id: 55, title: "Loveless", albumArtistID: 7))
         _ = try await albums.insert(Album(id: 56, title: "Souvlaki", albumArtistID: 8))
 
-        let sha101 = String(repeating: "aa01", count: 16)
-        let sha102 = String(repeating: "aa02", count: 16)
-        let sha103 = String(repeating: "aa03", count: 16)
-
-        let mp3URL = URL(fileURLWithPath: "/Music/Slowdive/Souvlaki/04 Souvlaki Space Station.mp3").absoluteString
-
-        _ = try await tracks.insert(Track(
-            id: 101, fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/01 Only Shallow.flac").absoluteString,
-            fileSize: 31_337_000, fileFormat: "flac", duration: 254,
-            sampleRate: 44100, bitDepth: 16, bitrate: 987, channelCount: 2, isLossless: true,
-            title: "Only Shallow", artistID: 7, albumArtistID: 7, albumID: 55,
-            trackNumber: 1, trackTotal: 11, discNumber: 1, discTotal: 1, year: 1991,
-            genre: "Shoegaze", composer: "Kevin Shields", bpm: 130,
-            replaygainTrackGain: -8.1, replaygainTrackPeak: 0.98, replaygainAlbumGain: -7.9, replaygainAlbumPeak: 0.99,
-            rating: 80, loved: true, contentHash: sha101, addedAt: 0, updatedAt: 0
-        ))
-        _ = try await tracks.insert(Track(
-            id: 102, fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/02 Loomer.flac").absoluteString,
-            fileSize: 17_000_000, fileFormat: "flac", duration: 158,
-            sampleRate: 44100, bitDepth: 16, bitrate: 941, channelCount: 2, isLossless: true,
-            title: "Loomer", artistID: 7, albumArtistID: 7, albumID: 55, trackNumber: 2,
-            contentHash: sha102, addedAt: 0, updatedAt: 0
-        ))
-        _ = try await tracks.insert(Track(
-            id: 103, fileURL: mp3URL,
-            fileSize: 9_200_000, fileFormat: "mp3", duration: 356,
-            sampleRate: 44100, bitrate: 320, channelCount: 2, isLossless: false,
-            title: "Souvlaki Space Station", artistID: 8, albumArtistID: 8, albumID: 56,
-            trackNumber: 4, trackTotal: 10, discNumber: 1, discTotal: 1, year: 1993, genre: "Shoegaze",
-            replaygainTrackGain: -6.2, replaygainTrackPeak: 0.91,
-            rating: 60, contentHash: sha103, addedAt: 0, updatedAt: 0
-        ))
-        // An untagged file: only the id/file core, per the contract's
-        // field-optionality rules. Every metadata key must end up omitted.
-        _ = try await tracks.insert(Track(
-            id: 105, fileURL: URL(fileURLWithPath: "/Music/Unsorted/rip-004.flac").absoluteString,
-            fileSize: 24_000_000, fileFormat: "flac", duration: 201,
-            contentHash: String(repeating: "aa05", count: 16),
-            addedAt: 0, updatedAt: 0
-        ))
+        _ = try await tracks.insert(Self.onlyShallow)
+        _ = try await tracks.insert(Self.loomer)
+        _ = try await tracks.insert(Self.souvlakiSpaceStation)
+        _ = try await tracks.insert(Self.untagged)
 
         let builder = ManifestBuilder(database: database)
         let built = try await builder.build(
             profile: .everything(includePodcasts: false),
-            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
         )
 
         // The golden keeps a clip track (id 104) because the wire contract
@@ -88,5 +55,111 @@ struct ManifestParityTests {
             let builtTrack = try #require(built.tracks.first { $0.id == goldenTrack.id })
             #expect(self.normalized(builtTrack) == self.normalized(goldenTrack))
         }
+    }
+
+    // MARK: - Fixture tracks (the rows that mirror `manifest-small.json`)
+
+    private static var onlyShallow: Track {
+        Track(
+            id: 101,
+            fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/01 Only Shallow.flac").absoluteString,
+            fileSize: 31_337_000,
+            fileFormat: "flac",
+            duration: 254,
+            sampleRate: 44100,
+            bitDepth: 16,
+            bitrate: 987,
+            channelCount: 2,
+            isLossless: true,
+            title: "Only Shallow",
+            artistID: 7,
+            albumArtistID: 7,
+            albumID: 55,
+            trackNumber: 1,
+            trackTotal: 11,
+            discNumber: 1,
+            discTotal: 1,
+            year: 1991,
+            genre: "Shoegaze",
+            composer: "Kevin Shields",
+            bpm: 130,
+            replaygainTrackGain: -8.1,
+            replaygainTrackPeak: 0.98,
+            replaygainAlbumGain: -7.9,
+            replaygainAlbumPeak: 0.99,
+            rating: 80,
+            loved: true,
+            contentHash: String(repeating: "aa01", count: 16),
+            addedAt: 0,
+            updatedAt: 0
+        )
+    }
+
+    private static var loomer: Track {
+        Track(
+            id: 102,
+            fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/02 Loomer.flac").absoluteString,
+            fileSize: 17_000_000,
+            fileFormat: "flac",
+            duration: 158,
+            sampleRate: 44100,
+            bitDepth: 16,
+            bitrate: 941,
+            channelCount: 2,
+            isLossless: true,
+            title: "Loomer",
+            artistID: 7,
+            albumArtistID: 7,
+            albumID: 55,
+            trackNumber: 2,
+            contentHash: String(repeating: "aa02", count: 16),
+            addedAt: 0,
+            updatedAt: 0
+        )
+    }
+
+    private static var souvlakiSpaceStation: Track {
+        Track(
+            id: 103,
+            fileURL: URL(fileURLWithPath: "/Music/Slowdive/Souvlaki/04 Souvlaki Space Station.mp3").absoluteString,
+            fileSize: 9_200_000,
+            fileFormat: "mp3",
+            duration: 356,
+            sampleRate: 44100,
+            bitrate: 320,
+            channelCount: 2,
+            isLossless: false,
+            title: "Souvlaki Space Station",
+            artistID: 8,
+            albumArtistID: 8,
+            albumID: 56,
+            trackNumber: 4,
+            trackTotal: 10,
+            discNumber: 1,
+            discTotal: 1,
+            year: 1993,
+            genre: "Shoegaze",
+            replaygainTrackGain: -6.2,
+            replaygainTrackPeak: 0.91,
+            rating: 60,
+            contentHash: String(repeating: "aa03", count: 16),
+            addedAt: 0,
+            updatedAt: 0
+        )
+    }
+
+    /// An untagged file: only the id/file core, per the contract's
+    /// field-optionality rules. Every metadata key must end up omitted.
+    private static var untagged: Track {
+        Track(
+            id: 105,
+            fileURL: URL(fileURLWithPath: "/Music/Unsorted/rip-004.flac").absoluteString,
+            fileSize: 24_000_000,
+            fileFormat: "flac",
+            duration: 201,
+            contentHash: String(repeating: "aa05", count: 16),
+            addedAt: 0,
+            updatedAt: 0
+        )
     }
 }

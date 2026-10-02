@@ -56,8 +56,13 @@ private func makeAutoBed(autoDownload: Bool, maxConcurrent: Int = 2) async throw
         maxConcurrent: maxConcurrent
     )
     return AutoBed(
-        db: db, podcastRepo: podcastRepo, episodeRepo: episodeRepo, stateRepo: stateRepo,
-        manager: manager, storeRoot: root, podcastID: podcastID
+        db: db,
+        podcastRepo: podcastRepo,
+        episodeRepo: episodeRepo,
+        stateRepo: stateRepo,
+        manager: manager,
+        storeRoot: root,
+        podcastID: podcastID
     )
 }
 
@@ -128,8 +133,10 @@ struct AutoDownloadCoordinatorTests {
         let guids = try await insertEpisodes(bed, count: 3)
 
         let coordinator = AutoDownloadCoordinator(
-            podcastRepo: bed.podcastRepo, episodeRepo: bed.episodeRepo,
-            stateRepo: bed.stateRepo, manager: bed.manager
+            podcastRepo: bed.podcastRepo,
+            episodeRepo: bed.episodeRepo,
+            stateRepo: bed.stateRepo,
+            manager: bed.manager
         )
         let outcome = RefreshOutcome(
             notModified: false, newEpisodeCount: 3, totalEpisodeCount: 3, newEpisodeGUIDs: guids
@@ -154,8 +161,11 @@ struct AutoDownloadCoordinatorTests {
         try await bed.stateRepo.markPlayed(podcastID: bed.podcastID, guid: "e4", now: 1_700_000_000)
 
         let coordinator = AutoDownloadCoordinator(
-            podcastRepo: bed.podcastRepo, episodeRepo: bed.episodeRepo,
-            stateRepo: bed.stateRepo, manager: bed.manager, newestN: 3
+            podcastRepo: bed.podcastRepo,
+            episodeRepo: bed.episodeRepo,
+            stateRepo: bed.stateRepo,
+            manager: bed.manager,
+            newestN: 3
         )
         let outcome = RefreshOutcome(
             notModified: false, newEpisodeCount: 5, totalEpisodeCount: 5, newEpisodeGUIDs: guids
@@ -177,8 +187,10 @@ struct AutoDownloadCoordinatorTests {
         try await insertEpisodes(bed, count: 2)
 
         let coordinator = AutoDownloadCoordinator(
-            podcastRepo: bed.podcastRepo, episodeRepo: bed.episodeRepo,
-            stateRepo: bed.stateRepo, manager: bed.manager
+            podcastRepo: bed.podcastRepo,
+            episodeRepo: bed.episodeRepo,
+            stateRepo: bed.stateRepo,
+            manager: bed.manager
         )
         let outcome = RefreshOutcome(
             notModified: false, newEpisodeCount: 0, totalEpisodeCount: 2, newEpisodeGUIDs: []

@@ -68,6 +68,10 @@ public actor BackupRing {
 
     // MARK: - Init
 
+    /// Opens the ring in `directory`, creating the folder if needed, and
+    /// rebuilds the eviction order from the entries already on disk.
+    /// `capacity` is the number of edits kept. Throws when the folder cannot
+    /// be created.
     public init(directory: URL, capacity: Int = 50) throws {
         self.ringDir = directory
         self.capacity = capacity

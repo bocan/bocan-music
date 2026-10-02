@@ -20,19 +20,27 @@ private final class ReadStubTransport: HTTPTransport, @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
         let (data, status) = self.responses.removeFirst()
-        let resp = HTTPURLResponse(
+        let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
             httpVersion: nil,
             headerFields: nil
-        )!
+        ))
         return (data, resp)
     }
 }
 
 private let testServerURL = URL(string: "https://music.test.local")!
 
-private func makeService() async throws -> (SubsonicService, UUID, ReadStubTransport) {
+/// What `makeService()` gives a test: the service, the ID of its one server
+/// and the stub transport behind that server's client.
+private struct ServiceFixture {
+    let service: SubsonicService
+    let id: UUID
+    let transport: ReadStubTransport
+}
+
+private func makeService() async throws -> ServiceFixture {
     let db = try await Database(location: .inMemory)
     let repo = SubsonicServerRepository(database: db)
     let store = SubsonicServerStore(repository: repo)
@@ -55,8 +63,8 @@ private func makeService() async throws -> (SubsonicService, UUID, ReadStubTrans
         retryPolicy: RetryPolicy(maxAttempts: 1, baseDelay: 0)
     )
     let service = SubsonicService(store: store)
-    await service._registerClientForTesting(client, serverID: id)
-    return (service, id, transport)
+    await service.registerClientForTesting(client, serverID: id)
+    return ServiceFixture(service: service, id: id, transport: transport)
 }
 
 private let okEnv = """
@@ -73,7 +81,8 @@ private func envelope(_ inner: String) -> String {
 struct SubsonicServiceReadSweepTests {
     @Test("ping hits ping endpoint")
     func pingHits() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnv)
         try await service.ping(serverID: id)
         #expect(transport.requests[0].path.contains("ping"))
@@ -81,7 +90,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getArtists parses an empty index list")
     func getArtists() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"artists\":{\"ignoredArticles\":\"The\",\"index\":[]}"))
         let result = try await service.getArtists(serverID: id)
         #expect(result.isEmpty)
@@ -90,7 +100,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getArtist parses a stub artist")
     func getArtist() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"artist\":{\"id\":\"a1\",\"name\":\"Stub\",\"albumCount\":0}"))
         let result = try await service.getArtist(serverID: id, id: "a1")
         #expect(result.id == "a1")
@@ -99,7 +110,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getAlbum parses a stub album")
     func getAlbum() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"album\":{\"id\":\"b1\",\"name\":\"Album\",\"songCount\":0,\"duration\":0}"))
         let result = try await service.getAlbum(serverID: id, id: "b1")
         #expect(result.id == "b1")
@@ -107,7 +119,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getGenres parses an empty list")
     func getGenres() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"genres\":{\"genre\":[]}"))
         let result = try await service.getGenres(serverID: id)
         #expect(result.isEmpty)
@@ -115,7 +128,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getAlbumList2 hits getAlbumList2 endpoint")
     func getAlbumList2() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"albumList2\":{\"album\":[]}"))
         let result = try await service.getAlbumList2(serverID: id, type: .newest, size: 10, offset: 0)
         #expect(result.isEmpty)
@@ -124,7 +138,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getRandomSongs returns an empty array for empty payload")
     func getRandomSongs() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"randomSongs\":{\"song\":[]}"))
         let result = try await service.getRandomSongs(serverID: id, size: 5)
         #expect(result.isEmpty)
@@ -132,7 +147,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getSongsByGenre returns an empty array for empty payload")
     func getSongsByGenre() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"songsByGenre\":{\"song\":[]}"))
         let result = try await service.getSongsByGenre(serverID: id, genre: "Rock", count: 10, offset: 0)
         #expect(result.isEmpty)
@@ -140,7 +156,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getStarred2 returns an empty result")
     func getStarred2() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"starred2\":{}"))
         let result = try await service.getStarred2(serverID: id)
         #expect((result.song ?? []).isEmpty)
@@ -148,7 +165,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getPlaylists returns an empty list")
     func getPlaylists() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"playlists\":{\"playlist\":[]}"))
         let result = try await service.getPlaylists(serverID: id)
         #expect(result.isEmpty)
@@ -156,20 +174,19 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getPlaylist parses a stub playlist")
     func getPlaylist() async throws {
-        let (service, id, transport) = try await makeService()
-        transport
-            .enqueue(
-                json: envelope(
-                    "\"playlist\":{\"id\":\"p1\",\"name\":\"Mix\",\"songCount\":0,\"duration\":0,\"owner\":\"alice\",\"public\":false,\"created\":\"2024-01-01T00:00:00.000Z\",\"changed\":\"2024-01-01T00:00:00.000Z\"}"
-                )
-            )
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
+        let playlist = "\"playlist\":{\"id\":\"p1\",\"name\":\"Mix\",\"songCount\":0,\"duration\":0,\"owner\":\"alice\",\"public\":false,"
+            + "\"created\":\"2024-01-01T00:00:00.000Z\",\"changed\":\"2024-01-01T00:00:00.000Z\"}"
+        transport.enqueue(json: envelope(playlist))
         let result = try await service.getPlaylist(serverID: id, id: "p1")
         #expect(result.id == "p1")
     }
 
     @Test("search3 returns an empty result")
     func search3() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"searchResult3\":{}"))
         let result = try await service.search3(serverID: id, query: "abba")
         #expect((result.song ?? []).isEmpty)
@@ -177,7 +194,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getPodcasts returns an empty list")
     func getPodcasts() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"podcasts\":{\"channel\":[]}"))
         let result = try await service.getPodcasts(serverID: id)
         #expect(result.isEmpty)
@@ -185,7 +203,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getInternetRadioStations returns an empty list")
     func getInternetRadioStations() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"internetRadioStations\":{\"internetRadioStation\":[]}"))
         let result = try await service.getInternetRadioStations(serverID: id)
         #expect(result.isEmpty)
@@ -193,7 +212,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getBookmarks returns an empty list")
     func getBookmarks() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"bookmarks\":{\"bookmark\":[]}"))
         let result = try await service.getBookmarks(serverID: id)
         #expect(result.isEmpty)
@@ -201,7 +221,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getNowPlaying returns an empty list")
     func getNowPlaying() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: envelope("\"nowPlaying\":{\"entry\":[]}"))
         let result = try await service.getNowPlaying(serverID: id)
         #expect(result.isEmpty)
@@ -225,7 +246,8 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("removeClient drops the registered client")
     func removeClientDrops() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         await service.removeClient(for: id)
         do {
             try await service.ping(serverID: id)
@@ -237,7 +259,7 @@ struct SubsonicServiceReadSweepTests {
 
     @Test("getArtists on unknown server throws unknownServer")
     func getArtistsUnknown() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         let bogus = UUID()
         do {
             _ = try await service.getArtists(serverID: bogus)

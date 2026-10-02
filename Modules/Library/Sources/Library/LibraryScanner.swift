@@ -17,13 +17,15 @@ import Persistence
 public actor LibraryScanner {
     // MARK: - Properties
 
-    private let database: Database
+    // `database` and `log` are internal rather than private for
+    // `LibraryScanner+FSChanges.swift`.
+    let database: Database
     private let rootRepo: LibraryRootRepository
     private let maintenanceRepo: PendingMaintenanceRepository
     private let coordinator: ScanCoordinator
     private var fsWatcher: FSWatcher?
     private var isScanning = false
-    private let log = AppLogger.make(.library)
+    let log = AppLogger.make(.library)
 
     /// Called on the caller's context after FSEvents imports one or more files.
     /// The ViewModel sets this to reload the tracks/albums/artists views.
@@ -36,6 +38,7 @@ public actor LibraryScanner {
 
     // MARK: - Init
 
+    /// Creates a scanner over `database`. No scan or folder watching starts here.
     public init(database: Database) {
         self.database = database
         self.rootRepo = LibraryRootRepository(database: database)
@@ -109,112 +112,137 @@ public actor LibraryScanner {
             // ScanCoordinator's cooperative `Task.isCancelled` checks never
             // tripped because nothing ever cancelled this task. See #266.
             let task = Task {
-                guard !self.isScanning else {
-                    continuation.yield(.error(url: nil, error: LibraryError.scanAlreadyInProgress))
-                    continuation.finish()
-                    return
-                }
-                self.isScanning = true
-                defer { isScanning = false }
-
-                let allRoots: [LibraryRoot]
-                do {
-                    allRoots = try await self.rootRepo.fetchAll()
-                } catch {
-                    continuation.yield(.error(url: nil, error: error))
-                    continuation.finish()
-                    return
-                }
-
-                // Resolve bookmarks and keep security scopes active for the entire scan.
-                // SecurityScope.withAccess stops the scope when its closure returns, which
-                // is too early — file tag reading happens later in coordinator.scan().
-                // Instead, start each scope manually and stop them all via defer once
-                // the coordinator finishes.
-                var resolved: [(url: URL, rootID: Int64)] = []
-                for root in allRoots {
-                    guard let rootID = root.id else { continue }
-                    var isStale = false
-                    do {
-                        let url = try URL(
-                            resolvingBookmarkData: root.bookmark,
-                            options: .withSecurityScope,
-                            relativeTo: nil,
-                            bookmarkDataIsStale: &isStale
-                        )
-                        guard url.startAccessingSecurityScopedResource() else {
-                            throw LibraryError.bookmarkStale(url)
-                        }
-                        if isStale {
-                            self.log.warning("security_scope.stale", ["url": url.path])
-                            // Bookmark is still resolvable but macOS has flagged it for renewal.
-                            // Persist a fresh bookmark now so future launches don't fail entirely.
-                            do {
-                                let fresh = try url.bookmarkData(
-                                    options: .withSecurityScope,
-                                    includingResourceValuesForKeys: nil,
-                                    relativeTo: nil
-                                )
-                                var updated = root
-                                updated.bookmark = fresh
-                                try await self.rootRepo.upsert(updated)
-                                self.log.debug("security_scope.refreshed", ["url": url.path])
-                            } catch {
-                                self.log.warning(
-                                    "security_scope.refresh_failed",
-                                    ["url": url.path, "error": String(reflecting: error)]
-                                )
-                            }
-                        }
-                        resolved.append((url, rootID))
-                    } catch {
-                        self.log.warning("library.root.inaccessible", ["id": rootID, "path": root.path])
-                        do {
-                            try await self.rootRepo.markInaccessible(id: rootID, true)
-                        } catch {
-                            // The row still says the folder is reachable, so
-                            // the UI keeps offering it as healthy (#492).
-                            self.log.warning("library.root.markInaccessibleFailed", [
-                                "id": rootID,
-                                "error": String(reflecting: error),
-                            ])
-                        }
-                        continuation.yield(.error(url: URL(fileURLWithPath: root.path), error: error))
-                    }
-                }
-                // Stop all scopes once the scan completes (or if we return early below).
-                defer {
-                    for (url, _) in resolved {
-                        url.stopAccessingSecurityScopedResource()
-                    }
-                }
-
-                guard !resolved.isEmpty else {
-                    continuation.yield(.finished(ScanProgress.Summary(
-                        inserted: 0, updated: 0, removed: 0,
-                        skipped: 0, errors: 0, duration: .zero
-                    )))
-                    continuation.finish()
-                    return
-                }
-
-                // A migration may have asked for a full re-read (#425). Honour it
-                // on any scan, silently, and clear the request only when that
-                // full scan finishes, so a cancelled or crashed scan runs again.
-                let effectiveMode = await self.effectiveScanMode(requested: mode)
-                let finished = FinishedFlag()
-                await self.coordinator.scan(roots: resolved, mode: effectiveMode) { event in
-                    if case .finished = event {
-                        finished.mark()
-                    }
-                    continuation.yield(event)
-                }
-                if effectiveMode == .full, finished.isSet, !Task.isCancelled {
-                    await self.clearFullRescanRequest()
-                }
-                continuation.finish()
+                await self.runScan(mode: mode, continuation: continuation)
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// The body of the scanning task that `scan(mode:)` starts.
+    private func runScan(mode: ScanMode, continuation: AsyncStream<ScanProgress>.Continuation) async {
+        guard !self.isScanning else {
+            continuation.yield(.error(url: nil, error: LibraryError.scanAlreadyInProgress))
+            continuation.finish()
+            return
+        }
+        self.isScanning = true
+        defer { isScanning = false }
+
+        let allRoots: [LibraryRoot]
+        do {
+            allRoots = try await self.rootRepo.fetchAll()
+        } catch {
+            continuation.yield(.error(url: nil, error: error))
+            continuation.finish()
+            return
+        }
+
+        // Resolve bookmarks and keep security scopes active for the entire scan.
+        // SecurityScope.withAccess stops the scope when its closure returns, which
+        // is too early: file tag reading happens later in coordinator.scan().
+        // Instead, start each scope manually and stop them all via defer once
+        // the coordinator finishes.
+        let resolved = await self.startRootScopes(for: allRoots, continuation: continuation)
+        // Stop all scopes once the scan completes (or if we return early below).
+        defer {
+            for (url, _) in resolved {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        guard !resolved.isEmpty else {
+            continuation.yield(.finished(ScanProgress.Summary(
+                inserted: 0,
+                updated: 0,
+                removed: 0,
+                skipped: 0,
+                errors: 0,
+                duration: .zero
+            )))
+            continuation.finish()
+            return
+        }
+
+        // A migration may have asked for a full re-read (#425). Honour it
+        // on any scan, silently, and clear the request only when that
+        // full scan finishes, so a cancelled or crashed scan runs again.
+        let effectiveMode = await self.effectiveScanMode(requested: mode)
+        let finished = FinishedFlag()
+        await self.coordinator.scan(roots: resolved, mode: effectiveMode) { event in
+            if case .finished = event {
+                finished.mark()
+            }
+            continuation.yield(event)
+        }
+        if effectiveMode == .full, finished.isSet, !Task.isCancelled {
+            await self.clearFullRescanRequest()
+        }
+        continuation.finish()
+    }
+
+    /// Resolves the bookmark of every root and starts its security scope. The
+    /// caller stops the scopes of the roots returned. A root that cannot be
+    /// reached is marked inaccessible and reported on `continuation`.
+    private func startRootScopes(
+        for allRoots: [LibraryRoot],
+        continuation: AsyncStream<ScanProgress>.Continuation
+    ) async -> [(url: URL, rootID: Int64)] {
+        var resolved: [(url: URL, rootID: Int64)] = []
+        for root in allRoots {
+            guard let rootID = root.id else { continue }
+            var isStale = false
+            do {
+                let url = try URL(
+                    resolvingBookmarkData: root.bookmark,
+                    options: .withSecurityScope,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+                guard url.startAccessingSecurityScopedResource() else {
+                    throw LibraryError.bookmarkStale(url)
+                }
+                if isStale {
+                    await self.refreshStaleBookmark(of: root, url: url)
+                }
+                resolved.append((url, rootID))
+            } catch {
+                self.log.warning("library.root.inaccessible", ["id": rootID, "path": root.path])
+                do {
+                    try await self.rootRepo.markInaccessible(id: rootID, true)
+                } catch {
+                    // The row still says the folder is reachable, so
+                    // the UI keeps offering it as healthy (#492).
+                    self.log.warning("library.root.markInaccessibleFailed", [
+                        "id": rootID,
+                        "error": String(reflecting: error),
+                    ])
+                }
+                continuation.yield(.error(url: URL(fileURLWithPath: root.path), error: error))
+            }
+        }
+        return resolved
+    }
+
+    /// Persists a fresh bookmark for a root whose bookmark macOS flagged stale.
+    private func refreshStaleBookmark(of root: LibraryRoot, url: URL) async {
+        self.log.warning("security_scope.stale", ["url": url.path])
+        // Bookmark is still resolvable but macOS has flagged it for renewal.
+        // Persist a fresh bookmark now so future launches don't fail entirely.
+        do {
+            let fresh = try url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            var updated = root
+            updated.bookmark = fresh
+            try await self.rootRepo.upsert(updated)
+            self.log.debug("security_scope.refreshed", ["url": url.path])
+        } catch {
+            self.log.warning(
+                "security_scope.refresh_failed",
+                ["url": url.path, "error": String(reflecting: error)]
+            )
         }
     }
 
@@ -331,7 +359,7 @@ public actor LibraryScanner {
                 "error": String(reflecting: error),
             ])
         }
-        let bookmark = roots.first(where: { $0.path == path })?.bookmark
+        let bookmark = roots.first { $0.path == path }?.bookmark
         let url = self.watchableURL(for: path)
         await watcher.watch(url, bookmark: bookmark)
         self.log.debug("fsevents.root_added", ["path": path])
@@ -369,114 +397,64 @@ public actor LibraryScanner {
             let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
 
             if !exists {
-                // File or directory was deleted — disable matching tracks.
-                if TagReader.isSupported(url) {
-                    // Single audio file: look it up by URL and mark disabled.
-                    // The info line below claims the library was updated, so a
-                    // failed read or write must not reach it (#492).
-                    do {
-                        if let track = try await trackRepo.fetchOne(fileURL: url.absoluteString),
-                           let id = track.id {
-                            var disabled = track
-                            disabled.disabled = true
-                            try await trackRepo.update(disabled)
-                            self.log.info("fsevents.file_removed", ["id": id, "path": url.lastPathComponent])
-                            didChange = true
-                        }
-                    } catch {
-                        self.log.warning("fsevents.file_removed.failed", [
-                            "path": url.lastPathComponent,
-                            "error": String(reflecting: error),
-                        ])
-                    }
-                } else {
-                    // Directory (or unrecognised path): disable all tracks whose
-                    // file_url starts with this URL.  This is a no-op if nothing
-                    // in the DB lives under this path.
-                    do {
-                        try await trackRepo.disableAll(underPath: url.absoluteString)
-                        self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
-                        didChange = true
-                    } catch {
-                        self.log.warning("fsevents.dir_removed.failed", [
-                            "path": url.lastPathComponent,
-                            "error": String(reflecting: error),
-                        ])
-                    }
+                if await self.handleRemovedPath(url, trackRepo: trackRepo) {
+                    didChange = true
                 }
             } else if isDir.boolValue {
-                // A whole directory was moved/created — enumerate it recursively.
-                let audioFiles = self.audioFiles(under: url)
-                for fileURL in audioFiles {
-                    guard await self.contentChanged(url: fileURL, trackRepo: trackRepo) else { continue }
-                    do {
-                        _ = try await self.scanSingleFile(url: fileURL)
-                        self.log.debug("fsevents.file_rescanned", ["path": fileURL.lastPathComponent])
-                        didChange = true
-                    } catch {
-                        self.log.warning("fsevents.rescan_failed", ["path": fileURL.path, "error": "\(error)"])
-                    }
-                }
-                // ADR-087: the folder may have arrived with sidecar cues, and
-                // the per-file cue event can fire before its audio is indexed
-                // — running the attach after the folder's audio imports makes
-                // a dropped-in single-file rip marker-complete either way.
-                let service = CueMarkerService(
-                    trackRepo: trackRepo,
-                    markerRepo: TrackMarkerRepository(database: self.database)
-                )
-                for folder in ScanCoordinator.cueFolders(under: url) {
-                    if await service.attachMarkers(inFolder: folder) > 0 {
-                        didChange = true
-                    }
+                if await self.handleChangedDirectory(url, trackRepo: trackRepo) {
+                    didChange = true
                 }
             } else {
-                if url.pathExtension.lowercased() == "cue" {
-                    // A cue appeared or changed: re-attach its folder's
-                    // markers (ADR-087). The audio around it is unchanged, so
-                    // the mtime guard below would skip everything; the marker
-                    // pass needs no track rescan at all.
-                    let service = CueMarkerService(
-                        trackRepo: trackRepo,
-                        markerRepo: TrackMarkerRepository(database: self.database)
-                    )
-                    let touched = await service.attachMarkers(inFolder: url.deletingLastPathComponent())
-                    if touched > 0 {
-                        self.log.debug("fsevents.cue_markers", ["path": url.lastPathComponent])
-                        didChange = true
-                    }
-                    continue
-                }
-                if SidecarArt.matches(url) {
-                    // A cover image appeared or changed. The audio around it
-                    // is unchanged (so the mtime guard below would skip it);
-                    // re-run one sibling through the importer, whose sidecar
-                    // fallback links the art to the folder's album (#388).
-                    if let sibling = self.audioFiles(under: url.deletingLastPathComponent()).first {
-                        do {
-                            _ = try await self.scanSingleFile(url: sibling)
-                            self.log.debug("fsevents.sidecar_art", ["path": url.lastPathComponent])
-                            didChange = true
-                        } catch {
-                            self.log.warning("fsevents.sidecar_failed", ["path": url.path, "error": "\(error)"])
-                        }
-                    }
-                    continue
-                }
-                guard TagReader.isSupported(url) else { continue }
-                guard await self.contentChanged(url: url, trackRepo: trackRepo) else { continue }
-                do {
-                    _ = try await self.scanSingleFile(url: url)
-                    self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
+                if await self.handleChangedFile(url, trackRepo: trackRepo) {
                     didChange = true
-                } catch {
-                    self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
                 }
             }
         }
         if didChange, let callback = self.onFileImported {
             await callback()
         }
+    }
+
+    /// File or directory was deleted: disable matching tracks.
+    ///
+    /// - Returns: `true` when the library changed.
+    private func handleRemovedPath(_ url: URL, trackRepo: TrackRepository) async -> Bool {
+        var didChange = false
+        if TagReader.isSupported(url) {
+            // Single audio file: look it up by URL and mark disabled.
+            // The info line below claims the library was updated, so a
+            // failed read or write must not reach it (#492).
+            do {
+                if let track = try await trackRepo.fetchOne(fileURL: url.absoluteString),
+                   let id = track.id {
+                    var disabled = track
+                    disabled.disabled = true
+                    try await trackRepo.update(disabled)
+                    self.log.info("fsevents.file_removed", ["id": id, "path": url.lastPathComponent])
+                    didChange = true
+                }
+            } catch {
+                self.log.warning("fsevents.file_removed.failed", [
+                    "path": url.lastPathComponent,
+                    "error": String(reflecting: error),
+                ])
+            }
+        } else {
+            // Directory (or unrecognised path): disable all tracks whose
+            // file_url starts with this URL.  This is a no-op if nothing
+            // in the DB lives under this path.
+            do {
+                try await trackRepo.disableAll(underPath: url.absoluteString)
+                self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
+                didChange = true
+            } catch {
+                self.log.warning("fsevents.dir_removed.failed", [
+                    "path": url.lastPathComponent,
+                    "error": String(reflecting: error),
+                ])
+            }
+        }
+        return didChange
     }
 
     /// Returns `true` when `url` needs a rescan: it is unknown to the DB,
@@ -488,7 +466,10 @@ public actor LibraryScanner {
     /// rescan makes macOS touch the quarantine metadata again, which emits the
     /// next FSEvents event. Size+mtime comparison is the same signal the quick
     /// scan's ChangeDetector uses.
-    private func contentChanged(url: URL, trackRepo: TrackRepository) async -> Bool {
+    ///
+    /// Stays in this file, and is internal for `LibraryScanner+FSChanges.swift`:
+    /// `Scripts/audit-try-optional-allowlist.txt` keys its `try?` on this path.
+    func contentChanged(url: URL, trackRepo: TrackRepository) async -> Bool {
         guard let track = try? await trackRepo.fetchOne(fileURL: url.absoluteString),
               !track.disabled,
               let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]) else { return true }
@@ -499,23 +480,6 @@ public actor LibraryScanner {
             return false
         }
         return true
-    }
-
-    /// Returns all supported audio files found recursively under `directory`.
-    ///
-    /// Hidden files and hidden directories are skipped.
-    func audioFiles(under directory: URL) -> [URL] {
-        guard let enumerator = FileManager.default.enumerator(
-            at: directory,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) else { return [] }
-        var results: [URL] = []
-        for case let fileURL as URL in enumerator {
-            guard TagReader.isSupported(fileURL) else { continue }
-            results.append(fileURL)
-        }
-        return results
     }
 }
 

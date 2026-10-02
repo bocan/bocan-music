@@ -31,12 +31,15 @@ enum MenuState: String, CaseIterable {
 /// self-referential, and implicit Sendable inference through that cycle is
 /// order-dependent. On CI runners (different batch partitioning) it resolved
 /// to non-Sendable and `MenuManifest.menus` failed to compile (2026-08-30).
-// swiftformat:disable:next redundantSendable
-struct MenuItemSpec: Sendable {
+struct MenuItemSpec: Sendable { // swiftformat:disable:this redundantSendable
     let titles: [String]
     /// Expected shortcut; the parity test checks it against the source
     /// declaration and `KeyBindings.swift`.
     var shortcut: MenuShortcut?
+    /// The `key` text of an item whose shortcut did not parse; nil in a
+    /// correct manifest. `ShortcutParityTests.testManifestKeysParse` fails
+    /// on any other value.
+    var unparsedKey: String?
     /// `KeyBindings` constant name the source must route through (nil for
     /// inline shortcuts and shortcut-less items).
     var binding: String?
@@ -57,7 +60,7 @@ struct MenuItemSpec: Sendable {
     /// Expected enablement per matrix state; unlisted states are not
     /// asserted (dynamic or irrelevant there).
     var enablement: [MenuState: Bool] = [:]
-    var submenu: [MenuItemSpec] = []
+    var submenu: [Self] = []
 
     var canonicalTitle: String {
         self.titles[0]
@@ -72,11 +75,13 @@ struct MenuItemSpec: Sendable {
         rowDisplay: String? = nil,
         conditional: String? = nil,
         enablement: [MenuState: Bool] = [:],
-        submenu: [MenuItemSpec] = []
-    ) -> MenuItemSpec {
-        MenuItemSpec(
+        submenu: [Self] = []
+    ) -> Self {
+        let shortcut = key.flatMap(MenuShortcut.fromDisplay)
+        return Self(
             titles: titles,
-            shortcut: key.map { MenuShortcut.fromDisplay($0)! },
+            shortcut: shortcut,
+            unparsedKey: shortcut == nil ? key : nil,
             binding: binding,
             helpRow: row,
             helpDisplay: rowDisplay,
@@ -93,8 +98,8 @@ struct MenuItemSpec: Sendable {
         _ titles: String...,
         ignoreChildren: Bool = false,
         conditional: String? = nil
-    ) -> MenuItemSpec {
-        MenuItemSpec(
+    ) -> Self {
+        Self(
             titles: titles,
             system: true,
             conditional: conditional,
@@ -107,8 +112,7 @@ struct MenuItemSpec: Sendable {
 
 /// One expected top-level menu. `Sendable` is explicit for the same reason
 /// as `MenuItemSpec`: it is what `MenuManifest.menus` stores.
-// swiftformat:disable:next redundantSendable
-struct MenuSpec: Sendable {
+struct MenuSpec: Sendable { // swiftformat:disable:this redundantSendable
     let title: String
     /// `false` for menus whose contents are wholly system-managed and
     /// machine-dependent (Window: tiling, tab items, open-window list).

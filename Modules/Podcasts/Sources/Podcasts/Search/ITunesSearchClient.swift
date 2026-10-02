@@ -9,6 +9,7 @@ public actor ITunesSearchClient {
     private let http: any HTTPClient
     private let log = AppLogger.make(.network)
 
+    /// Creates a client. `http` is the network seam for tests.
     public init(http: any HTTPClient = URLSession.shared) {
         self.http = http
     }
@@ -21,14 +22,12 @@ public actor ITunesSearchClient {
         country: String = PodcastSettings.defaultStorefront
     ) async throws -> [PodcastSearchResult] {
         try Task.checkCancellation()
-        var comps = URLComponents(string: "https://itunes.apple.com/search")!
-        comps.queryItems = [
+        let url = try Self.requestURL(path: "search", queryItems: [
             URLQueryItem(name: "media", value: "podcast"),
             URLQueryItem(name: "term", value: term),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "country", value: country),
-        ]
-        let url = comps.url!
+        ])
         let response: ITunesSearchResponse = try await fetch(url: url)
         return response.results.compactMap { Self.map(result: $0) }
     }
@@ -40,17 +39,31 @@ public actor ITunesSearchClient {
         country: String = PodcastSettings.defaultStorefront
     ) async throws -> PodcastSearchResult? {
         try Task.checkCancellation()
-        var comps = URLComponents(string: "https://itunes.apple.com/lookup")!
-        comps.queryItems = [
+        let url = try Self.requestURL(path: "lookup", queryItems: [
             URLQueryItem(name: "id", value: String(collectionID)),
             URLQueryItem(name: "country", value: country),
-        ]
-        let url = comps.url!
+        ])
         let response: ITunesSearchResponse = try await fetch(url: url)
         return response.results.compactMap { Self.map(result: $0) }.first
     }
 
     // MARK: - Networking
+
+    /// Builds the request URL for `path` on the iTunes host. The host and the
+    /// path are constants and `URLComponents` percent-encodes the query, so a
+    /// failure here means the endpoint itself is malformed; the caller gets
+    /// the same error as for any other failure of this source.
+    private static func requestURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
+        let endpoint = "https://itunes.apple.com/\(path)"
+        guard var comps = URLComponents(string: endpoint) else {
+            throw PodcastsError.searchUnavailable(source: "itunes", reason: "invalid request URL: \(endpoint)")
+        }
+        comps.queryItems = queryItems
+        guard let url = comps.url else {
+            throw PodcastsError.searchUnavailable(source: "itunes", reason: "invalid request URL: \(endpoint)")
+        }
+        return url
+    }
 
     private func fetch<T: Decodable>(url: URL) async throws -> T {
         var request = URLRequest(url: url, timeoutInterval: 15)

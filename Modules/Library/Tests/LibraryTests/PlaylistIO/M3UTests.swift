@@ -26,24 +26,24 @@ struct M3UReaderWriterTests {
     func bomAndCRLF() throws {
         var bytes: [UInt8] = [0xEF, 0xBB, 0xBF]
         bytes.append(contentsOf: "#EXTM3U\r\n#EXTINF:60,Foo - Bar\r\n/x/y.mp3\r\n".utf8)
-        let p = try M3UReader.parse(data: Data(bytes))
-        #expect(p.entries.count == 1)
-        #expect(p.entries[0].titleHint == "Bar")
+        let parsed = try M3UReader.parse(data: Data(bytes))
+        #expect(parsed.entries.count == 1)
+        #expect(parsed.entries[0].titleHint == "Bar")
     }
 
     @Test("Resolves relative paths against playlist directory")
     func relativeResolution() throws {
         let dir = URL(fileURLWithPath: "/Users/me/Music")
         let body = "#EXTM3U\n#EXTINF:10,X - Y\nrelative/song.mp3\n"
-        let p = try M3UReader.parse(data: Data(body.utf8), sourceURL: dir.appendingPathComponent("p.m3u8"))
-        #expect(p.entries[0].absoluteURL?.path == "/Users/me/Music/relative/song.mp3")
+        let parsed = try M3UReader.parse(data: Data(body.utf8), sourceURL: dir.appendingPathComponent("p.m3u8"))
+        #expect(parsed.entries[0].absoluteURL?.path == "/Users/me/Music/relative/song.mp3")
     }
 
     @Test("Handles file:// URLs")
     func fileURLs() throws {
         let body = "#EXTM3U\nfile:///foo/bar.flac\n"
-        let p = try M3UReader.parse(data: Data(body.utf8))
-        #expect(p.entries[0].absoluteURL?.absoluteString == "file:///foo/bar.flac")
+        let parsed = try M3UReader.parse(data: Data(body.utf8))
+        #expect(parsed.entries[0].absoluteURL?.absoluteString == "file:///foo/bar.flac")
     }
 
     @Test("Falls back to Windows-1252 for legacy .m3u")
@@ -53,9 +53,9 @@ struct M3UReaderWriterTests {
         bytes.append(0xE9) // 'é' in Windows-1252
         bytes.append(contentsOf: " - song\n/p.mp3\n".utf8)
         let url = URL(fileURLWithPath: "/tmp/playlist.m3u")
-        let p = try M3UReader.parse(data: Data(bytes), sourceURL: url)
-        #expect(p.entries.count == 1)
-        #expect(p.entries[0].artistHint?.contains("é") == true)
+        let parsed = try M3UReader.parse(data: Data(bytes), sourceURL: url)
+        #expect(parsed.entries.count == 1)
+        #expect(parsed.entries[0].artistHint?.contains("é") == true)
     }
 
     @Test("Roundtrip: write then read returns same entries")

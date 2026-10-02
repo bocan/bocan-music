@@ -11,11 +11,20 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     /// File extension used when writing a payload in this format.
     public var preferredExtension: String {
         switch self {
-        case .m3u: "m3u"
-        case .m3u8: "m3u8"
-        case .pls: "pls"
-        case .xspf: "xspf"
-        case .cue: "cue"
+        case .m3u:
+            "m3u"
+
+        case .m3u8:
+            "m3u8"
+
+        case .pls:
+            "pls"
+
+        case .xspf:
+            "xspf"
+
+        case .cue:
+            "cue"
         }
     }
 
@@ -27,25 +36,39 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     /// Whether this format is producible by `PlaylistExportService`.
     public var isExportable: Bool {
         switch self {
-        case .m3u, .m3u8, .pls, .xspf: true
-        case .cue: false
+        case .m3u, .m3u8, .pls, .xspf:
+            true
+
+        case .cue:
+            false
         }
     }
 
     /// Best-effort detection from a file extension.
-    public static func fromExtension(_ ext: String) -> PlaylistFormat? {
+    public static func fromExtension(_ ext: String) -> Self? {
         switch ext.lowercased() {
-        case "m3u": .m3u
-        case "m3u8": .m3u8
-        case "pls": .pls
-        case "xspf": .xspf
-        case "cue": .cue
-        default: nil
+        case "m3u":
+            .m3u
+
+        case "m3u8":
+            .m3u8
+
+        case "pls":
+            .pls
+
+        case "xspf":
+            .xspf
+
+        case "cue":
+            .cue
+
+        default:
+            nil
         }
     }
 
     /// Sniff a format from a buffer. Looks at the first ~512 bytes.
-    public static func sniff(data: Data, fallback ext: String? = nil) -> PlaylistFormat? {
+    public static func sniff(data: Data, fallback ext: String? = nil) -> Self? {
         // Try to read up to the first 512 bytes as UTF-8 (BOM-tolerant) or Latin-1 fallback.
         let head = Self.headSnippet(data: data)
         let trimmed = head.drop { $0 == "\u{FEFF}" || $0.isWhitespace || $0.isNewline }

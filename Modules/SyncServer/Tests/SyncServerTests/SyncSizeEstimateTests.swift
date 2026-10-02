@@ -115,8 +115,12 @@ struct SyncSizeEstimateTests {
         let rows = try await fixture.tracks.fetchAllIncludingDisabled()
         let lossless = try #require(rows.first { $0.contentHash == "h-l" }?.id)
         try await fixture.ledger.upsert(SyncTranscode(
-            trackID: lossless, preset: "opus_128", sourceContentHash: "h-l",
-            sha256: "a", size: 1, createdAt: 1
+            trackID: lossless,
+            preset: "opus_128",
+            sourceContentHash: "h-l",
+            sha256: "a",
+            size: 1,
+            createdAt: 1
         ))
         progress = try await fixture.builder.transcodeProgress(
             for: .everything(includePodcasts: false), preset: .opus128

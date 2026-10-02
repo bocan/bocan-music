@@ -34,7 +34,7 @@ public struct RetryPolicy: Sendable, Equatable {
     }
 
     /// The default policy used in production.
-    public static let `default` = RetryPolicy()
+    public static let `default` = Self()
 
     /// Returns the delay (in seconds) to wait *before* the given attempt number.
     /// `attemptNumber` is 1-indexed (the 1st attempt has delay 0).

@@ -66,10 +66,10 @@ struct ContentHashServiceTests {
         let db = try await makeDB()
         let repo = TrackRepository(database: db)
 
-        let (a, hashA) = try makeFileTrack(in: dir, name: "a.flac", bytes: Data("first file".utf8))
-        let (b, hashB) = try makeFileTrack(in: dir, name: "b.flac", bytes: Data("second file".utf8))
-        let idA = try await repo.insert(a)
-        let idB = try await repo.insert(b)
+        let (trackA, hashA) = try makeFileTrack(in: dir, name: "a.flac", bytes: Data("first file".utf8))
+        let (trackB, hashB) = try makeFileTrack(in: dir, name: "b.flac", bytes: Data("second file".utf8))
+        let idA = try await repo.insert(trackA)
+        let idB = try await repo.insert(trackB)
 
         let service = ContentHashService(tracks: repo)
         await service.backfillOnce()

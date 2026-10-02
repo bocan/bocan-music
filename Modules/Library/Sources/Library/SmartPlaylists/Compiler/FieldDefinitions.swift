@@ -45,9 +45,20 @@ public enum FieldDefinitions {
     // MARK: - Lookup
 
     /// Returns the definition for `field`.
+    ///
+    /// The table holds every field in `Field.allCases`. A field outside it
+    /// (`.unknown`, from criteria written by a newer app) gets `unknownField`:
+    /// no comparator is allowed and the column is `NULL`, which matches no
+    /// track. `Validator` and `SQLBuilder` reject such a rule before it runs.
     public static func definition(for field: Field) -> FieldDefinition {
-        self.table[field]! // table is exhaustive
+        self.table[field] ?? self.unknownField
     }
+
+    private static let unknownField = FieldDefinition(
+        dataType: .text,
+        allowedComparators: [],
+        columnRef: .init(expression: "NULL")
+    )
 
     // MARK: - Private table
 

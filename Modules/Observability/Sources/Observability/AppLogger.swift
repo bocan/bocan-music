@@ -29,7 +29,7 @@ public struct AppLogger: Sendable {
     }
 
     /// Internal initialiser used by tests to inject an isolated `LogStore`.
-    init(category: LogCategory, subsystem: String = "io.cloudcauldron.bocan", store: LogStore) {
+    init(category: LogCategory, store: LogStore, subsystem: String = "io.cloudcauldron.bocan") {
         self.category = category
         self.logger = os.Logger(subsystem: subsystem, category: category.rawValue)
         self.store = store

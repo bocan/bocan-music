@@ -75,8 +75,10 @@ public enum SQLBuilder {
         switch criterion {
         case let .rule(rule):
             return try Self.buildRule(rule, args: &args, joins: &joins)
+
         case let .invalid(reason):
             throw SmartPlaylistError.invalidRule(reason: reason)
+
         case let .group(op, children):
             let parts = try children.map { try Self.buildWhere($0, args: &args, joins: &joins) }
             let separator = op == .and ? " AND " : " OR "
@@ -92,6 +94,9 @@ public enum SQLBuilder {
         args: inout [DatabaseValueConvertible?],
         joins: inout Set<Join>
     ) throws -> String {
+        if case let .unknown(raw) = rule.field {
+            throw SmartPlaylistError.invalidRule(reason: "Unknown field \"\(raw)\"")
+        }
         let def = FieldDefinitions.definition(for: rule.field)
         if let join = def.columnRef.join {
             joins.insert(join)
@@ -101,33 +106,33 @@ public enum SQLBuilder {
         switch rule.comparator {
         // ── Text ─────────────────────────────────────────────────────────────
         case .is:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v.lowercased())
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(text.lowercased())
             return "LOWER(\(col)) = LOWER(?)"
 
         case .isNot:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v.lowercased())
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(text.lowercased())
             return "(\(col) IS NULL OR LOWER(\(col)) != LOWER(?))"
 
         case .contains:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()) + "%")
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .doesNotContain:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()) + "%")
             return "(\(col) IS NULL OR LOWER(\(col)) NOT LIKE LOWER(?) ESCAPE '\\')"
 
         case .startsWith:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(Self.escapeLike(v.lowercased()) + "%")
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append(Self.escapeLike(text.lowercased()) + "%")
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .endsWith:
-            guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v.lowercased()))
+            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            args.append("%" + Self.escapeLike(text.lowercased()))
             return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .matchesRegex:
@@ -180,17 +185,17 @@ public enum SQLBuilder {
 
         // ── Date ─────────────────────────────────────────────────────────────
         case .beforeDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
-            args.append(Int64(d.timeIntervalSince1970))
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
+            args.append(Int64(date.timeIntervalSince1970))
             return "\(col) < ?"
 
         case .afterDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
-            args.append(Int64(d.timeIntervalSince1970))
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
+            args.append(Int64(date.timeIntervalSince1970))
             return "\(col) > ?"
 
         case .onDate:
-            guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
+            guard case let .date(date) = rule.value else { throw Self.valueError(rule) }
             // Match entire day: [start of day, start of next day).
             // Pin the Gregorian calendar to the device's current timezone so the
             // day boundary matches the user's local clock; Calendar.current can
@@ -198,8 +203,8 @@ public enum SQLBuilder {
             // incorrect year-based arithmetic.
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = TimeZone.current
-            let start = cal.startOfDay(for: d)
-            let end = cal.date(byAdding: .day, value: 1, to: start)!
+            let start = cal.startOfDay(for: date)
+            guard let end = cal.date(byAdding: .day, value: 1, to: start) else { throw Self.valueError(rule) }
             args.append(Int64(start.timeIntervalSince1970))
             args.append(Int64(end.timeIntervalSince1970))
             return "\(col) >= ? AND \(col) < ?"
@@ -303,18 +308,41 @@ public enum SQLBuilder {
     /// join set. `random` is handled by the caller and never routed here.
     private static func orderColumn(for key: SortKey) -> SQLColumnRef {
         switch key {
-        case .title: SQLColumnRef(expression: "tracks.title")
-        case .artist: FieldDefinitions.definition(for: .artist).columnRef
-        case .album: FieldDefinitions.definition(for: .album).columnRef
-        case .year: SQLColumnRef(expression: "tracks.year")
-        case .trackNumber: SQLColumnRef(expression: "tracks.track_number")
-        case .addedAt: SQLColumnRef(expression: "tracks.added_at")
-        case .lastPlayedAt: SQLColumnRef(expression: "tracks.last_played_at")
-        case .playCount: SQLColumnRef(expression: "tracks.play_count")
-        case .rating: SQLColumnRef(expression: "tracks.rating")
-        case .duration: SQLColumnRef(expression: "tracks.duration")
-        case .bpm: SQLColumnRef(expression: "tracks.bpm")
-        case .random: SQLColumnRef(expression: "tracks.added_at") // unreachable; guarded by caller
+        case .title:
+            SQLColumnRef(expression: "tracks.title")
+
+        case .artist:
+            FieldDefinitions.definition(for: .artist).columnRef
+
+        case .album:
+            FieldDefinitions.definition(for: .album).columnRef
+
+        case .year:
+            SQLColumnRef(expression: "tracks.year")
+
+        case .trackNumber:
+            SQLColumnRef(expression: "tracks.track_number")
+
+        case .addedAt:
+            SQLColumnRef(expression: "tracks.added_at")
+
+        case .lastPlayedAt:
+            SQLColumnRef(expression: "tracks.last_played_at")
+
+        case .playCount:
+            SQLColumnRef(expression: "tracks.play_count")
+
+        case .rating:
+            SQLColumnRef(expression: "tracks.rating")
+
+        case .duration:
+            SQLColumnRef(expression: "tracks.duration")
+
+        case .bpm:
+            SQLColumnRef(expression: "tracks.bpm")
+
+        case .random:
+            SQLColumnRef(expression: "tracks.added_at") // unreachable; guarded by caller
         }
     }
 
@@ -322,20 +350,36 @@ public enum SQLBuilder {
 
     private static func numericArg(_ rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch rule.value {
-        case let .int(v): return v
-        case let .double(v): return v
-        case let .duration(v): return v
-        default: throw self.valueError(rule)
+        case let .int(number):
+            return number
+
+        case let .double(number):
+            return number
+
+        case let .duration(number):
+            return number
+
+        default:
+            throw self.valueError(rule)
         }
     }
 
-    private static func scalarArg(_ v: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
-        switch v {
-        case let .int(x): return x
-        case let .double(x): return x
-        case let .duration(x): return x
-        case let .date(x): return Int64(x.timeIntervalSince1970)
-        default: throw self.valueError(rule)
+    private static func scalarArg(_ value: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
+        switch value {
+        case let .int(x):
+            return x
+
+        case let .double(x):
+            return x
+
+        case let .duration(x):
+            return x
+
+        case let .date(x):
+            return Int64(x.timeIntervalSince1970)
+
+        default:
+            throw self.valueError(rule)
         }
     }
 

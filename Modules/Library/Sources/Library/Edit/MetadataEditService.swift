@@ -35,6 +35,8 @@ public actor MetadataEditService {
 
     // MARK: - Init
 
+    /// Creates the service and opens its undo backup ring. Throws when the
+    /// ring directory cannot be created.
     public init(database: Persistence.Database) throws {
         self.database = database
         self.trackRepo = TrackRepository(database: database)
@@ -270,7 +272,7 @@ public actor MetadataEditService {
         // Use the per-file security-scoped bookmark when available so that
         // the sandboxed process can open the file outside its container.
         if let bookmarkData = track.fileBookmark {
-            return try await SecurityScope.withAccess(bookmarkData, onStaleBookmark: { [self] freshURL in
+            let renewBookmark: @Sendable (URL) async -> Void = { [self] freshURL in
                 // Renew and persist the stale per-file bookmark while we still hold access.
                 do {
                     let fresh = try freshURL.bookmarkData(
@@ -288,19 +290,26 @@ public actor MetadataEditService {
                         ["trackID": trackID, "error": String(reflecting: error)]
                     )
                 }
-            }) { scopedURL in
+            }
+            return try await SecurityScope.withAccess(bookmarkData, onStaleBookmark: renewBookmark) { scopedURL in
                 try await withCheckedThrowingContinuation { continuation in
                     Self.tagReadQueue.async {
-                        do { try continuation.resume(returning: TagReader().read(from: scopedURL)) }
-                        catch { continuation.resume(throwing: error) }
+                        do {
+                            try continuation.resume(returning: TagReader().read(from: scopedURL))
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
                     }
                 }
             }
         }
         return try await withCheckedThrowingContinuation { continuation in
             Self.tagReadQueue.async {
-                do { try continuation.resume(returning: TagReader().read(from: url)) }
-                catch { continuation.resume(throwing: error) }
+                do {
+                    try continuation.resume(returning: TagReader().read(from: url))
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }
@@ -352,9 +361,13 @@ public actor MetadataEditService {
     // MARK: - Helpers
 
     private static func backupRingDirectory() -> URL {
-        FileManager.default
+        // Same fallback as `LibraryLocation`: the user-domain lookup has no
+        // documented way to come back empty, and the fallback is the same folder.
+        let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
+            .first ?? URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support")
+        return appSupport
             .appendingPathComponent("Bocan", isDirectory: true)
             .appendingPathComponent("EditBackups", isDirectory: true)
     }

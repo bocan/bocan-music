@@ -122,9 +122,8 @@ struct BonjourTests {
         let server = SyncServer(
             database: database,
             identity: ServerIdentity(store: serverStore),
-            ui: SilentBridge(),
-            serverName: { serviceName }
-        )
+            ui: SilentBridge()
+        ) { serviceName }
         try await server.start()
         defer { Task { await server.stop() } }
 

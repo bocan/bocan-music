@@ -28,6 +28,14 @@ public actor LastFmAuth {
     private let timeout: Duration
     private let openURL: @Sendable (URL) -> Void
 
+    /// Creates the flow.
+    ///
+    /// - Parameters:
+    ///   - provider: Makes the `auth.getToken` and `auth.getSession` calls.
+    ///   - credentials: Where the session key and username are stored on success.
+    ///   - pollInterval: Wait between two `auth.getSession` attempts.
+    ///   - timeout: How long `connect()` polls before it throws `ScrobbleError.authTimeout`.
+    ///   - openURL: Opens the authorisation page; the caller supplies the browser hand-off.
     public init(
         provider: LastFmProvider,
         credentials: any LastFmCredentialsStore,

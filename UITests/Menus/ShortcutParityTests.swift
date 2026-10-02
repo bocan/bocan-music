@@ -15,6 +15,18 @@ final class ShortcutParityTests: XCTestCase {
         MenuManifest.allItems.filter { $0.shortcut != nil }
     }
 
+    /// Every `key:` in the manifest must parse into a shortcut. The manifest
+    /// keeps the text of one that does not, so a typing error fails here
+    /// instead of stopping the whole test process when the table loads.
+    func testManifestKeysParse() {
+        for item in MenuManifest.allItems {
+            XCTAssertNil(
+                item.unparsedKey,
+                "\(item.canonicalTitle): manifest key \(item.unparsedKey ?? "") is not a shortcut"
+            )
+        }
+    }
+
     /// Manifest ▸ KeyBindings: every item that declares a binding name
     /// must match the parsed `KeyBindings` constant, and the constant must
     /// exist.
@@ -27,9 +39,11 @@ final class ShortcutParityTests: XCTestCase {
                 XCTFail("\(item.canonicalTitle): KeyBindings.\(name) does not exist")
                 continue
             }
+            let manifestSays = item.shortcut.map(String.init(describing:)) ?? "none"
             XCTAssertEqual(
-                item.shortcut, bound,
-                "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), KeyBindings.\(name) is \(bound)"
+                item.shortcut,
+                bound,
+                "\(item.canonicalTitle): manifest says \(manifestSays), KeyBindings.\(name) is \(bound)"
             )
         }
     }
@@ -58,7 +72,8 @@ final class ShortcutParityTests: XCTestCase {
             switch site.shortcut {
             case let .binding(name):
                 XCTAssertEqual(
-                    item.binding, name,
+                    item.binding,
+                    name,
                     "\(item.canonicalTitle): source routes through KeyBindings.\(name), manifest says \(item.binding ?? "inline")"
                 )
                 XCTAssertEqual(item.shortcut, bindings[name], item.canonicalTitle)
@@ -68,17 +83,20 @@ final class ShortcutParityTests: XCTestCase {
                     item.binding,
                     "\(item.canonicalTitle): manifest expects KeyBindings routing, source is inline"
                 )
+                let manifestSays = item.shortcut.map(String.init(describing:)) ?? "none"
                 XCTAssertEqual(
-                    item.shortcut, shortcut,
-                    "\(item.canonicalTitle): manifest says \(item.shortcut.map(String.init(describing:)) ?? "none"), source says \(shortcut)"
+                    item.shortcut,
+                    shortcut,
+                    "\(item.canonicalTitle): manifest says \(manifestSays), source says \(shortcut)"
                 )
             }
         }
 
         for item in self.shortcutItems where !item.system {
+            let declared = item.shortcut.map(String.init(describing:)) ?? "none"
             XCTAssertTrue(
                 claimedTitles.contains(item.canonicalTitle),
-                "\(item.canonicalTitle): manifest declares \(item.shortcut!) but no menu source site carries it"
+                "\(item.canonicalTitle): manifest declares \(declared) but no menu source site carries it"
             )
         }
     }
@@ -111,7 +129,8 @@ final class ShortcutParityTests: XCTestCase {
                 continue
             }
             XCTAssertEqual(
-                MenuShortcut.fromDisplay(display), item.shortcut,
+                MenuShortcut.fromDisplay(display),
+                item.shortcut,
                 "help says \(action) = \(display), manifest says \(item.shortcut.map(String.init(describing:)) ?? "none")"
             )
         }

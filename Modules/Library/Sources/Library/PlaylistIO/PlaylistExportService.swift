@@ -10,6 +10,7 @@ public actor PlaylistExportService {
     /// `makeEntry` is static, so it needs its own handle.
     private static let log = AppLogger.make(.library)
 
+    /// Creates a service that reads playlists and tracks from `database`.
     public init(database: Persistence.Database) {
         self.database = database
     }
@@ -19,6 +20,7 @@ public actor PlaylistExportService {
         public let destination: URL
         public let format: PlaylistFormat
         public let pathMode: PathMode
+
         public init(playlistID: Int64, destination: URL, format: PlaylistFormat, pathMode: PathMode) {
             self.playlistID = playlistID
             self.destination = destination
@@ -27,6 +29,10 @@ public actor PlaylistExportService {
         }
     }
 
+    /// Writes the playlist named in `request` to its destination, replacing
+    /// the file atomically. Throws `PlaylistIOError.writeFailed` for a format
+    /// that cannot be exported or a failed write, and `lookupFailed` when the
+    /// playlist does not exist.
     public func export(_ request: ExportRequest) async throws {
         guard request.format.isExportable else {
             throw PlaylistIOError.writeFailed(
@@ -67,6 +73,9 @@ public actor PlaylistExportService {
 
     // MARK: - Payload builder
 
+    /// The playlist's name and its member tracks in playlist order, each with
+    /// duration, title, artist and album hints. Throws
+    /// `PlaylistIOError.lookupFailed` when no playlist has `playlistID`.
     public func buildPayload(playlistID: Int64) async throws -> PlaylistPayload {
         try await self.database.read { db in
             guard let playlist = try Playlist.fetchOne(db, key: playlistID) else {
@@ -84,6 +93,8 @@ public actor PlaylistExportService {
         }
     }
 
+    /// A payload called `name` with one entry per id in `trackIDs`, in the
+    /// given order. An id with no track row is left out.
     public func buildSmartPayload(name: String, trackIDs: [Int64]) async throws -> PlaylistPayload {
         try await self.database.read { db in
             var entries: [PlaylistPayload.Entry] = []
@@ -99,8 +110,8 @@ public actor PlaylistExportService {
 
     private static func makeEntry(track: Track, db: GRDB.Database) -> PlaylistPayload.Entry {
         let absolute: URL? = {
-            if let u = URL(string: track.fileURL), u.scheme != nil {
-                return u
+            if let url = URL(string: track.fileURL), url.scheme != nil {
+                return url
             }
             return URL(fileURLWithPath: track.fileURL)
         }()
@@ -145,6 +156,8 @@ public actor PlaylistExportService {
 
     // MARK: - Serialise + write
 
+    /// The text of `payload` in `format`. M3U output carries `#EXTART` and
+    /// `#EXTALB` lines. `.cue` has no writer and gives an empty string.
     public nonisolated func serialise(
         _ payload: PlaylistPayload,
         format: PlaylistFormat,
@@ -156,10 +169,13 @@ public actor PlaylistExportService {
                 payload,
                 options: M3UWriter.Options(pathMode: pathMode, includeExtArt: true, includeExtAlb: true)
             )
+
         case .pls:
             PLSWriter.write(payload, options: PLSWriter.Options(pathMode: pathMode))
+
         case .xspf:
             XSPFWriter.write(payload, options: XSPFWriter.Options(pathMode: pathMode))
+
         case .cue:
             ""
         }

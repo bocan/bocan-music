@@ -453,6 +453,7 @@ public actor PlaylistService {
             WHERE pt.playlist_id = ?
             ORDER BY LOWER(COALESCE(t.title, '')) ASC, t.id ASC
             """
+
         case .artist:
             """
             SELECT pt.track_id FROM playlist_tracks pt
@@ -463,6 +464,7 @@ public actor PlaylistService {
                      LOWER(COALESCE(t.title, '')) ASC,
                      t.id ASC
             """
+
         case .dateAdded:
             """
             SELECT pt.track_id FROM playlist_tracks pt

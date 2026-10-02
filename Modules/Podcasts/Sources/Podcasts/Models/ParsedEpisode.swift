@@ -24,6 +24,8 @@ public struct ParsedEpisode: Sendable {
     /// people for this episode when present).
     public var persons: [PodcastPerson]
 
+    // Memberwise initialiser: the parameters keep the stored-property order.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         guid: String,
         title: String,
@@ -63,4 +65,5 @@ public struct ParsedEpisode: Sendable {
         self.explicit = explicit
         self.persons = persons
     }
+    // swiftlint:enable function_default_parameter_at_end
 }

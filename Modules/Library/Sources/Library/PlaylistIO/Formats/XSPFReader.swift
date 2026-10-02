@@ -6,6 +6,9 @@ import Foundation
 /// `<playlist><trackList><track>...`. We honour `location`, `title`,
 /// `creator`, `album`, and `duration` (milliseconds).
 public enum XSPFReader {
+    /// Parses XSPF `data` into a payload. The name is the playlist `<title>`,
+    /// else the file name of `sourceURL`, which is also the base for relative
+    /// locations. Throws `PlaylistIOError.malformed` when the XML does not parse.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> PlaylistPayload {
         let parser = XMLParser(data: data)
         let delegate = XSPFParserDelegate()
@@ -92,17 +95,27 @@ private final class XSPFParserDelegate: NSObject, XMLParserDelegate {
                 if self.currentTrack.location == nil {
                     self.currentTrack.location = value
                 }
-            case "title": self.currentTrack.title = value
-            case "creator": self.currentTrack.creator = value
-            case "album": self.currentTrack.album = value
+
+            case "title":
+                self.currentTrack.title = value
+
+            case "creator":
+                self.currentTrack.creator = value
+
+            case "album":
+                self.currentTrack.album = value
+
             case "duration":
                 if let ms = Int(value), ms > 0 {
                     self.currentTrack.durationMs = ms
                 }
+
             case "track":
                 self.tracks.append(self.currentTrack)
                 self.inTrack = false
-            default: break
+
+            default:
+                break
             }
         } else {
             if name == "title", self.inPlaylistTitle {

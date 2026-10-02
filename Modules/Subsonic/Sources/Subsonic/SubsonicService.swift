@@ -2,106 +2,9 @@ import Foundation
 import Observability
 import SwiftSonic
 
-// MARK: - SubsonicMetricsRelay
-
-/// Bridges `SwiftSonicRequestEvent` metrics into Bòcan's observability layer.
-///
-/// Pass an instance as `metricsCollector:` when building each `SwiftSonicClient`.
-/// This gives us per-endpoint duration tracking, retry visibility, and failure
-/// logging — all surfaced in Console.app and Instruments via `os.Logger`.
-private final class SubsonicMetricsRelay: SwiftSonicMetricsCollector, @unchecked Sendable {
-    let serverName: String
-    let log: AppLogger
-
-    init(serverName: String) {
-        self.serverName = serverName
-        self.log = AppLogger.make(.subsonic)
-    }
-
-    func record(_ event: SwiftSonicRequestEvent) {
-        switch event {
-        case let .started(endpoint, _):
-            self.log.trace(
-                "subsonic.request.start",
-                ["server": self.serverName, "endpoint": endpoint]
-            )
-        case let .succeeded(endpoint, _, duration):
-            self.log.debug(
-                "subsonic.request.ok",
-                ["server": self.serverName, "endpoint": endpoint, "ms": Int(duration * 1000)]
-            )
-        case let .failed(endpoint, _, error, attempt):
-            self.log.warning(
-                "subsonic.request.fail",
-                [
-                    "server": self.serverName,
-                    "endpoint": endpoint,
-                    "attempt": attempt,
-                    "err": error.localizedDescription,
-                ]
-            )
-        case let .retryScheduled(endpoint, attempt, delay):
-            self.log.info(
-                "subsonic.request.retry",
-                [
-                    "server": self.serverName,
-                    "endpoint": endpoint,
-                    "attempt": attempt + 1,
-                    "delay_ms": Int(delay * 1000),
-                ]
-            )
-        }
-    }
-}
-
-// MARK: - TrustBypassTransport
-
-/// A custom `HTTPTransport` that allows a single named host to present a
-/// self-signed TLS certificate. The exemption is host-scoped — no global
-/// policy is changed.
-private final class TrustBypassTransport: HTTPTransport, @unchecked Sendable {
-    private let session: URLSession
-    private let host: String
-
-    init(host: String) {
-        self.host = host
-        let config = URLSessionConfiguration.ephemeral
-        self.session = URLSession(
-            configuration: config,
-            delegate: HostTrustDelegate(host: host),
-            delegateQueue: nil
-        )
-    }
-
-    func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        let (data, response) = try await self.session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        return (data, http)
-    }
-}
-
-private final class HostTrustDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
-    let host: String
-    init(host: String) {
-        self.host = host
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        didReceive challenge: URLAuthenticationChallenge,
-        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
-    ) {
-        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-              challenge.protectionSpace.host == self.host,
-              let trust = challenge.protectionSpace.serverTrust else {
-            completionHandler(.performDefaultHandling, nil)
-            return
-        }
-        completionHandler(.useCredential, URLCredential(trust: trust))
-    }
-}
+// The metrics relay and the self-signed-TLS transport that `buildClient` gives
+// each client are in `SubsonicServiceTransport.swift`. The endpoint methods are
+// in `SubsonicService+Endpoints.swift`.
 
 // MARK: - SubsonicService
 
@@ -137,11 +40,13 @@ public actor SubsonicService {
 
     private var clients: [UUID: ClientEntry] = [:]
     private let store: SubsonicServerStore
-    private let log = AppLogger.make(.subsonic)
+    let log = AppLogger.make(.subsonic)
     private var (capabilityStream, capabilityContinuation) = AsyncStream<UUID>.makeStream()
 
     // MARK: - Init
 
+    /// Creates a service with an empty client pool. Until `reloadClients()` or
+    /// `refreshClient(for:)` adds a client, requests throw `SubsonicError.unknownServer`.
     public init(store: SubsonicServerStore) {
         self.store = store
     }
@@ -246,8 +151,8 @@ public actor SubsonicService {
                 ]
             )
             return caps
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -281,172 +186,9 @@ public actor SubsonicService {
                 ["id": serverID.uuidString, "type": caps.serverType ?? "unknown"]
             )
             return caps
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
-    }
-
-    // MARK: - Browsing
-
-    public func getArtists(serverID: UUID) async throws -> [ArtistIndex] {
-        try await self.withClient(serverID) { try await $0.getArtists() }
-    }
-
-    public func getArtist(serverID: UUID, id: String) async throws -> ArtistID3 {
-        try await self.withClient(serverID) { try await $0.getArtist(id: id) }
-    }
-
-    public func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
-        try await self.withClient(serverID) { try await $0.getAlbum(id: id) }
-    }
-
-    public func getGenres(serverID: UUID) async throws -> [Genre] {
-        try await self.withClient(serverID) { try await $0.getGenres() }
-    }
-
-    // MARK: - Lists
-
-    public func getAlbumList2(
-        serverID: UUID,
-        type: AlbumListType,
-        size: Int = 50,
-        offset: Int = 0
-    ) async throws -> [AlbumID3] {
-        try await self.withClient(serverID) { try await $0.getAlbumList2(type: type, size: size, offset: offset) }
-    }
-
-    public func getRandomSongs(serverID: UUID, size: Int = 50) async throws -> [Song] {
-        try await self.withClient(serverID) { try await $0.getRandomSongs(size: size) }
-    }
-
-    public func getSongsByGenre(
-        serverID: UUID,
-        genre: String,
-        count: Int = 50,
-        offset: Int = 0
-    ) async throws -> [Song] {
-        try await self.withClient(serverID) { try await $0.getSongsByGenre(genre, count: count, offset: offset) }
-    }
-
-    public func getStarred2(serverID: UUID) async throws -> Starred2 {
-        try await self.withClient(serverID) { try await $0.getStarred2() }
-    }
-
-    // MARK: - Playlists
-
-    public func getPlaylists(serverID: UUID) async throws -> [Playlist] {
-        try await self.withClient(serverID) { try await $0.getPlaylists() }
-    }
-
-    public func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs {
-        try await self.withClient(serverID) { try await $0.getPlaylist(id: id) }
-    }
-
-    // MARK: - Search
-
-    public func search3(
-        serverID: UUID,
-        query: String,
-        artistCount: Int = 5,
-        albumCount: Int = 5,
-        songCount: Int = 20
-    ) async throws -> SearchResult3 {
-        try await self.withClient(serverID) {
-            try await $0.search3(
-                query,
-                artistCount: artistCount,
-                albumCount: albumCount,
-                songCount: songCount
-            )
-        }
-    }
-
-    // MARK: - Podcasts (capability-gated)
-
-    public func getPodcasts(serverID: UUID) async throws -> [PodcastChannel] {
-        try await self.withCapabilityGatedClient(serverID, feature: "podcasts") { try await $0.getPodcasts() }
-    }
-
-    // MARK: - Internet radio (capability-gated)
-
-    public func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation] {
-        try await self.withCapabilityGatedClient(serverID, feature: "internetRadio") {
-            try await $0.getInternetRadioStations()
-        }
-    }
-
-    // MARK: - Bookmarks (capability-gated)
-
-    public func getBookmarks(serverID: UUID) async throws -> [Bookmark] {
-        try await self.withCapabilityGatedClient(serverID, feature: "bookmarks") { try await $0.getBookmarks() }
-    }
-
-    // MARK: - Now Playing
-
-    public func getNowPlaying(serverID: UUID) async throws -> [NowPlayingEntry] {
-        try await self.withClient(serverID) { try await $0.getNowPlaying() }
-    }
-
-    // MARK: - Annotations
-
-    public func star(serverID: UUID, songID: String) async throws {
-        try await self.withClient(serverID) { client in
-            try await client.star(songId: songID)
-            self.log.debug("subsonic.star", ["server": serverID.uuidString, "song": songID])
-        }
-    }
-
-    public func unstar(serverID: UUID, songID: String) async throws {
-        try await self.withClient(serverID) { client in
-            try await client.unstar(songId: songID)
-            self.log.debug("subsonic.unstar", ["server": serverID.uuidString, "song": songID])
-        }
-    }
-
-    public func setRating(serverID: UUID, songID: String, rating: Int) async throws {
-        try await self.withClient(serverID) { client in
-            try await client.setRating(id: songID, rating: rating)
-            self.log.debug(
-                "subsonic.rating",
-                ["server": serverID.uuidString, "song": songID, "rating": rating]
-            )
-        }
-    }
-
-    // MARK: - Scrobble
-
-    public func scrobble(serverID: UUID, songID: String, submission: Bool = true) async throws {
-        try await self.withClient(serverID) { client in
-            try await client.scrobble(id: songID, submission: submission)
-            self.log.debug(
-                "subsonic.scrobble",
-                ["server": serverID.uuidString, "song": songID, "submission": submission]
-            )
-        }
-    }
-
-    // MARK: - Media URLs (nonisolated passthrough — never log these)
-
-    /// Returns the stream URL for a song.
-    ///
-    /// > Warning: Never log this URL; it contains the per-request auth token.
-    public func streamURL(
-        serverID: UUID,
-        songID: String,
-        maxBitRate: Int? = nil,
-        format: String? = nil
-    ) throws -> URL {
-        let client = try self.requireClient(serverID)
-        guard let url = client.streamURL(id: songID, maxBitRate: maxBitRate, format: format) else {
-            throw SubsonicError.invalidServerRecord("streamURL returned nil for song \(songID)")
-        }
-        return url
-    }
-
-    /// Returns the cover-art URL for an entity.
-    public func coverArtURL(serverID: UUID, entityID: String, size: Int? = nil) throws -> URL? {
-        let client = try self.requireClient(serverID)
-        return client.coverArtURL(id: entityID, size: size)
     }
 
     // MARK: - Capability lie detection
@@ -484,7 +226,7 @@ public actor SubsonicService {
         self.clients[serverID]?.client
     }
 
-    private func requireClient(_ serverID: UUID) throws -> SwiftSonicClient {
+    func requireClient(_ serverID: UUID) throws -> SwiftSonicClient {
         guard let entry = self.clients[serverID] else {
             throw SubsonicError.unknownServer(serverID)
         }
@@ -494,22 +236,22 @@ public actor SubsonicService {
     /// Resolves the client for `serverID`, runs `body` against it, and maps any
     /// `SwiftSonicError` to `SubsonicError.transport`. Folds the request wrapper
     /// that every endpoint method otherwise repeats verbatim.
-    private func withClient<T>(
+    func withClient<T>(
         _ serverID: UUID,
         _ body: (SwiftSonicClient) async throws -> T
     ) async throws -> T {
         let client = try self.requireClient(serverID)
         do {
             return try await body(client)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
+        } catch let sonicError as SwiftSonicError {
+            throw SubsonicError.transport(sonicError)
         }
     }
 
     /// Like `withClient`, but for capability-gated endpoints: when the server
     /// 404/501s an endpoint it advertised, `feature`'s capability flag is
     /// revoked before the error is surfaced (see `isCapabilityLie`).
-    private func withCapabilityGatedClient<T>(
+    func withCapabilityGatedClient<T>(
         _ serverID: UUID,
         feature: String,
         _ body: (SwiftSonicClient) async throws -> T
@@ -517,11 +259,11 @@ public actor SubsonicService {
         let client = try self.requireClient(serverID)
         do {
             return try await body(client)
-        } catch let e as SwiftSonicError {
-            if isCapabilityLie(e) {
+        } catch let sonicError as SwiftSonicError {
+            if isCapabilityLie(sonicError) {
                 await self.markCapabilityUnsupported(feature, for: serverID)
             }
-            throw SubsonicError.transport(e)
+            throw SubsonicError.transport(sonicError)
         }
     }
 
@@ -596,6 +338,7 @@ public actor SubsonicService {
                 auth: .tokenAuth(username: username, password: secret, reusesSalt: false),
                 clientName: Self.clientName
             )
+
         case .apiKey:
             config = ServerConfiguration(
                 serverURL: server.serverURL,
@@ -640,14 +383,14 @@ public actor SubsonicService {
     /// Test-only seam: register a preconstructed `SwiftSonicClient` for a
     /// server without going through Keychain-backed `buildClient`. Production
     /// code must continue to use `reloadClients` / `refreshClient`.
-    func _registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
+    func registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
         self.clients[serverID] = ClientEntry(client: client, capabilities: nil)
     }
 
     /// Test-only: read the in-memory capability snapshot without going through
     /// the staleness check. Production code should always use
     /// `loadCapabilities(serverID:)` instead.
-    func _capabilitiesForTesting(serverID: UUID) -> SubsonicCapabilities? {
+    func capabilitiesForTesting(serverID: UUID) -> SubsonicCapabilities? {
         self.clients[serverID]?.capabilities
     }
 }

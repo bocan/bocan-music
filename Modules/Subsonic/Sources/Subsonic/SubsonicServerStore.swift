@@ -9,11 +9,19 @@ import Security
 /// Never stored on disk; JSON is only ever written to the Keychain data blob.
 struct SubsonicCredential: Codable {
     /// Schema version, for forward-compatible migration.
-    var v = 1
+    var version = 1
     /// Auth kind: "tokenSalt" or "apiKey".
     var kind: String
     /// The actual secret: password (tokenSalt) or API key (apiKey).
     var secret: String
+
+    /// The stored blob spells the schema version `v`; the key must not change,
+    /// or credentials already in the Keychain stop decoding.
+    private enum CodingKeys: String, CodingKey {
+        case version = "v"
+        case kind
+        case secret
+    }
 }
 
 // MARK: - SubsonicServerStore
@@ -40,6 +48,8 @@ public actor SubsonicServerStore {
 
     // MARK: - Init
 
+    /// Creates a store whose server rows live in `repository`. Credentials
+    /// always go to the Keychain, whatever repository is passed.
     public init(repository: SubsonicServerRepository) {
         self.repository = repository
     }
@@ -62,8 +72,8 @@ public actor SubsonicServerStore {
             // Roll back the Keychain item to keep them in sync.
             do {
                 try self.keychainDelete(account: server.keychainAccount)
-            } catch let keychainError {
-                self.log.warning("subsonic.store.rollback.keychain.failed", ["error": String(reflecting: keychainError)])
+            } catch {
+                self.log.warning("subsonic.store.rollback.keychain.failed", ["error": String(reflecting: error)])
             }
             throw error
         }

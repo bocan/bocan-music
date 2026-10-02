@@ -72,8 +72,8 @@ public struct RemotePlaylistResolver: Sendable {
     private func classify(data: Data, url: URL) -> RemotePlaylistResolution {
         // HLS first: an `.m3u8` variant ladder is M3U-shaped, so it would
         // otherwise "parse" as an empty station list.
-        let text = String(decoding: data, as: UTF8.self)
-        if text.contains("#EXT-X-") {
+        // A byte search, so a body that is not valid UTF-8 is still checked.
+        if data.range(of: Data("#EXT-X-".utf8)) != nil {
             return .hlsStream
         }
 

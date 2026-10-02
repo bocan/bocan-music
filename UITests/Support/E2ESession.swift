@@ -60,8 +60,8 @@ struct E2ESession {
 
     // MARK: Setup
 
-    static func make(named name: String) -> E2ESession {
-        E2ESession(runID: "\(name)-\(UUID().uuidString.prefix(8))")
+    static func make(named name: String) -> Self {
+        Self(runID: "\(name)-\(UUID().uuidString.prefix(8))")
     }
 
     // MARK: Launch
@@ -118,8 +118,7 @@ extension String {
     /// "-[FoundationJourneys testX]" to a filesystem-friendly "testX".
     var sanitizedTestName: String {
         self.components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .last ?? "run"
+            .last { !$0.isEmpty } ?? "run"
     }
 }
 

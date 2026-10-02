@@ -49,7 +49,7 @@ struct RadioRestoreTests {
             repeatMode: .off,
             shuffleState: .off
         )
-        await persistence._awaitPendingSaveForTesting()
+        await persistence.awaitPendingSaveForTesting()
 
         UserDefaults.standard.set(412.0, forKey: "playback.resumePosition")
         defer { UserDefaults.standard.removeObject(forKey: "playback.resumePosition") }
@@ -91,7 +91,7 @@ struct RadioRestoreTests {
             repeatMode: .off,
             shuffleState: .off
         )
-        await persistence._awaitPendingSaveForTesting()
+        await persistence.awaitPendingSaveForTesting()
 
         let engine = AudioEngine()
         let player = QueuePlayer(engine: engine, database: db)

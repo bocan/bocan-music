@@ -18,7 +18,7 @@ public struct TranscodeSettings: Sendable, Codable, Equatable {
     }
 
     /// No transcoding: today's behaviour, and the default.
-    public static let original = TranscodeSettings()
+    public static let original = Self()
 }
 
 // MARK: - SyncProfileDocument
@@ -40,7 +40,7 @@ public struct SyncProfileDocument: Sendable, Codable, Equatable {
         self.transcode = transcode
     }
 
-    public static let `default` = SyncProfileDocument(profile: .default)
+    public static let `default` = Self(profile: .default)
 
     private enum CodingKeys: String, CodingKey {
         case profile
@@ -70,10 +70,10 @@ public struct SyncProfileDocument: Sendable, Codable, Equatable {
 
     /// Decodes stored blob bytes, falling back to the default document for a
     /// missing or unreadable blob (the same fallback the profile always had).
-    public static func decode(_ data: Data?) -> SyncProfileDocument {
+    public static func decode(_ data: Data?) -> Self {
         guard let data else { return .default }
         do {
-            return try JSONDecoder().decode(SyncProfileDocument.self, from: data)
+            return try JSONDecoder().decode(Self.self, from: data)
         } catch {
             AppLogger.make(.sync).warning("sync.profile.undecodable", [
                 "error": String(reflecting: error),

@@ -95,7 +95,7 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
 
     /// Converts a `ServerCapabilities` value from SwiftSonic into our model.
     public static func from(_ caps: ServerCapabilities) -> Self {
-        SubsonicCapabilities(
+        Self(
             serverType: caps.serverType,
             serverVersion: caps.serverVersion,
             apiVersion: caps.apiVersion,
@@ -118,15 +118,32 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
     /// Used in the "capability lie" gotcha handler.
     public mutating func markUnsupported(_ feature: String) {
         switch feature {
-        case "podcasts": self.supportsPodcasts = false
-        case "internetRadio": self.supportsInternetRadio = false
-        case "bookmarks": self.supportsBookmarks = false
-        case "jukebox": self.supportsJukebox = false
-        case "shares": self.supportsShares = false
-        case "songLyrics": self.supportsLyricsBySongId = false
-        case "apiKeyAuthentication": self.supportsApiKey = false
-        case "randomSongsByGenre": self.supportsRandomSongsByGenre = false
-        default: break
+        case "podcasts":
+            self.supportsPodcasts = false
+
+        case "internetRadio":
+            self.supportsInternetRadio = false
+
+        case "bookmarks":
+            self.supportsBookmarks = false
+
+        case "jukebox":
+            self.supportsJukebox = false
+
+        case "shares":
+            self.supportsShares = false
+
+        case "songLyrics":
+            self.supportsLyricsBySongId = false
+
+        case "apiKeyAuthentication":
+            self.supportsApiKey = false
+
+        case "randomSongsByGenre":
+            self.supportsRandomSongsByGenre = false
+
+        default:
+            break
         }
     }
 
@@ -135,7 +152,7 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
     /// Returns `true` when the user-visible capability flags match `other`,
     /// ignoring `fetchedAt`. Used by the capability refresh path to decide
     /// whether a sidebar redraw is needed.
-    public func hasSameCapabilityFlags(as other: SubsonicCapabilities) -> Bool {
+    public func hasSameCapabilityFlags(as other: Self) -> Bool {
         self.serverType == other.serverType
             && self.serverVersion == other.serverVersion
             && self.apiVersion == other.apiVersion

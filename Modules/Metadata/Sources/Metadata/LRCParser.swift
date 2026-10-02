@@ -13,7 +13,7 @@ public struct LyricLine: Sendable, Equatable {
     /// Lyric text.
     public let text: String
 
-    public init(timestamp: Double? = nil, text: String) {
+    public init(text: String, timestamp: Double? = nil) {
         self.timestamp = timestamp
         self.text = text
     }
@@ -87,44 +87,63 @@ public enum LRCParser {
                 continue
             }
 
-            // Parse line-level timestamps.
-            var remaining = stripped[stripped.startIndex...]
-            var timestamps: [Double] = []
-            while let match = remaining.prefixMatch(of: timestampPattern) {
-                timestamps.append(Self.parseTimestamp(match.output.1, match.output.2, match.output.3))
-                remaining = remaining[match.range.upperBound...]
-            }
-
-            let textRaw = String(remaining).trimmingCharacters(in: .whitespaces)
-
-            // Parse word-level `<mm:ss.xx>` markers from the remaining text.
-            let (cleanText, wordTimes) = Self.extractWordTimings(from: textRaw)
-
-            if timestamps.isEmpty {
-                // Malformed line inside a synced document — include at t=0 if non-empty.
-                if !textRaw.isEmpty {
-                    result.append(LyricsDocument.LyricsLine(
-                        start: 0,
-                        text: cleanText.isEmpty ? textRaw : cleanText,
-                        words: wordTimes.isEmpty ? nil : wordTimes,
-                        malformed: true
-                    ))
-                }
-            } else {
-                let text = cleanText.isEmpty && !timestamps.isEmpty ? textRaw : cleanText
-                for ts in timestamps {
-                    result.append(LyricsDocument.LyricsLine(
-                        start: ts,
-                        text: text,
-                        words: wordTimes.isEmpty ? nil : wordTimes
-                    ))
-                }
-            }
+            Self.appendDocumentLines(from: stripped, to: &result)
         }
 
         var sorted = result.sorted { $0.start < $1.start }
+        Self.deriveEndTimes(in: &sorted, trackDuration: trackDuration)
 
-        // Derive `end` times from the next line's `start` (minus a 50ms gap).
+        return .synced(lines: sorted, offsetMS: offsetMS)
+    }
+
+    /// Parses one trimmed, non-empty lyric line of a synced document (not an
+    /// offset or metadata tag) and appends the entries it yields to `result`:
+    /// one per leading timestamp, or one malformed entry when it has none.
+    private static func appendDocumentLines(
+        from stripped: String,
+        to result: inout [LyricsDocument.LyricsLine]
+    ) {
+        // Parse line-level timestamps.
+        var remaining = stripped[stripped.startIndex...]
+        var timestamps: [Double] = []
+        while let match = remaining.prefixMatch(of: timestampPattern) {
+            timestamps.append(Self.parseTimestamp(match.output.1, match.output.2, match.output.3))
+            remaining = remaining[match.range.upperBound...]
+        }
+
+        let textRaw = String(remaining).trimmingCharacters(in: .whitespaces)
+
+        // Parse word-level `<mm:ss.xx>` markers from the remaining text.
+        let (cleanText, wordTimes) = Self.extractWordTimings(from: textRaw)
+
+        if timestamps.isEmpty {
+            // Malformed line inside a synced document — include at t=0 if non-empty.
+            if !textRaw.isEmpty {
+                result.append(LyricsDocument.LyricsLine(
+                    start: 0,
+                    text: cleanText.isEmpty ? textRaw : cleanText,
+                    words: wordTimes.isEmpty ? nil : wordTimes,
+                    malformed: true
+                ))
+            }
+        } else {
+            let text = cleanText.isEmpty && !timestamps.isEmpty ? textRaw : cleanText
+            for ts in timestamps {
+                result.append(LyricsDocument.LyricsLine(
+                    start: ts,
+                    text: text,
+                    words: wordTimes.isEmpty ? nil : wordTimes
+                ))
+            }
+        }
+    }
+
+    /// Derives `end` times from the next line's `start` (minus a 50ms gap).
+    /// The last line ends at `trackDuration` when one is given.
+    private static func deriveEndTimes(
+        in sorted: inout [LyricsDocument.LyricsLine],
+        trackDuration: TimeInterval?
+    ) {
         for idx in sorted.indices {
             if idx + 1 < sorted.count {
                 sorted[idx].end = sorted[idx + 1].start - 0.05
@@ -132,8 +151,6 @@ public enum LRCParser {
                 sorted[idx].end = dur
             }
         }
-
-        return .synced(lines: sorted, offsetMS: offsetMS)
     }
 
     /// Parses `raw` lyrics string into ``LyricLine`` values (legacy API).
@@ -175,7 +192,7 @@ public enum LRCParser {
                 }
             } else {
                 for ts in timestamps {
-                    result.append(LyricLine(timestamp: ts, text: text))
+                    result.append(LyricLine(text: text, timestamp: ts))
                 }
             }
         }

@@ -19,11 +19,17 @@ public actor PlaybackQueue {
 
     // MARK: - State
 
+    /// The queue in play order. When shuffle is on this is the shuffled order.
     public private(set) var items: [QueueItem] = []
+    /// Items the queue advanced away from, oldest first; `retreat()` pops the newest.
     public private(set) var history: [QueueItem] = []
+    /// Index into `items` of the current item, or `nil` when nothing is current.
     public private(set) var currentIndex: Int?
+    /// The repeat mode `advance()` and `peekNext()` follow.
     public private(set) var repeatMode: RepeatMode = .off
+    /// Whether shuffle is on, and with which seed.
     public private(set) var shuffleState: ShuffleState = .off
+    /// The stop-after-current flag. The queue only stores it; the player acts on it.
     public private(set) var stopAfterCurrent = false
 
     /// The original (un-shuffled) source order, used to restore on shuffle-off.
@@ -103,7 +109,7 @@ public actor PlaybackQueue {
         // Only items removed *before* the current position shift the index leftward;
         // removals after it leave the current track exactly where it is.
         let removedBeforeCurrent = oldCurrentIndex.map { ci in
-            self.items[..<ci].lazy.count(where: { ids.contains($0.id) })
+            self.items[..<ci].lazy.count { ids.contains($0.id) }
         } ?? 0
 
         let originalCount = self.items.count
@@ -288,10 +294,12 @@ public actor PlaybackQueue {
         switch self.repeatMode {
         case .one:
             return self.currentItem
+
         case .all:
             guard !self.items.isEmpty else { return nil }
             let next = ((currentIndex ?? -1) + 1) % self.items.count
             return self.items[next]
+
         case .off:
             let next = (currentIndex ?? -1) + 1
             return next < self.items.count ? self.items[next] : nil
@@ -306,6 +314,7 @@ public actor PlaybackQueue {
         switch self.repeatMode {
         case .one, .off:
             return next < self.items.count ? self.items[next] : nil
+
         case .all:
             guard !self.items.isEmpty else { return nil }
             return self.items[next % self.items.count]
@@ -319,12 +328,14 @@ public actor PlaybackQueue {
 
     // MARK: - Repeat / shuffle
 
+    /// Set the repeat mode and emit `.repeatChanged`.
     public func setRepeatMode(_ mode: RepeatMode) {
         self.repeatMode = mode
         self.emit(.repeatChanged(mode))
         self.log.debug("queue.repeat", ["mode": mode.rawValue])
     }
 
+    /// Set the stop-after-current flag and emit `.stopAfterCurrentChanged`.
     public func setStopAfterCurrent(_ enabled: Bool) {
         self.stopAfterCurrent = enabled
         self.emit(.stopAfterCurrentChanged(enabled))

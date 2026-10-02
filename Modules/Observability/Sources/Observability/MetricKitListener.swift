@@ -72,10 +72,12 @@ import os
 
         /// `~/Library/Logs/Bocan/diagnostics/` — where report `.json` files live.
         public nonisolated static var reportsDirectory: URL {
-            FileManager.default
+            // The user-domain lookup has no documented way to come back empty;
+            // the fallback names the same folder.
+            let library = FileManager.default
                 .urls(for: .libraryDirectory, in: .userDomainMask)
-                .first!
-                .appendingPathComponent("Logs/Bocan/diagnostics")
+                .first ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library")
+            return library.appendingPathComponent("Logs/Bocan/diagnostics")
         }
 
         /// Returns all `.json` report files in `reportsDirectory`, newest first.

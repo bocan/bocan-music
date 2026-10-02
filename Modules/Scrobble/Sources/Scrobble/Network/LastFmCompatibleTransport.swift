@@ -39,11 +39,11 @@ struct LastFmCompatibleTransport {
         sharedSecret: String,
         providerID: String
     ) async throws -> [String: Any] {
-        var p = params
-        p["api_sig"] = LastFmSignature.sign(p, secret: sharedSecret)
-        p["format"] = "json"
+        var signedParams = params
+        signedParams["api_sig"] = LastFmSignature.sign(signedParams, secret: sharedSecret)
+        signedParams["format"] = "json"
 
-        let request = try self.makeRequest(params: p, method: method, providerID: providerID)
+        let request = try self.makeRequest(params: signedParams, method: method, providerID: providerID)
         let (data, response) = try await self.http.data(for: request)
         let http = response as? HTTPURLResponse
         let status = http?.statusCode ?? 0
@@ -74,12 +74,16 @@ struct LastFmCompatibleTransport {
             switch errCode {
             case 11, 16: // Service offline / temporarily unavailable
                 throw ScrobbleError.transient(provider: providerID, reason: msg, retryAfter: retryAfter)
+
             case 29: // Rate limit exceeded
                 throw ScrobbleError.transient(provider: providerID, reason: msg, retryAfter: retryAfter ?? 60)
+
             case 9: // Invalid session key — re-auth required
                 throw ScrobbleError.invalidCredentials(provider: providerID)
+
             case 4, 13, 14, 17, 18, 22, 23: // Auth failed / token invalid / unauthorised
                 throw ScrobbleError.invalidCredentials(provider: providerID)
+
             default:
                 throw ScrobbleError.permanent(provider: providerID, reason: msg)
             }
@@ -97,8 +101,9 @@ struct LastFmCompatibleTransport {
     private func makeRequest(params: [String: String], method: String, providerID: String) throws -> URLRequest {
         let body = self.formEncode(params)
         if method == "GET" {
-            var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true)
-                ?? URLComponents(string: self.endpoint.absoluteString)!
+            guard var components = URLComponents(url: self.endpoint, resolvingAgainstBaseURL: true) else {
+                throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")
+            }
             components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
             guard let url = components.url else {
                 throw ScrobbleError.malformedResponse(provider: providerID, reason: "bad url")

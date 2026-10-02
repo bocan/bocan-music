@@ -22,9 +22,18 @@ struct SwallowedErrorPlaybackConventionTests {
         try String(contentsOf: self.sourceRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
+    /// The player's source: `QueuePlayer.swift` and its `QueuePlayer+*.swift`
+    /// extension files, joined.
+    private func queuePlayerSource() throws -> String {
+        let names = try FileManager.default.contentsOfDirectory(atPath: self.sourceRoot.path)
+            .filter { $0 == "QueuePlayer.swift" || ($0.hasPrefix("QueuePlayer+") && $0.hasSuffix(".swift")) }
+            .sorted()
+        return try names.map { try self.source($0) }.joined(separator: "\n")
+    }
+
     @Test("the player logs the reads and writes it recovers from")
     func queuePlayerRecoveriesAreLogged() throws {
-        let source = try self.source("QueuePlayer.swift")
+        let source = try self.queuePlayerSource()
         let events = [
             "queueplayer.nowPlaying.trackLookupFailed",
             "queueplayer.markers.readFailed",

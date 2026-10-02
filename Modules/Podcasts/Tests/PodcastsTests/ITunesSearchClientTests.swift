@@ -4,35 +4,23 @@ import Testing
 
 @Suite("ITunesSearchClient")
 struct ITunesSearchClientTests {
-    private func makeOKResponse() -> HTTPURLResponse {
-        HTTPURLResponse(
-            url: URL(string: "https://itunes.apple.com")!,
-            statusCode: 200,
-            httpVersion: nil,
-            headerFields: nil
-        )!
+    private func makeOKResponse() throws -> HTTPURLResponse {
+        try stubResponse("https://itunes.apple.com")
     }
 
     private func loadFixture() throws -> Data {
-        guard let url = Bundle.module.url(
-            forResource: "itunes-search.json",
-            withExtension: nil,
-            subdirectory: "Fixtures"
-        ),
-            let data = try? Data(contentsOf: url) else {
-            throw PodcastsError.parseFailed(
-                url: URL(string: "test://itunes-search.json")!,
-                reason: "itunes-search.json fixture not found"
-            )
-        }
-        return data
+        let url = try #require(
+            Bundle.module.url(forResource: "itunes-search.json", withExtension: nil, subdirectory: "Fixtures"),
+            "itunes-search.json fixture not found"
+        )
+        return try Data(contentsOf: url)
     }
 
     @Test("search decodes itunes-search.json and drops rows without feedUrl")
     func searchDecodesAndFilters() async throws {
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let results = try await client.search(term: "swift")
@@ -46,7 +34,7 @@ struct ITunesSearchClientTests {
     func sourcesAreItunes() async throws {
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let results = try await client.search(term: "swift")
@@ -57,7 +45,7 @@ struct ITunesSearchClientTests {
     func artworkUrl600Preferred() async throws {
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let results = try await client.search(term: "swift")
@@ -70,7 +58,7 @@ struct ITunesSearchClientTests {
     func fieldMapping() async throws {
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let results = try await client.search(term: "swift")
@@ -85,7 +73,7 @@ struct ITunesSearchClientTests {
     func noFeedUrlDropped() async throws {
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let results = try await client.search(term: "swift")
@@ -98,7 +86,7 @@ struct ITunesSearchClientTests {
         // Reuse itunes-search.json -- the lookup endpoint returns the same shape.
         let data = try loadFixture()
         let mock = MockHTTPClient()
-        mock.handler = { _ in (data, self.makeOKResponse()) }
+        mock.handler = { _ in try (data, self.makeOKResponse()) }
 
         let client = ITunesSearchClient(http: mock)
         let result = try await client.lookup(collectionID: 1_234_567)
@@ -121,7 +109,7 @@ struct ITunesSearchClientTests {
         let recorder = RequestRecorder()
         mock.handler = { request in
             recorder.record(request)
-            return (data, self.makeOKResponse())
+            return try (data, self.makeOKResponse())
         }
 
         let client = ITunesSearchClient(http: mock)

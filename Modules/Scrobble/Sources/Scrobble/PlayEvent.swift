@@ -27,6 +27,8 @@ public struct PlayEvent: Sendable, Codable, Hashable {
     /// Source song ID when the play originated from a Subsonic library.
     public let subsonicSongID: String?
 
+    // Memberwise initialiser: the parameters keep the stored-property order.
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         queueID: Int64,
         trackID: Int64,
@@ -52,6 +54,7 @@ public struct PlayEvent: Sendable, Codable, Hashable {
         self.subsonicServerID = subsonicServerID
         self.subsonicSongID = subsonicSongID
     }
+    // swiftlint:enable function_default_parameter_at_end
 }
 
 // MARK: - TrackIdentity

@@ -36,7 +36,8 @@ public struct SmartShuffle: ShuffleStrategy {
 
         while !remaining.isEmpty {
             let weights = remaining.map { self.weight(for: $0, now: now, daySeconds: daySeconds) }
-            let selected = self.weightedSample(from: remaining, weights: weights, using: &rng)
+            // `remaining` is not empty here, so there is always a sample.
+            guard let selected = self.weightedSample(from: remaining, weights: weights, using: &rng) else { break }
             result.append(selected)
             remaining.removeAll { $0.id == selected.id }
 
@@ -57,24 +58,24 @@ public struct SmartShuffle: ShuffleStrategy {
     // MARK: - Private helpers
 
     private func weight(for item: QueueItem, now: Int64, daySeconds: Int64) -> Double {
-        var w = 1.0
-        w += Double(item.rating) * 0.2 // rating 0-100 → +0..20
+        var weight = 1.0
+        weight += Double(item.rating) * 0.2 // rating 0-100 → +0..20
         if item.loved {
-            w += 3.0
+            weight += 3.0
         }
-        w += 0.5 * log(Double(item.playCount) + 1.0) // log-scaled play count
+        weight += 0.5 * log(Double(item.playCount) + 1.0) // log-scaled play count
         if let lastPlayed = item.lastPlayedAt,
            now - lastPlayed < daySeconds {
-            w -= 2.0
+            weight -= 2.0
         } // played today penalty
-        return max(0.001, w)
+        return max(0.001, weight)
     }
 
     private func weightedSample(
         from items: [QueueItem],
         weights: [Double],
         using rng: inout Xoshiro256StarStar
-    ) -> QueueItem {
+    ) -> QueueItem? {
         let total = weights.reduce(0, +)
         // Map the next random double onto [0, total)
         let pick = (Double(rng.next()) / Double(UInt64.max)) * total
@@ -85,6 +86,6 @@ public struct SmartShuffle: ShuffleStrategy {
                 return item
             }
         }
-        return items.last! // Fallback (floating-point rounding)
+        return items.last // Fallback (floating-point rounding); nil only for no items
     }
 }
