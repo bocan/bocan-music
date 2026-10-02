@@ -258,6 +258,26 @@ struct PlaybackQueueTests {
         #expect(ci == nil)
     }
 
+    @Test("clear empties history, so retreat cannot go back across it")
+    func clearEmptiesHistory() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 3).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 0)
+        _ = await queue.advance()
+        _ = await queue.advance()
+        await queue.clear()
+        let history = await queue.history
+        #expect(history.isEmpty)
+
+        // The same items come back with the same ids. A history entry that
+        // survived the clear would move the queue forward to items[1].
+        await queue.replace(with: items, startAt: 0)
+        let retreated = await queue.retreat()
+        let ci = await queue.currentIndex
+        #expect(retreated?.id == items[0].id)
+        #expect(ci == 0)
+    }
+
     // MARK: - Shuffle
 
     @Test("shuffle-on reorders items and sets state")
