@@ -19,8 +19,10 @@ public enum Validator {
         switch criterion {
         case let .rule(rule):
             try Self.validateRule(rule)
+
         case let .invalid(reason):
             throw SmartPlaylistError.invalidRule(reason: reason)
+
         case let .group(_, children):
             guard !children.isEmpty else { throw SmartPlaylistError.emptyGroup }
             guard depth <= Self.maxGroupDepth else {
@@ -47,6 +49,38 @@ public enum Validator {
             throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
         }
 
+        try Self.validateRangeAndRegex(rule)
+
+        // Membership comparators need a playlistRef or text.
+        switch rule.comparator {
+        case .memberOf, .notMemberOf:
+            guard case .playlistRef = rule.value else {
+                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
+            }
+
+        case .pathUnder:
+            guard case .text = rule.value else {
+                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
+            }
+
+        default:
+            break
+        }
+
+        // Bool fields require bool comparators.
+        if case .bool = def.dataType {
+            switch rule.comparator {
+            case .isTrue, .isFalse:
+                break
+
+            default:
+                throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
+            }
+        }
+    }
+
+    /// Checks the value of a `between` rule and of a `matchesRegex` rule.
+    private static func validateRangeAndRegex(_ rule: SmartCriterion.Rule) throws {
         // `between` requires a range value with low <= high.
         if rule.comparator == .between {
             guard case let .range(low, high) = rule.value else {
@@ -68,39 +102,25 @@ public enum Validator {
                 throw SmartPlaylistError.invalidRegex(pattern)
             }
         }
-
-        // Membership comparators need a playlistRef or text.
-        switch rule.comparator {
-        case .memberOf, .notMemberOf:
-            guard case .playlistRef = rule.value else {
-                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
-            }
-        case .pathUnder:
-            guard case .text = rule.value else {
-                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
-            }
-        default:
-            break
-        }
-
-        // Bool fields require bool comparators.
-        if case .bool = def.dataType {
-            switch rule.comparator {
-            case .isTrue, .isFalse: break
-            default:
-                throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
-            }
-        }
     }
 
     /// Returns `true` when `low` is strictly greater than `high` for ordered types.
     private static func isDescending(_ low: Value, _ high: Value) -> Bool {
         switch (low, high) {
-        case let (.int(a), .int(b)): a > b
-        case let (.double(a), .double(b)): a > b
-        case let (.duration(a), .duration(b)): a > b
-        case let (.date(a), .date(b)): a > b
-        default: false
+        case let (.int(lhs), .int(rhs)):
+            lhs > rhs
+
+        case let (.double(lhs), .double(rhs)):
+            lhs > rhs
+
+        case let (.duration(lhs), .duration(rhs)):
+            lhs > rhs
+
+        case let (.date(lhs), .date(rhs)):
+            lhs > rhs
+
+        default:
+            false
         }
     }
 }

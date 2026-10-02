@@ -7,7 +7,20 @@ import Testing
 /// Serves a canned MusicBrainz artist per MBID; anything else is a 404, and a
 /// configurable MBID answers 503 to simulate the rate limit.
 private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
-    var artists: [String: (name: String, sortName: String, disambiguation: String)] = [:]
+    /// The canned MusicBrainz fields of one artist.
+    struct StubArtist {
+        let name: String
+        let sortName: String
+        let disambiguation: String
+
+        init(_ name: String, _ sortName: String, _ disambiguation: String) {
+            self.name = name
+            self.sortName = sortName
+            self.disambiguation = disambiguation
+        }
+    }
+
+    var artists: [String: StubArtist] = [:]
     /// MBIDs that answer 503; each hit decrements `rateLimitHits`, and the
     /// limit lifts when it reaches zero (nil = limited forever).
     var rateLimited: Set<String> = []
@@ -16,10 +29,10 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         self.requests += 1
-        let url = request.url!
+        let url = try #require(request.url)
         let mbid = url.lastPathComponent
-        func response(_ status: Int) -> HTTPURLResponse {
-            HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!
+        func response(_ status: Int) throws -> HTTPURLResponse {
+            try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil))
         }
         if self.rateLimited.contains(mbid) {
             if let hits = self.rateLimitHits {
@@ -27,13 +40,13 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
                 if hits <= 0 {
                     self.rateLimited.remove(mbid)
                 } else {
-                    return (Data(), response(503))
+                    return try (Data(), response(503))
                 }
             } else {
-                return (Data(), response(503))
+                return try (Data(), response(503))
             }
         }
-        guard let artist = self.artists[mbid] else { return (Data(), response(404)) }
+        guard let artist = self.artists[mbid] else { return try (Data(), response(404)) }
         let json: [String: Any] = [
             "id": mbid, "name": artist.name, "sort-name": artist.sortName,
             "disambiguation": artist.disambiguation, "type": "Group", "relations": [],
@@ -51,10 +64,13 @@ struct ArtistEnrichmentServiceTests {
             httpClient: http
         )
         return ArtistEnrichmentService(
-            artists: ArtistRepository(database: db), client: client, batchSize: 2,
-            pacing: .zero, backoff: .milliseconds(1), maxBackoffs: 3,
-            now: { Date(timeIntervalSince1970: 1_720_000_000) }
-        )
+            artists: ArtistRepository(database: db),
+            client: client,
+            batchSize: 2,
+            pacing: .zero,
+            backoff: .milliseconds(1),
+            maxBackoffs: 3
+        ) { Date(timeIntervalSince1970: 1_720_000_000) }
     }
 
     @Test("a pass fills disambiguation, a missing sort name, and stamps fetched_at once")
@@ -66,8 +82,8 @@ struct ArtistEnrichmentServiceTests {
         _ = try await repo.findOrCreate(name: "John Williams feat. Yo-Yo Ma", musicbrainzID: "mb-jw")
         _ = try await repo.findOrCreate(name: "Untagged")
         let http = ArtistStubHTTP()
-        http.artists["mb-jw"] = ("John Williams", "Williams, John", "film composer")
-        http.artists["mb-k"] = ("The Kestrels", "Kestrels, The", "")
+        http.artists["mb-jw"] = .init("John Williams", "Williams, John", "film composer")
+        http.artists["mb-k"] = .init("The Kestrels", "Kestrels, The", "")
         let service = self.makeService(db, http: http)
 
         #expect(await service.enrichOnce() == 2, "two MBIDs, two lookups, three rows stamped")
@@ -96,7 +112,7 @@ struct ArtistEnrichmentServiceTests {
             _ = try await repo.findOrCreate(name: name, musicbrainzID: "mb-santana")
         }
         let http = ArtistStubHTTP()
-        http.artists["mb-santana"] = ("Santana", "Santana", "US Latin rock band")
+        http.artists["mb-santana"] = .init("Santana", "Santana", "US Latin rock band")
         let client = MusicBrainzClient(
             userAgent: "Bocan/test ( https://bocan.app )",
             rateLimiter: RateLimiter(maxRequests: 1000, per: 1.0),
@@ -120,8 +136,8 @@ struct ArtistEnrichmentServiceTests {
         let http = ArtistStubHTTP()
         http.rateLimited = ["mb-limited"]
         http.rateLimitHits = 2
-        http.artists["mb-limited"] = ("Limited", "Limited", "after backoff")
-        http.artists["mb-later"] = ("Later", "Later", "x")
+        http.artists["mb-limited"] = .init("Limited", "Limited", "after backoff")
+        http.artists["mb-later"] = .init("Later", "Later", "x")
         #expect(await self.makeService(db, http: http).enrichOnce() == 2)
         #expect(try await repo.fetchOne(name: "Limited")?.disambiguation == "after backoff")
         #expect(try await repo.fetchOne(name: "Later")?.disambiguation == "x")
@@ -136,7 +152,7 @@ struct ArtistEnrichmentServiceTests {
         _ = try await repo.findOrCreate(name: "Later", musicbrainzID: "mb-later")
         let http = ArtistStubHTTP()
         http.rateLimited = ["mb-limited"]
-        http.artists["mb-later"] = ("Later", "Later", "x")
+        http.artists["mb-later"] = .init("Later", "Later", "x")
         let service = self.makeService(db, http: http)
 
         #expect(await service.enrichOnce() == 0)
@@ -146,7 +162,7 @@ struct ArtistEnrichmentServiceTests {
         #expect(try await repo.fetchOne(name: "Later")?.musicbrainzFetchedAt == nil, "pass paused before reaching it")
 
         http.rateLimited = []
-        http.artists["mb-limited"] = ("Limited", "Limited", "ok now")
+        http.artists["mb-limited"] = .init("Limited", "Limited", "ok now")
         #expect(await service.enrichOnce() == 2)
         #expect(try await repo.fetchOne(name: "Limited")?.disambiguation == "ok now")
     }
@@ -157,7 +173,7 @@ struct ArtistEnrichmentServiceTests {
         let repo = ArtistRepository(database: db)
         let artist = try await repo.findOrCreate(name: "Solo", musicbrainzID: "mb-solo")
         let http = ArtistStubHTTP()
-        http.artists["mb-solo"] = ("Solo", "Solo", "singer")
+        http.artists["mb-solo"] = .init("Solo", "Solo", "singer")
         let refreshed = try await self.makeService(db, http: http).enrich(artistID: #require(artist.id))
         #expect(refreshed.disambiguation == "singer")
     }

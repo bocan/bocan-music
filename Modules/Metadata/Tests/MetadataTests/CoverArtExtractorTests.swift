@@ -26,9 +26,9 @@ struct CoverArtExtractorTests {
 
     @Test("different images are both included")
     func multipleDistinctImages() {
-        let a = self.makeArt(bytes: [0x01, 0x02])
-        let b = self.makeArt(bytes: [0x03, 0x04], type: 0)
-        let arts = CoverArtExtractor.extract(from: [a, b])
+        let first = self.makeArt(bytes: [0x01, 0x02])
+        let second = self.makeArt(bytes: [0x03, 0x04], type: 0)
+        let arts = CoverArtExtractor.extract(from: [first, second])
         #expect(arts.count == 2)
     }
 

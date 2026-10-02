@@ -68,6 +68,7 @@ struct PairingCoordinatorTests {
         try await trusted.start()
         let ui = TestPairingUIBridge()
         let clock = OSAllocatedUnfairLock(initialState: Date(timeIntervalSince1970: 1000))
+        let now: @Sendable () -> Date = { clock.withLock { $0 } }
         let coordinator = PairingCoordinator(
             identity: identity,
             trusted: trusted,
@@ -75,7 +76,7 @@ struct PairingCoordinatorTests {
             serverName: { "Test Mac" },
             serverId: serverId,
             timeout: timeout,
-            now: { clock.withLock { $0 } }
+            now: now
         )
         return Harness(coordinator: coordinator, ui: ui, trusted: trusted, serverFingerprint: serverFingerprint, clock: clock)
     }
@@ -144,7 +145,7 @@ struct PairingCoordinatorTests {
     @Test("pairing fails when this Mac's id cannot be read, rather than pairing under an empty one (#485)")
     func confirmFailsWithoutServerId() async throws {
         struct MetaUnavailable: Error {}
-        let harness = try await self.makeHarness(serverId: { throw MetaUnavailable() })
+        let harness = try await self.makeHarness { throw MetaUnavailable() }
         let peer = self.peerFingerprint("f")
         let (response, _) = try await self.armAndStart(harness, peer: peer)
         let code = try #require(harness.ui.shownCode)

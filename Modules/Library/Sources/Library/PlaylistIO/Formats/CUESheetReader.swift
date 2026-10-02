@@ -13,6 +13,7 @@ public struct CUESheet: Sendable, Hashable {
         public let startMs: Int64
         public let endMs: Int64?
         public let isrc: String?
+
         public init(
             number: Int,
             title: String?,
@@ -34,6 +35,7 @@ public struct CUESheet: Sendable, Hashable {
         public let path: String
         public let absoluteURL: URL?
         public let tracks: [Track]
+
         public init(path: String, absoluteURL: URL?, tracks: [Track]) {
             self.path = path
             self.absoluteURL = absoluteURL
@@ -77,6 +79,11 @@ public enum CUESheetReader {
         }
     }
 
+    /// Parses CUE `data` into its `FILE` blocks and their tracks. A track
+    /// belongs to the file that holds its `INDEX 01`; a track without one is
+    /// dropped. `sourceURL` is the base for relative audio paths. Throws
+    /// `PlaylistIOError.unreadable` when the bytes decode as no supported
+    /// text encoding.
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> CUESheet {
         guard let text = String(data: data, encoding: .utf8)
             ?? String(data: data, encoding: .windowsCP1252)
@@ -86,25 +93,7 @@ public enum CUESheetReader {
         let baseDir = sourceURL?.deletingLastPathComponent()
         let lines = M3UReader.splitLines(text)
 
-        var sheetTitle: String?
-        var sheetPerformer: String?
-        var files: [CUESheet.File] = []
-
-        // Per-file builders.
-        var currentFilePath: String?
-        var currentFileURL: URL?
-        var trackBuilders: [TrackBuilder] = []
-
-        func flushFile() {
-            guard let path = currentFilePath else { return }
-            let resolved = self.finaliseTracks(trackBuilders, fileEndMs: nil)
-            files.append(CUESheet.File(path: path, absoluteURL: currentFileURL, tracks: resolved))
-            currentFilePath = nil
-            currentFileURL = nil
-            trackBuilders = []
-        }
-
-        var currentTrack: TrackBuilder?
+        var state = ParseState()
 
         for raw in lines {
             let line = raw.trimmingCharacters(in: .whitespaces)
@@ -116,76 +105,127 @@ public enum CUESheetReader {
 
             switch cmd {
             case "TITLE":
-                let val = self.unquote(rest)
-                if currentTrack != nil {
-                    currentTrack?.title = val
-                } else {
-                    sheetTitle = val
-                }
+                state.setTitle(rest)
+
             case "PERFORMER":
-                let val = self.unquote(rest)
-                if currentTrack != nil {
-                    currentTrack?.performer = val
-                } else {
-                    sheetPerformer = val
-                }
+                state.setPerformer(rest)
+
             case "FILE":
-                // A TRACK belongs to the FILE where its INDEX 01 occurs. In
-                // EAC "gaps appended" sheets the next track opens under the
-                // PREVIOUS file (only its INDEX 00 pregap lives there) and
-                // its INDEX 01 follows the next FILE line — so a track that
-                // has no start yet carries over instead of flushing, or a
-                // one-file-per-track manifest grows phantom pregap markers.
-                var carried: TrackBuilder?
-                if let track = currentTrack {
-                    if track.startMs == nil {
-                        carried = track
-                    } else {
-                        trackBuilders.append(track)
-                    }
-                    currentTrack = nil
-                }
-                flushFile()
-                let payload = self.parseFileArgs(rest)
-                currentFilePath = payload
-                currentFileURL = M3UReader.resolveURL(rawPath: payload, baseDir: baseDir)
-                currentTrack = carried
+                state.beginFile(rest, baseDir: baseDir)
+
             case "TRACK":
-                if currentTrack != nil {
-                    trackBuilders.append(currentTrack!)
-                }
-                let trackParts = rest.split(separator: " ", omittingEmptySubsequences: true)
-                let num = trackParts.first.flatMap { Int($0) } ?? (trackBuilders.count + 1)
-                currentTrack = TrackBuilder(number: num)
+                state.beginTrack(rest)
+
             case "INDEX":
-                // INDEX nn mm:ss:ff
-                let idxParts = rest.split(separator: " ", omittingEmptySubsequences: true)
-                guard idxParts.count >= 2,
-                      let idxNum = Int(idxParts[0]) else { continue }
-                let timeStr = String(idxParts[1])
-                guard let ms = parseMSF(timeStr) else { continue }
-                if idxNum == 1 {
-                    currentTrack?.startMs = ms
-                }
+                state.setIndex(rest)
+
             case "ISRC":
-                currentTrack?.isrc = rest.trimmingCharacters(in: .whitespaces)
+                state.currentTrack?.isrc = rest.trimmingCharacters(in: .whitespaces)
+
             case "REM":
                 continue // ignored
+
             default:
                 continue
             }
         }
 
-        if currentTrack != nil {
-            trackBuilders.append(currentTrack!)
-            currentTrack = nil
+        if let track = state.currentTrack {
+            state.trackBuilders.append(track)
+            state.currentTrack = nil
         }
-        flushFile()
+        state.flushFile()
 
-        return CUESheet(title: sheetTitle, performer: sheetPerformer, files: files)
+        return CUESheet(title: state.sheetTitle, performer: state.sheetPerformer, files: state.files)
     }
 
     // MARK: - Helpers
+
+    /// What `parse` has read so far: the sheet's own fields, the finished
+    /// files, and the file and track still open.
+    private struct ParseState {
+        var sheetTitle: String?
+        var sheetPerformer: String?
+        var files: [CUESheet.File] = []
+
+        // Per-file builders.
+        var currentFilePath: String?
+        var currentFileURL: URL?
+        var trackBuilders: [TrackBuilder] = []
+
+        var currentTrack: TrackBuilder?
+
+        mutating func flushFile() {
+            guard let path = currentFilePath else { return }
+            let resolved = CUESheetReader.finaliseTracks(self.trackBuilders, fileEndMs: nil)
+            self.files.append(CUESheet.File(path: path, absoluteURL: self.currentFileURL, tracks: resolved))
+            self.currentFilePath = nil
+            self.currentFileURL = nil
+            self.trackBuilders = []
+        }
+
+        mutating func setTitle(_ rest: String) {
+            let val = CUESheetReader.unquote(rest)
+            if self.currentTrack != nil {
+                self.currentTrack?.title = val
+            } else {
+                self.sheetTitle = val
+            }
+        }
+
+        mutating func setPerformer(_ rest: String) {
+            let val = CUESheetReader.unquote(rest)
+            if self.currentTrack != nil {
+                self.currentTrack?.performer = val
+            } else {
+                self.sheetPerformer = val
+            }
+        }
+
+        mutating func beginFile(_ rest: String, baseDir: URL?) {
+            // A TRACK belongs to the FILE where its INDEX 01 occurs. In
+            // EAC "gaps appended" sheets the next track opens under the
+            // PREVIOUS file (only its INDEX 00 pregap lives there) and
+            // its INDEX 01 follows the next FILE line, so a track that
+            // has no start yet carries over instead of flushing, or a
+            // one-file-per-track manifest grows phantom pregap markers.
+            var carried: TrackBuilder?
+            if let track = currentTrack {
+                if track.startMs == nil {
+                    carried = track
+                } else {
+                    self.trackBuilders.append(track)
+                }
+                self.currentTrack = nil
+            }
+            self.flushFile()
+            let payload = CUESheetReader.parseFileArgs(rest)
+            self.currentFilePath = payload
+            self.currentFileURL = M3UReader.resolveURL(rawPath: payload, baseDir: baseDir)
+            self.currentTrack = carried
+        }
+
+        mutating func beginTrack(_ rest: String) {
+            if let track = currentTrack {
+                self.trackBuilders.append(track)
+            }
+            let trackParts = rest.split(separator: " ", omittingEmptySubsequences: true)
+            let num = trackParts.first.flatMap { Int($0) } ?? (self.trackBuilders.count + 1)
+            self.currentTrack = TrackBuilder(number: num)
+        }
+
+        mutating func setIndex(_ rest: String) {
+            // INDEX nn mm:ss:ff
+            let idxParts = rest.split(separator: " ", omittingEmptySubsequences: true)
+            guard idxParts.count >= 2,
+                  let idxNum = Int(idxParts[0]) else { return }
+            let timeStr = String(idxParts[1])
+            guard let ms = CUESheetReader.parseMSF(timeStr) else { return }
+            if idxNum == 1 {
+                self.currentTrack?.startMs = ms
+            }
+        }
+    }
 
     private struct TrackBuilder {
         let number: Int
@@ -248,10 +288,10 @@ public enum CUESheetReader {
     static func parseMSF(_ s: String) -> Int64? {
         let parts = s.split(separator: ":", omittingEmptySubsequences: false)
         guard parts.count == 3,
-              let m = Int64(parts[0]),
+              let minutes = Int64(parts[0]),
               let sec = Int64(parts[1]),
               let f = Int64(parts[2]) else { return nil }
-        let totalFrames = (m * 60 + sec) * 75 + f
+        let totalFrames = (minutes * 60 + sec) * 75 + f
         // 1 frame = 1/75 s = 13.333... ms; multiply then divide for integer arithmetic.
         return (totalFrames * 1000) / 75
     }

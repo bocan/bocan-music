@@ -7,17 +7,32 @@ import Testing
 
 final class MockHTTPClient: HTTPClient, @unchecked Sendable {
     var handler: (URLRequest) async throws -> (Data, URLResponse) = { _ in
-        (Data(), HTTPURLResponse(
-            url: URL(string: "https://example.com")!,
-            statusCode: 200,
-            httpVersion: nil,
-            headerFields: nil
-        )!)
+        try (Data(), stubResponse("https://example.com"))
     }
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         try await self.handler(request)
     }
+}
+
+/// Builds the `HTTPURLResponse` a mock handler returns. If Foundation refuses
+/// the arguments, the test that asked for the response fails; the test run
+/// does not crash.
+func stubResponse(
+    url: URL,
+    status: Int = 200,
+    headers: [String: String]? = nil
+) throws -> HTTPURLResponse {
+    try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers))
+}
+
+/// `stubResponse(url:status:headers:)` for a URL written as a string.
+func stubResponse(
+    _ url: String,
+    status: Int = 200,
+    headers: [String: String]? = nil
+) throws -> HTTPURLResponse {
+    try stubResponse(url: #require(URL(string: url)), status: status, headers: headers)
 }
 
 /// Thread-safe capture of requests seen by a mock handler.
@@ -34,12 +49,14 @@ final class RequestRecorder: @unchecked Sendable {
     }
 }
 
+/// A response from `url`, or from the feed URL these tests request when
+/// `url` is nil.
 private func makeHTTPResponse(
-    url: URL = URL(string: "https://example.com/feed")!,
     status: Int,
+    url: URL? = nil,
     headers: [String: String] = [:]
-) -> HTTPURLResponse {
-    HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers)!
+) throws -> HTTPURLResponse {
+    try stubResponse(url: url ?? #require(URL(string: "https://example.com/feed")), status: status, headers: headers)
 }
 
 @Suite("FeedFetcher")
@@ -47,9 +64,9 @@ struct FeedFetcherTests {
     @Test("200 response returns data and no notModified flag")
     func successfulFetch() async throws {
         let mock = MockHTTPClient()
-        let expectedData = "<?xml version='1.0'?><rss/>".data(using: .utf8)!
+        let expectedData = Data("<?xml version='1.0'?><rss/>".utf8)
         mock.handler = { _ in
-            (expectedData, makeHTTPResponse(status: 200, headers: ["ETag": "\"abc123\""]))
+            try (expectedData, makeHTTPResponse(status: 200, headers: ["ETag": "\"abc123\""]))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(
@@ -66,7 +83,7 @@ struct FeedFetcherTests {
     func notModifiedResponse() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data(), makeHTTPResponse(status: 304))
+            try (Data(), makeHTTPResponse(status: 304))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(
@@ -84,7 +101,7 @@ struct FeedFetcherTests {
         var capturedRequest: URLRequest?
         mock.handler = { req in
             capturedRequest = req
-            return (Data(), makeHTTPResponse(status: 304))
+            return try (Data(), makeHTTPResponse(status: 304))
         }
         let fetcher = FeedFetcher(http: mock)
         _ = try? await fetcher.fetch(
@@ -101,7 +118,7 @@ struct FeedFetcherTests {
         var capturedRequest: URLRequest?
         mock.handler = { req in
             capturedRequest = req
-            return (Data(), makeHTTPResponse(status: 304))
+            return try (Data(), makeHTTPResponse(status: 304))
         }
         let fetcher = FeedFetcher(http: mock)
         _ = try? await fetcher.fetch(
@@ -121,7 +138,7 @@ struct FeedFetcherTests {
         var capturedRequest: URLRequest?
         mock.handler = { req in
             capturedRequest = req
-            return (Data(), makeHTTPResponse(status: 200))
+            return try (Data(), makeHTTPResponse(status: 200))
         }
         let fetcher = FeedFetcher(http: mock)
         _ = try? await fetcher.fetch(
@@ -138,12 +155,13 @@ struct FeedFetcherTests {
     @Test("404 response throws httpStatus error")
     func notFoundThrows() async throws {
         let mock = MockHTTPClient()
-        mock.handler = { _ in (Data(), makeHTTPResponse(status: 404)) }
+        mock.handler = { _ in try (Data(), makeHTTPResponse(status: 404)) }
         let fetcher = FeedFetcher(http: mock)
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected httpStatus error to be thrown")
         } catch let PodcastsError.httpStatus(code, _) {
@@ -155,12 +173,13 @@ struct FeedFetcherTests {
     func overSizedResponseThrows() async throws {
         let mock = MockHTTPClient()
         let bigData = Data(count: 1024 + 1)
-        mock.handler = { _ in (bigData, makeHTTPResponse(status: 200)) }
+        mock.handler = { _ in try (bigData, makeHTTPResponse(status: 200)) }
         let fetcher = FeedFetcher(http: mock, maxBytes: 1024)
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge error to be thrown")
         } catch let PodcastsError.feedTooLarge(bytes) {
@@ -176,7 +195,8 @@ struct FeedFetcherTests {
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected network error to be thrown")
         } catch PodcastsError.network {
@@ -188,7 +208,7 @@ struct FeedFetcherTests {
     func etagCapturedFromResponse() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data("x".utf8), makeHTTPResponse(
+            try (Data("x".utf8), makeHTTPResponse(
                 status: 200,
                 headers: ["ETag": "\"v2\"", "Last-Modified": "Wed, 10 Jan 2024 00:00:00 GMT"]
             ))
@@ -196,7 +216,8 @@ struct FeedFetcherTests {
         let fetcher = FeedFetcher(http: mock, maxBytes: 1024)
         let result = try await fetcher.fetch(
             #require(URL(string: "https://example.com/feed")),
-            etag: nil, lastModified: nil
+            etag: nil,
+            lastModified: nil
         )
         #expect(result.etag == "\"v2\"")
         #expect(result.lastModified == "Wed, 10 Jan 2024 00:00:00 GMT")
@@ -207,13 +228,14 @@ struct FeedFetcherTests {
         let mock = MockHTTPClient()
         mock.handler = { _ in
             let headers = ["Content-Length": "2000"]
-            return (Data(count: 100), makeHTTPResponse(status: 200, headers: headers))
+            return try (Data(count: 100), makeHTTPResponse(status: 200, headers: headers))
         }
         let fetcher = FeedFetcher(http: mock, maxBytes: 1024)
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "https://example.com/feed")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge error to be thrown")
         } catch let PodcastsError.feedTooLarge(bytes) {
@@ -225,11 +247,11 @@ struct FeedFetcherTests {
     func plainHttpRemoteUpgradedToHttps() async throws {
         let mock = MockHTTPClient()
         let seen = RequestRecorder()
-        let body = "<?xml version='1.0'?><rss/>".data(using: .utf8)!
+        let body = Data("<?xml version='1.0'?><rss/>".utf8)
         let expectedUpgraded = try #require(URL(string: "https://podcast.example.org/feed?x=1"))
         mock.handler = { request in
             seen.record(request)
-            return (body, makeHTTPResponse(url: expectedUpgraded, status: 200))
+            return try (body, makeHTTPResponse(status: 200, url: expectedUpgraded))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(
@@ -259,7 +281,7 @@ struct FeedFetcherTests {
             if request.url?.scheme == "https" {
                 throw URLError(.secureConnectionFailed)
             }
-            return (body, makeHTTPResponse(url: original, status: 200))
+            return try (body, makeHTTPResponse(status: 200, url: original))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(original, etag: nil, lastModified: nil)
@@ -278,9 +300,9 @@ struct FeedFetcherTests {
         mock.handler = { request in
             seen.record(request)
             if request.url?.scheme == "https" {
-                return (Data(), makeHTTPResponse(status: 404))
+                return try (Data(), makeHTTPResponse(status: 404))
             }
-            return (Data("<rss/>".utf8), makeHTTPResponse(url: original, status: 200))
+            return try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: original))
         }
         let fetcher = FeedFetcher(http: mock)
         let result = try await fetcher.fetch(original, etag: nil, lastModified: nil)
@@ -316,13 +338,14 @@ struct FeedFetcherTests {
         let seen = RequestRecorder()
         mock.handler = { request in
             seen.record(request)
-            return (Data(count: 100), makeHTTPResponse(status: 200, headers: ["Content-Length": "2000"]))
+            return try (Data(count: 100), makeHTTPResponse(status: 200, headers: ["Content-Length": "2000"]))
         }
         let fetcher = FeedFetcher(http: mock, maxBytes: 1024)
         do {
             _ = try await fetcher.fetch(
                 #require(URL(string: "http://podcast.example.org/rss")),
-                etag: nil, lastModified: nil
+                etag: nil,
+                lastModified: nil
             )
             Issue.record("Expected feedTooLarge to be thrown")
         } catch PodcastsError.feedTooLarge {
@@ -336,7 +359,7 @@ struct FeedFetcherTests {
         let mock = MockHTTPClient()
         let asked = try #require(URL(string: "https://feeds.example.org/show"))
         let moved = try #require(URL(string: "https://new.example.org/show"))
-        mock.handler = { _ in (Data("<rss/>".utf8), makeHTTPResponse(url: moved, status: 200)) }
+        mock.handler = { _ in try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: moved)) }
         let result = try await FeedFetcher(http: mock).fetch(asked, etag: nil, lastModified: nil)
         #expect(result.requestedURL == asked)
         #expect(result.finalURL == moved)
@@ -349,7 +372,7 @@ struct FeedFetcherTests {
         let expectedKept = try #require(URL(string: "http://127.0.0.1:8090/feed"))
         mock.handler = { request in
             seen.record(request)
-            return (Data("<rss/>".utf8), makeHTTPResponse(url: expectedKept, status: 200))
+            return try (Data("<rss/>".utf8), makeHTTPResponse(status: 200, url: expectedKept))
         }
         let fetcher = FeedFetcher(http: mock)
         _ = try await fetcher.fetch(expectedKept, etag: nil, lastModified: nil)

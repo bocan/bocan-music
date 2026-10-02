@@ -73,9 +73,9 @@ struct TranscodeCoordinatorTests {
         let coordinator = TranscodeCoordinator(
             database: database,
             store: store,
-            encoder: encoder,
             prepareWindowBytes: prepareWindowBytes,
-            debounce: .milliseconds(10)
+            debounce: .milliseconds(10),
+            encoder: encoder
         )
         return Fixture(
             database: database,

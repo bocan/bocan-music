@@ -193,6 +193,7 @@ public actor GaplessScheduler {
             // No format gate: the engine converts each track to the output
             // format before it mixes them (ADR-095).
             break
+
         case let .gapless(forceGapless):
             guard remaining <= preroll else { return }
             guard await self.formatAllowsGapless(nextItem, forceGapless: forceGapless) else {

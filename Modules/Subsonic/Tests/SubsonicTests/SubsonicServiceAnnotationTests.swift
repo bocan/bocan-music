@@ -28,12 +28,12 @@ private final class RecordingStubTransport: HTTPTransport, @unchecked Sendable {
             throw URLError(.badServerResponse)
         }
         let (data, status) = self.responses.removeFirst()
-        let resp = HTTPURLResponse(
+        let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
             httpVersion: nil,
             headerFields: nil
-        )!
+        ))
         return (data, resp)
     }
 }
@@ -44,10 +44,18 @@ private let okEnvelope = """
 
 private let testServerURL = URL(string: "https://music.test.local")!
 
+/// What `makeService()` gives a test: the service, the ID of its one server
+/// and the stub transport behind that server's client.
+private struct ServiceFixture {
+    let service: SubsonicService
+    let id: UUID
+    let transport: RecordingStubTransport
+}
+
 private func makeService(
     syncStars: Bool = true,
     syncRatings: Bool = true
-) async throws -> (SubsonicService, UUID, RecordingStubTransport) {
+) async throws -> ServiceFixture {
     let db = try await Database(location: .inMemory)
     let repo = SubsonicServerRepository(database: db)
     let store = SubsonicServerStore(repository: repo)
@@ -72,8 +80,8 @@ private func makeService(
         retryPolicy: RetryPolicy(maxAttempts: 1, baseDelay: 0)
     )
     let service = SubsonicService(store: store)
-    await service._registerClientForTesting(client, serverID: id)
-    return (service, id, transport)
+    await service.registerClientForTesting(client, serverID: id)
+    return ServiceFixture(service: service, id: id, transport: transport)
 }
 
 // MARK: - SubsonicService annotation methods
@@ -82,7 +90,8 @@ private func makeService(
 struct SubsonicServiceAnnotationTests {
     @Test("star issues a request to /rest/star")
     func starHitsStarEndpoint() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         try await service.star(serverID: id, songID: "song-42")
         #expect(transport.requests.count == 1)
@@ -91,7 +100,8 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("unstar issues a request to /rest/unstar")
     func unstarHitsUnstarEndpoint() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         try await service.unstar(serverID: id, songID: "song-42")
         #expect(transport.requests.count == 1)
@@ -100,7 +110,8 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("setRating issues a request to /rest/setRating with rating query")
     func setRatingHitsSetRatingEndpoint() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         try await service.setRating(serverID: id, songID: "song-42", rating: 4)
         #expect(transport.requests.count == 1)
@@ -111,7 +122,8 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("scrobble issues a request to /rest/scrobble with submission flag")
     func scrobbleHitsScrobbleEndpoint() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         try await service.scrobble(serverID: id, songID: "song-42", submission: true)
         #expect(transport.requests.count == 1)
@@ -122,7 +134,8 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("scrobble with submission=false records a now-playing entry")
     func scrobbleNowPlaying() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         try await service.scrobble(serverID: id, songID: "song-99", submission: false)
         #expect(transport.requests[0].query?.contains("submission=false") == true)
@@ -130,7 +143,7 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("star on unknown server throws SubsonicError.unknownServer")
     func starUnknownServer() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         let bogus = UUID()
         do {
             try await service.star(serverID: bogus, songID: "x")
@@ -142,7 +155,8 @@ struct SubsonicServiceAnnotationTests {
 
     @Test("transport error is wrapped as SubsonicError.transport")
     func transportErrorIsWrapped() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueueError(URLError(.networkConnectionLost))
         do {
             try await service.star(serverID: id, songID: "x")
@@ -159,7 +173,8 @@ struct SubsonicServiceAnnotationTests {
 struct SubsonicServiceMediaURLTests {
     @Test("streamURL returns a URL with /stream path and the song id")
     func streamURLContainsSongID() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         let url = try await service.streamURL(serverID: id, songID: "song-7")
         #expect(url.path.contains("stream"))
         #expect(url.query?.contains("id=song-7") == true)
@@ -167,7 +182,8 @@ struct SubsonicServiceMediaURLTests {
 
     @Test("streamURL honors maxBitRate and format")
     func streamURLHonorsParameters() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         let url = try await service.streamURL(serverID: id, songID: "song-7", maxBitRate: 192, format: "opus")
         let query = url.query ?? ""
         #expect(query.contains("maxBitRate=192"))
@@ -176,7 +192,7 @@ struct SubsonicServiceMediaURLTests {
 
     @Test("streamURL on unknown server throws .unknownServer")
     func streamURLUnknownServer() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         do {
             _ = try await service.streamURL(serverID: UUID(), songID: "x")
             Issue.record("Expected unknownServer error")
@@ -187,7 +203,8 @@ struct SubsonicServiceMediaURLTests {
 
     @Test("coverArtURL returns a URL with the entity id")
     func coverArtURLContainsEntityID() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         let url = try #require(await service.coverArtURL(serverID: id, entityID: "album-3"))
         #expect(url.query?.contains("id=album-3") == true)
         #expect(url.path.contains("getCoverArt"))
@@ -195,14 +212,15 @@ struct SubsonicServiceMediaURLTests {
 
     @Test("coverArtURL with size includes size parameter")
     func coverArtURLWithSize() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         let url = try #require(await service.coverArtURL(serverID: id, entityID: "album-3", size: 256))
         #expect(url.query?.contains("size=256") == true)
     }
 
     @Test("coverArtURL on unknown server throws .unknownServer")
     func coverArtURLUnknownServer() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         do {
             _ = try await service.coverArtURL(serverID: UUID(), entityID: "x")
             Issue.record("Expected unknownServer error")
@@ -218,7 +236,8 @@ struct SubsonicServiceMediaURLTests {
 struct SubsonicCoverArtProviderTests {
     @Test("delegates to service.coverArtURL and returns the same URL")
     func delegates() async throws {
-        let (service, id, _) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id) = (fixture.service, fixture.id)
         let provider = SubsonicCoverArtProvider(service: service)
         let url = try #require(await provider.coverArtURL(serverID: id, entityID: "album-7", size: 64))
         #expect(url.query?.contains("id=album-7") == true)
@@ -227,7 +246,7 @@ struct SubsonicCoverArtProviderTests {
 
     @Test("rethrows unknownServer error")
     func rethrowsUnknownServer() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         let provider = SubsonicCoverArtProvider(service: service)
         do {
             _ = try await provider.coverArtURL(serverID: UUID(), entityID: "x")
@@ -244,7 +263,8 @@ struct SubsonicCoverArtProviderTests {
 struct SubsonicAnnotationsTests {
     @Test("star success delegates to service.star")
     func starSuccess() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         let annotations = SubsonicAnnotations(service: service)
         await annotations.star(serverID: id, songID: "s1")
@@ -254,7 +274,8 @@ struct SubsonicAnnotationsTests {
 
     @Test("unstar success delegates to service.unstar")
     func unstarSuccess() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         let annotations = SubsonicAnnotations(service: service)
         await annotations.unstar(serverID: id, songID: "s1")
@@ -264,7 +285,8 @@ struct SubsonicAnnotationsTests {
 
     @Test("setRating success delegates to service.setRating")
     func setRatingSuccess() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         let annotations = SubsonicAnnotations(service: service)
         await annotations.setRating(serverID: id, songID: "s1", rating: 5)
@@ -274,7 +296,8 @@ struct SubsonicAnnotationsTests {
 
     @Test("a server with syncStars off receives no star and no unstar (#502)")
     func syncStarsOffSendsNothing() async throws {
-        let (service, id, transport) = try await makeService(syncStars: false)
+        let fixture = try await makeService(syncStars: false)
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         let annotations = SubsonicAnnotations(service: service)
 
@@ -286,7 +309,8 @@ struct SubsonicAnnotationsTests {
 
     @Test("a server with syncRatings off receives no rating, but still receives stars (#502)")
     func syncRatingsOffSendsNoRating() async throws {
-        let (service, id, transport) = try await makeService(syncRatings: false)
+        let fixture = try await makeService(syncRatings: false)
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.enqueue(json: okEnvelope)
         let annotations = SubsonicAnnotations(service: service)
 

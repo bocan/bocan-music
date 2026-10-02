@@ -46,6 +46,8 @@ public actor TrustedDevices {
     private let log = AppLogger.make(.sync)
     private var observationTask: Task<Void, Never>?
 
+    /// Creates the store over `repository`. The fingerprint snapshot is empty
+    /// until `start()` seeds it.
     public init(repository: TrustedDeviceRepository) {
         self.repository = repository
     }

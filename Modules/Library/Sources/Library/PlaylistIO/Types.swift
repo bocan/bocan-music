@@ -89,6 +89,7 @@ public struct Resolution: Sendable, Hashable {
     public struct Match: Sendable, Hashable {
         public let entryIndex: Int
         public let trackID: Int64
+
         public init(entryIndex: Int, trackID: Int64) {
             self.entryIndex = entryIndex
             self.trackID = trackID
@@ -98,6 +99,7 @@ public struct Resolution: Sendable, Hashable {
     public struct Miss: Sendable, Hashable {
         public let entryIndex: Int
         public let hint: TrackHint
+
         public init(entryIndex: Int, hint: TrackHint) {
             self.entryIndex = entryIndex
             self.hint = hint

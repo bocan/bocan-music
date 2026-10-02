@@ -12,8 +12,10 @@ struct PicardFixtureFinisherTests {
     func finishM4A() throws {
         // .../Modules/Metadata/Tests/MetadataTests/<file> up to .../Modules
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("Library/Tests/LibraryTests/Fixtures/picard-library")
         let m4a = root.appendingPathComponent("A Quiet Storm/Harbour EP/02 - Lighthouse.m4a")
         var tags = try TagReader().read(from: m4a)

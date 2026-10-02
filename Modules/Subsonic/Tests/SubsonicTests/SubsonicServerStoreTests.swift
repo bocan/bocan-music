@@ -46,14 +46,14 @@ struct SubsonicServerStoreReadOnlyTests {
     @Test("fetchAll returns all seeded servers")
     func fetchAllSeeded() async throws {
         let (store, repo) = try await makeStore()
-        let a = self.makeDTO(name: "A")
-        let b = self.makeDTO(name: "B")
-        try await repo.insert(a)
-        try await repo.insert(b)
+        let first = self.makeDTO(name: "A")
+        let second = self.makeDTO(name: "B")
+        try await repo.insert(first)
+        try await repo.insert(second)
         let all = try await store.fetchAll()
         let names = Set(all.map(\.name))
-        #expect(names.contains(a.name))
-        #expect(names.contains(b.name))
+        #expect(names.contains(first.name))
+        #expect(names.contains(second.name))
     }
 
     @Test("fetchAll skips rows with invalid authKind")
@@ -93,5 +93,20 @@ struct SubsonicServerStoreReadOnlyTests {
         let (store, repo) = try await makeStore()
         try await repo.insert(self.makeDTO())
         try await store.migrateOrphans()
+    }
+
+    /// The Keychain blob written by every released build spells the schema
+    /// version `v`. A renamed key would leave saved servers without a password.
+    @Test("the credential blob keeps its stored keys")
+    func credentialBlobKeys() throws {
+        let stored = Data(#"{"v":1,"kind":"tokenSalt","secret":"hunter2"}"#.utf8)
+        let decoded = try JSONDecoder().decode(SubsonicCredential.self, from: stored)
+        #expect(decoded.version == 1)
+        #expect(decoded.kind == "tokenSalt")
+        #expect(decoded.secret == "hunter2")
+
+        let encoded = try JSONEncoder().encode(decoded)
+        let keys = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any]).keys
+        #expect(Set(keys) == ["v", "kind", "secret"])
     }
 }

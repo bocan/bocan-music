@@ -48,12 +48,23 @@ public enum OPMLWriter {
         out.reserveCapacity(string.count)
         for character in string {
             switch character {
-            case "&": out.append("&amp;")
-            case "<": out.append("&lt;")
-            case ">": out.append("&gt;")
-            case "\"": out.append("&quot;")
-            case "'": out.append("&apos;")
-            default: out.append(character)
+            case "&":
+                out.append("&amp;")
+
+            case "<":
+                out.append("&lt;")
+
+            case ">":
+                out.append("&gt;")
+
+            case "\"":
+                out.append("&quot;")
+
+            case "'":
+                out.append("&apos;")
+
+            default:
+                out.append(character)
             }
         }
         return out

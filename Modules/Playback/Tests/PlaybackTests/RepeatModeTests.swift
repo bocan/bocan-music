@@ -15,8 +15,11 @@ struct RepeatModeTests {
                 fileURL: "/tmp/t\(i).flac",
                 duration: 200,
                 sourceFormat: AudioSourceFormat(
-                    sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                    isInterleaved: false, codec: "flac"
+                    sampleRate: 44100,
+                    bitDepth: 16,
+                    channelCount: 2,
+                    isInterleaved: false,
+                    codec: "flac"
                 )
             )
         }

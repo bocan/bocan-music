@@ -27,6 +27,9 @@ public enum M3UWriter {
         }
     }
 
+    /// The extended M3U text for `payload`: `#EXTM3U`, a `#PLAYLIST` line
+    /// when the name is not empty, then each entry with the directives that
+    /// `options` turns on. An unknown duration is written as -1.
     public static func write(_ payload: PlaylistPayload, options: Options = Options()) -> String {
         var lines: [String] = []
         lines.append("#EXTM3U")
@@ -39,11 +42,11 @@ public enum M3UWriter {
                 let display = Self.displayString(for: entry)
                 lines.append("#EXTINF:\(dur),\(display)")
             }
-            if options.includeExtArt, let a = entry.artistHint, !a.isEmpty {
-                lines.append("#EXTART:" + a)
+            if options.includeExtArt, let artist = entry.artistHint, !artist.isEmpty {
+                lines.append("#EXTART:" + artist)
             }
-            if options.includeExtAlb, let a = entry.albumHint, !a.isEmpty {
-                lines.append("#EXTALB:" + a)
+            if options.includeExtAlb, let album = entry.albumHint, !album.isEmpty {
+                lines.append("#EXTALB:" + album)
             }
             lines.append(Self.renderPath(for: entry, mode: options.pathMode))
         }
@@ -52,10 +55,17 @@ public enum M3UWriter {
 
     static func displayString(for entry: PlaylistPayload.Entry) -> String {
         switch (entry.artistHint, entry.titleHint) {
-        case let (artist?, title?): "\(artist) - \(title)"
-        case let (_, title?): title
-        case let (artist?, _): artist
-        case (nil, nil): ""
+        case let (artist?, title?):
+            "\(artist) - \(title)"
+
+        case let (_, title?):
+            title
+
+        case let (artist?, _):
+            artist
+
+        case (nil, nil):
+            ""
         }
     }
 
@@ -66,6 +76,7 @@ public enum M3UWriter {
                 return url.path
             }
             return entry.path
+
         case let .relative(root):
             guard let url = entry.absoluteURL, url.isFileURL else { return entry.path }
             return Self.relativePath(of: url, to: root) ?? url.path

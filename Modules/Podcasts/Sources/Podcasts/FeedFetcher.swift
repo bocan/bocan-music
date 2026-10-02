@@ -28,6 +28,8 @@ public actor FeedFetcher {
     private let maxBytes: Int
     private let log = AppLogger.make(.podcasts)
 
+    /// Creates a fetcher. `maxBytes` is the size cap for a feed body, 50 MB
+    /// by default; `http` is the network seam for tests.
     public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 50 * 1024 * 1024) {
         self.http = http
         self.maxBytes = maxBytes
@@ -89,18 +91,7 @@ public actor FeedFetcher {
 
     /// One conditional GET of exactly `url`, no scheme rewriting.
     private func perform(_ url: URL, etag: String?, lastModified: String?) async throws -> FeedFetchResult {
-        var request = URLRequest(url: url, timeoutInterval: 20)
-        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
-        request.setValue(
-            "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
-            forHTTPHeaderField: "Accept"
-        )
-        if let etag {
-            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
-        }
-        if let lastModified {
-            request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
-        }
+        let request = Self.conditionalRequest(url, etag: etag, lastModified: lastModified)
 
         self.log.debug("feed.fetch.start", ["url": url.absoluteString])
 
@@ -161,6 +152,24 @@ public actor FeedFetcher {
             finalURL: finalURL,
             requestedURL: url
         )
+    }
+
+    /// The GET request for `url`, with the shared User-Agent, the feed Accept
+    /// header and whichever validators the caller holds.
+    private static func conditionalRequest(_ url: URL, etag: String?, lastModified: String?) -> URLRequest {
+        var request = URLRequest(url: url, timeoutInterval: 20)
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
+        request.setValue(
+            "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
+            forHTTPHeaderField: "Accept"
+        )
+        if let etag {
+            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        }
+        if let lastModified {
+            request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
+        }
+        return request
     }
 
     /// The https twin of a plain-http feed URL, or the URL unchanged for any

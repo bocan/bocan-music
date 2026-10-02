@@ -102,9 +102,16 @@ struct BackupRingTests {
 
     @Test func snapshotRoundTrip() {
         let tags = TrackTags(
-            title: "Trip", artist: "Artist", albumArtist: "Album Artist",
-            album: "Album", genre: "Rock", composer: "Bach",
-            year: 2001, trackNumber: 3, discNumber: 1, bpm: 120,
+            title: "Trip",
+            artist: "Artist",
+            albumArtist: "Album Artist",
+            album: "Album",
+            genre: "Rock",
+            composer: "Bach",
+            year: 2001,
+            trackNumber: 3,
+            discNumber: 1,
+            bpm: 120,
             replayGain: ReplayGain(trackGain: -3.5, trackPeak: 0.99)
         )
         let snap = TagsSnapshot(from: tags)

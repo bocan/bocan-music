@@ -26,6 +26,14 @@ public actor ArtistEnrichmentService {
     private let log = AppLogger.make(.library)
     private var runningPass: Task<Void, Never>?
 
+    /// Creates the service; no lookup runs until `start(after:)`.
+    ///
+    /// - Parameters:
+    ///   - batchSize: Artists fetched per database query.
+    ///   - pacing: Pause between two MusicBrainz lookups.
+    ///   - backoff: First pause after a 503 or network error; it doubles on each repeat.
+    ///   - maxBackoffs: Failures in a row before the pass gives up.
+    ///   - now: Clock for the `musicbrainz_fetched_at` stamp, injectable for tests.
     public init(
         artists: ArtistRepository,
         client: MusicBrainzClient = MusicBrainzClient(),
@@ -58,6 +66,8 @@ public actor ArtistEnrichmentService {
         }
     }
 
+    /// Cancels the pass in progress, if any. Artists not yet stamped stay
+    /// pending for the next pass.
     public func stop() {
         self.runningPass?.cancel()
         self.runningPass = nil
@@ -100,9 +110,11 @@ public actor ArtistEnrichmentService {
                         consecutiveBackoffs = 0
                         cursor = max(cursor, id)
                         resolved.insert(mbid)
+
                     case .skipped:
                         cursor = max(cursor, id)
                         resolved.insert(mbid)
+
                     case .abort:
                         // Retry this artist after a growing pause; give up on
                         // the pass after a run of failures. Leaving the loop
@@ -112,9 +124,7 @@ public actor ArtistEnrichmentService {
                             self.log.info("artist.enrich.pass.paused", ["stamped": stamped, "reason": "rate limit or network"])
                             return stamped
                         }
-                        let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
-                        self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
-                        try await Task.sleep(for: wait)
+                        try await self.pauseBeforeRetry(attempt: consecutiveBackoffs)
                         cursor = id - 1
                         break batchLoop
                     }
@@ -129,6 +139,13 @@ public actor ArtistEnrichmentService {
         }
         self.log.info("artist.enrich.pass.end", ["stamped": stamped])
         return stamped
+    }
+
+    /// Sleeps for the growing pause that goes before retry number `attempt`.
+    private func pauseBeforeRetry(attempt consecutiveBackoffs: Int) async throws {
+        let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
+        self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
+        try await Task.sleep(for: wait)
     }
 
     /// Enriches one artist on demand (Deep Dive, #413). Returns the refreshed row.

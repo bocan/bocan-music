@@ -12,10 +12,9 @@ struct RockskyProviderTests {
     func submitSuccess() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (Data("{}".utf8), resp)
+                (Data("{}".utf8), resp)
             })
             let creds = StubRockskyCreds(apiKey: "mykey")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -26,13 +25,12 @@ struct RockskyProviderTests {
     }
 
     @Test("401 response surfaces as invalidCredentials")
-    func unauthorisedError() async {
-        await withStubLock {
+    func unauthorisedError() async throws {
+        try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 401)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 401, httpVersion: nil, headerFields: nil)!
-                return (Data(), resp)
+                (Data(), resp)
             })
             let creds = StubRockskyCreds(apiKey: "bad")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -46,13 +44,9 @@ struct RockskyProviderTests {
     func rateLimited() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 429, headers: ["Retry-After": "30"])
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(
-                    url: url, statusCode: 429, httpVersion: nil,
-                    headerFields: ["Retry-After": "30"]
-                )!
-                return (Data(), resp)
+                (Data(), resp)
             })
             let creds = StubRockskyCreds(apiKey: "key")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -70,10 +64,9 @@ struct RockskyProviderTests {
     func transient5xx() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 503)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil)!
-                return (Data(), resp)
+                (Data(), resp)
             })
             let creds = StubRockskyCreds(apiKey: "key")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -99,18 +92,16 @@ struct RockskyProviderTests {
     func throttle() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (Data("{}".utf8), resp)
+                (Data("{}".utf8), resp)
             })
             let now = Date()
             let provider = RockskyProvider(
                 config: self.config,
                 http: URLSession.stubbed,
-                credentials: StubRockskyCreds(apiKey: "key"),
-                now: { now }
-            )
+                credentials: StubRockskyCreds(apiKey: "key")
+            ) { now }
             try await provider.nowPlaying(self.makeEvent())
             try await provider.nowPlaying(self.makeEvent())
             #expect(StubProtocol.capturedRequests.count == 1)
@@ -121,10 +112,9 @@ struct RockskyProviderTests {
     func batching() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (Data("{}".utf8), resp)
+                (Data("{}".utf8), resp)
             })
             let creds = StubRockskyCreds(apiKey: "key")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -139,10 +129,9 @@ struct RockskyProviderTests {
     func requestUsesBearer() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (Data("{}".utf8), resp)
+                (Data("{}".utf8), resp)
             })
             let creds = StubRockskyCreds(apiKey: "testkey")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -156,10 +145,9 @@ struct RockskyProviderTests {
     func requestBodyIsJSON() async throws {
         try await withStubLock {
             StubProtocol.reset()
+            let resp = try StubProtocol.response(status: 200)
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
-                let url = URL(string: "https://stub")!
-                let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (Data("{}".utf8), resp)
+                (Data("{}".utf8), resp)
             })
             let creds = StubRockskyCreds(apiKey: "key")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
@@ -203,9 +191,13 @@ struct RockskyProviderTests {
 
     private func makeEvent(queueID: Int64 = 1) -> PlayEvent {
         PlayEvent(
-            queueID: queueID, trackID: 100,
-            artist: "Cher", album: "Believe", title: "Believe",
-            duration: 240, mbid: nil,
+            queueID: queueID,
+            trackID: 100,
+            artist: "Cher",
+            album: "Believe",
+            title: "Believe",
+            duration: 240,
+            mbid: nil,
             playedAt: Date(timeIntervalSince1970: 1_700_000_000)
         )
     }

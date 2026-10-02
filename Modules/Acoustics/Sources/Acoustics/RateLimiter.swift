@@ -38,6 +38,8 @@ public actor RateLimiter {
     /// Request times, in the injected clock's units, oldest first.
     private var timestamps: [TimeInterval] = []
 
+    /// Creates a limiter that allows `maxRequests` in any window of `interval`
+    /// seconds, measured on `clock`.
     public init(
         maxRequests: Int,
         per interval: TimeInterval,

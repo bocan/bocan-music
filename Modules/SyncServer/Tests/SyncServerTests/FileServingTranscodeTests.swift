@@ -92,8 +92,13 @@ struct FileServingTranscodeTests {
 
         let bytes = Data("opus-artifact-bytes".utf8)
         try await fixture.ledger.upsert(SyncTranscode(
-            trackID: id, preset: "opus_128", sourceContentHash: "src",
-            sha256: "art-sha", size: Int64(bytes.count), createdAt: 1, bitrate: 128
+            trackID: id,
+            preset: "opus_128",
+            sourceContentHash: "src",
+            sha256: "art-sha",
+            size: Int64(bytes.count),
+            createdAt: 1,
+            bitrate: 128
         ))
         if artifactOnDisk {
             try fixture.store.prepareDirectory(preset: .opus128)

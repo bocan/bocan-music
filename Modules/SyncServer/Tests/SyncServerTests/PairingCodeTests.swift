@@ -52,7 +52,7 @@ struct PairingCodeTests {
 
     // MARK: - Parity with the golden vectors
 
-    @Test("code() reproduces the golden verification code", arguments: PairingCodeTests.allVectors)
+    @Test("code() reproduces the golden verification code", arguments: Self.allVectors)
     func codeMatchesGolden(_ vector: Vector) throws {
         let noncePhone = try #require(Data(base64Encoded: vector.noncePhoneBase64))
         let nonceMac = try #require(Data(base64Encoded: vector.nonceMacBase64))
@@ -65,7 +65,7 @@ struct PairingCodeTests {
         #expect(code == vector.expectedCode)
     }
 
-    @Test("proof() reproduces the golden confirm proof", arguments: PairingCodeTests.allVectors)
+    @Test("proof() reproduces the golden confirm proof", arguments: Self.allVectors)
     func proofMatchesGolden(_ vector: Vector) {
         let proof = PairingCode.proof(code: vector.expectedCode, sessionId: vector.sessionId)
         #expect(proof == vector.expectedProofBase64)
@@ -73,7 +73,7 @@ struct PairingCodeTests {
 
     // MARK: - Algebraic properties
 
-    @Test("code() is symmetric in the two fingerprints", arguments: PairingCodeTests.allVectors)
+    @Test("code() is symmetric in the two fingerprints", arguments: Self.allVectors)
     func codeIsSymmetric(_ vector: Vector) throws {
         let noncePhone = try #require(Data(base64Encoded: vector.noncePhoneBase64))
         let nonceMac = try #require(Data(base64Encoded: vector.nonceMacBase64))

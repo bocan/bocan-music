@@ -5,6 +5,7 @@ import Observability
 /// `Application Support/Bocan/DeepDive/`, kept for `ttl` and served stale
 /// when the network is unavailable (#413).
 public actor DeepDiveCache {
+    /// How long a cached report counts as fresh: seven days, in seconds.
     public static let defaultTTL: TimeInterval = 7 * 24 * 3600
 
     private let root: URL
@@ -34,6 +35,8 @@ public actor DeepDiveCache {
         return (value, Date().timeIntervalSince(modified) < self.ttl)
     }
 
+    /// Writes `value` as JSON under `key`, creating the cache folder if
+    /// needed. A failed write is logged, not thrown.
     public func store(_ value: some Encodable & Sendable, key: String) {
         do {
             try FileManager.default.createDirectory(at: self.root, withIntermediateDirectories: true)
@@ -45,6 +48,7 @@ public actor DeepDiveCache {
         }
     }
 
+    /// Deletes the cached file for `key`; does nothing when there is none.
     public func remove(key: String) {
         try? FileManager.default.removeItem(at: self.fileURL(key))
     }

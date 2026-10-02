@@ -122,12 +122,16 @@ actor CoverArtCache {
     }
 
     static func make(database: Database) -> CoverArtCache {
+        // Same fallback as `LibraryLocation`: the user-domain lookup has no
+        // documented way to come back empty, and the fallback is the same folder.
         let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
+            .first ?? URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support")
+        let cacheRoot = appSupport
             .appendingPathComponent("Bocan", isDirectory: true)
             .appendingPathComponent("CoverArt", isDirectory: true)
-        return CoverArtCache(cacheRoot: appSupport, repo: CoverArtRepository(database: database))
+        return CoverArtCache(cacheRoot: cacheRoot, repo: CoverArtRepository(database: database))
     }
 
     // MARK: - API
@@ -154,33 +158,7 @@ actor CoverArtCache {
             // `originals/` and a downsampled copy is written to the working path.
             let resized = self.downsampleIfNeeded(data: art.data, fileExtension: art.fileExtension)
 
-            let fm = FileManager.default
-            if !fm.fileExists(atPath: fileURL.path) {
-                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-                try resized.data.write(to: fileURL, options: .atomic)
-                self.bytesSinceSweep += resized.data.count
-                self.log.debug("cover_art.write", [
-                    "hash": hash,
-                    "downsampled": resized.didDownsample,
-                    "width": resized.pixelSize?.width ?? 0,
-                    "height": resized.pixelSize?.height ?? 0,
-                ])
-
-                if resized.didDownsample {
-                    let originalURL = CoverArtFiles.originalURL(forWorking: fileURL)
-                    let originalsDir = originalURL.deletingLastPathComponent()
-                    if !fm.fileExists(atPath: originalURL.path) {
-                        try fm.createDirectory(at: originalsDir, withIntermediateDirectories: true)
-                        try art.data.write(to: originalURL, options: .atomic)
-                        self.bytesSinceSweep += art.data.count
-                        self.log.debug("cover_art.original_preserved", ["hash": hash])
-                    }
-                }
-            } else {
-                // Dedup hit: this art is still in use, so refresh its LRU
-                // timestamp to keep frequently-seen art warm against eviction.
-                try? fm.setAttributes([.modificationDate: Date()], ofItemAtPath: fileURL.path)
-            }
+            try self.writeIfAbsent(art, resized: resized, to: fileURL, in: dir, hash: hash)
 
             let record = CoverArt(
                 hash: hash,
@@ -205,6 +183,45 @@ actor CoverArtCache {
             await self.sweep()
         }
         return first
+    }
+
+    /// Writes the working copy of `art` to `fileURL` when no file is there,
+    /// with the original beside it when the working copy was downsampled. A
+    /// file already there only has its modification date refreshed.
+    private func writeIfAbsent(
+        _ art: ExtractedCoverArt,
+        resized: DownsampleResult,
+        to fileURL: URL,
+        in dir: URL,
+        hash: String
+    ) throws {
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: fileURL.path) {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            try resized.data.write(to: fileURL, options: .atomic)
+            self.bytesSinceSweep += resized.data.count
+            self.log.debug("cover_art.write", [
+                "hash": hash,
+                "downsampled": resized.didDownsample,
+                "width": resized.pixelSize?.width ?? 0,
+                "height": resized.pixelSize?.height ?? 0,
+            ])
+
+            if resized.didDownsample {
+                let originalURL = CoverArtFiles.originalURL(forWorking: fileURL)
+                let originalsDir = originalURL.deletingLastPathComponent()
+                if !fm.fileExists(atPath: originalURL.path) {
+                    try fm.createDirectory(at: originalsDir, withIntermediateDirectories: true)
+                    try art.data.write(to: originalURL, options: .atomic)
+                    self.bytesSinceSweep += art.data.count
+                    self.log.debug("cover_art.original_preserved", ["hash": hash])
+                }
+            }
+        } else {
+            // Dedup hit: this art is still in use, so refresh its LRU
+            // timestamp to keep frequently-seen art warm against eviction.
+            try? fm.setAttributes([.modificationDate: Date()], ofItemAtPath: fileURL.path)
+        }
     }
 
     // MARK: - Eviction
@@ -237,15 +254,9 @@ actor CoverArtCache {
 
         // If either set cannot be read, evict nothing: over budget is better
         // than deleting a cover that is in use or the only copy of one.
-        let unrebuildable: Set<String>
-        let inUse: Set<String>
-        do {
-            unrebuildable = try await self.repo.hashes(withSourceIn: Self.unrebuildableSources)
-            inUse = try await self.repo.hashesInUse()
-        } catch {
-            self.log.warning("cover_art.sweep.skipped", ["error": String(reflecting: error)])
-            return
-        }
+        guard let protected = await self.protectedHashes() else { return }
+        let unrebuildable = protected.unrebuildable
+        let inUse = protected.inUse
 
         entries.sort { $0.mtime < $1.mtime } // least-recently-used first
         let linkCutoff = Date().addingTimeInterval(-self.newArtGracePeriod)
@@ -281,17 +292,7 @@ actor CoverArtCache {
             freed += entry.size
             evicted += 1
             if !entry.isOriginal {
-                let hash = entry.hash
-                do {
-                    try await self.repo.delete(hash: hash)
-                } catch {
-                    // The file is gone but its row is not, so the next lookup
-                    // resolves to a path that no longer exists (#492).
-                    self.log.warning("cover_art.sweep.rowDeleteFailed", [
-                        "hash": hash,
-                        "error": String(reflecting: error),
-                    ])
-                }
+                await self.deleteRow(hash: entry.hash)
             }
         }
         self.log.info("cover_art.sweep", [
@@ -304,6 +305,35 @@ actor CoverArtCache {
             // Every evictable file is gone; what is left is art in use or art
             // a rescan cannot rebuild.
             self.log.info("cover_art.sweep.protected", ["count": protectedCount, "bytes": protectedBytes])
+        }
+    }
+
+    /// The hashes the sweep must not evict, or `nil` (with a log line) when
+    /// either set cannot be read.
+    private func protectedHashes() async -> (unrebuildable: Set<String>, inUse: Set<String>)? {
+        let unrebuildable: Set<String>
+        let inUse: Set<String>
+        do {
+            unrebuildable = try await self.repo.hashes(withSourceIn: Self.unrebuildableSources)
+            inUse = try await self.repo.hashesInUse()
+        } catch {
+            self.log.warning("cover_art.sweep.skipped", ["error": String(reflecting: error)])
+            return nil
+        }
+        return (unrebuildable, inUse)
+    }
+
+    /// Removes the `cover_art` row of an evicted working file.
+    private func deleteRow(hash: String) async {
+        do {
+            try await self.repo.delete(hash: hash)
+        } catch {
+            // The file is gone but its row is not, so the next lookup
+            // resolves to a path that no longer exists (#492).
+            self.log.warning("cover_art.sweep.rowDeleteFailed", [
+                "hash": hash,
+                "error": String(reflecting: error),
+            ])
         }
     }
 
@@ -385,20 +415,7 @@ actor CoverArtCache {
             )
         }
 
-        let utType: CFString = (fileExtension == "png")
-            ? UTType.png.identifier as CFString
-            : UTType.jpeg.identifier as CFString
-        let outData = NSMutableData()
-        guard let dest = CGImageDestinationCreateWithData(outData as CFMutableData, utType, 1, nil) else {
-            return DownsampleResult(
-                data: data,
-                didDownsample: false,
-                pixelSize: CGSize(width: width, height: height)
-            )
-        }
-        let destProps: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.9]
-        CGImageDestinationAddImage(dest, thumb, destProps as CFDictionary)
-        guard CGImageDestinationFinalize(dest) else {
+        guard let outData = self.encode(thumb, fileExtension: fileExtension) else {
             return DownsampleResult(
                 data: data,
                 didDownsample: false,
@@ -410,5 +427,23 @@ actor CoverArtCache {
             didDownsample: true,
             pixelSize: CGSize(width: thumb.width, height: thumb.height)
         )
+    }
+
+    /// Encodes `thumb` as PNG (for a `png` extension) or JPEG, or returns
+    /// `nil` when the image destination cannot be made or finalized.
+    private func encode(_ thumb: CGImage, fileExtension: String) -> NSMutableData? {
+        let utType: CFString = (fileExtension == "png")
+            ? UTType.png.identifier as CFString
+            : UTType.jpeg.identifier as CFString
+        let outData = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(outData as CFMutableData, utType, 1, nil) else {
+            return nil
+        }
+        let destProps: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.9]
+        CGImageDestinationAddImage(dest, thumb, destProps as CFDictionary)
+        guard CGImageDestinationFinalize(dest) else {
+            return nil
+        }
+        return outData
     }
 }

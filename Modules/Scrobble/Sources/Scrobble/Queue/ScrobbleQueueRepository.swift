@@ -2,6 +2,7 @@ import Foundation
 import GRDB
 import Observability
 import Persistence
+import Playback
 
 // MARK: - ScrobbleQueueRepository
 
@@ -9,102 +10,9 @@ import Persistence
 /// query the worker needs so the worker itself can stay focused on
 /// scheduling/backoff and providers.
 public actor ScrobbleQueueRepository {
-    public struct PendingRow: Sendable, Hashable {
-        public let queueID: Int64
-        public let trackID: Int64
-        public let playedAt: Date
-        public let durationPlayed: TimeInterval
-        public let attempts: Int
-        public let nextAttemptAt: Date?
+    let db: Persistence.Database
 
-        public let title: String
-        public let artist: String
-        public let albumArtist: String?
-        public let album: String?
-        public let duration: TimeInterval
-        public let mbid: String?
-
-        /// Set for Subsonic-sourced plays. The pair `(serverID, songID)` tells
-        /// the Subsonic provider which server endpoint to hit. Both nil for
-        /// local plays.
-        public let subsonicServerID: UUID?
-        public let subsonicSongID: String?
-    }
-
-    public struct Stats: Sendable, Equatable {
-        public let pending: Int
-        public let dead: Int
-        public let submittedToday: Int
-    }
-
-    // MARK: - RecentRow
-
-    /// One row per scrobble-queue entry, carrying per-provider submission status.
-    /// Used by `RecentScrobblesView` to display the last N scrobbles.
-    public struct RecentRow: Sendable, Hashable {
-        /// Per-provider submission state mirroring the `scrobble_submissions.status` column.
-        public enum SubmissionStatus: String, Sendable, Hashable, CaseIterable {
-            case pending
-            case retry
-            case sent
-            /// The provider accepted the scrobble but persisting the clean
-            /// success failed; recorded as a distinct terminal state so the row
-            /// is never re-submitted (would be a double scrobble) yet the
-            /// unconfirmed delivery stays visible. (#292)
-            case sentUnconfirmed = "sent_unconfirmed"
-            case failed
-            case ignored
-
-            /// Human-readable label shown in the UI.
-            public var displayLabel: String {
-                switch self {
-                case .pending: "Queued"
-                case .retry: "Retrying"
-                case .sent: "Sent"
-                case .sentUnconfirmed: "Sent (unconfirmed)"
-                case .failed: "Failed"
-                case .ignored: "Ignored"
-                }
-            }
-
-            /// `true` for terminal states (no more work expected).
-            public var isTerminal: Bool {
-                self == .sent || self == .sentUnconfirmed || self == .failed || self == .ignored
-            }
-        }
-
-        public let queueID: Int64
-        public let playedAt: Date
-        public let title: String
-        public let artist: String
-        public let album: String?
-        /// Submission status keyed by provider ID ("lastfm", "listenbrainz").
-        public let statusByProvider: [String: SubmissionStatus]
-
-        /// The "worst" aggregate status across all providers (most actionable first).
-        public var aggregateStatus: SubmissionStatus {
-            let statuses = self.statusByProvider.values
-            if statuses.contains(.failed) {
-                return .failed
-            }
-            if statuses.contains(.retry) {
-                return .retry
-            }
-            if statuses.contains(.pending) {
-                return .pending
-            }
-            if statuses.contains(.ignored) {
-                return .ignored
-            }
-            if statuses.contains(.sentUnconfirmed) {
-                return .sentUnconfirmed
-            }
-            return .sent
-        }
-    }
-
-    private let db: Persistence.Database
-
+    /// Creates a repository over the scrobble tables of `database`.
     public init(database: Persistence.Database) {
         self.db = database
     }
@@ -125,9 +33,13 @@ public actor ScrobbleQueueRepository {
               (track_id, played_at, duration_played, submitted, submission_attempts, dead)
             VALUES (?, ?, ?, 0, 0, 0)
             """, arguments: [trackID, Int(playedAt.timeIntervalSince1970), durationPlayed])
-            let queueID: Int64? = try Int64.fetchOne(db, sql: """
-            SELECT id FROM scrobble_queue WHERE track_id = ? AND played_at = ?
-            """, arguments: [trackID, Int(playedAt.timeIntervalSince1970)])
+            let queueID: Int64? = try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT id FROM scrobble_queue WHERE track_id = ? AND played_at = ?
+                """,
+                arguments: [trackID, Int(playedAt.timeIntervalSince1970)]
+            )
             guard let queueID else { return nil }
             for pid in providerIDs {
                 try db.execute(sql: """
@@ -146,19 +58,19 @@ public actor ScrobbleQueueRepository {
     /// `(subsonic_server_id, subsonic_song_id, played_at)`.
     @discardableResult
     public func enqueueSubsonic(
-        serverID: UUID,
-        songID: String,
+        context: SubsonicPlayContext,
         playedAt: Date,
         durationPlayed: TimeInterval,
-        title: String,
-        artist: String,
-        album: String?,
-        albumArtist: String?,
-        duration: TimeInterval,
         providerIDs: [String]
     ) async throws -> Int64? {
         let playedAtEpoch = Int(playedAt.timeIntervalSince1970)
-        let serverIDString = serverID.uuidString
+        let serverIDString = context.serverID.uuidString
+        let songID = context.songID
+        let title = context.title
+        let artist = context.artist
+        let album = context.album
+        let albumArtist = context.albumArtist
+        let duration = context.duration
         return try await self.db.write { db in
             // track_id is left NULL — there is no local row to FK against.
             try db.execute(sql: """
@@ -172,10 +84,14 @@ public actor ScrobbleQueueRepository {
                 serverIDString, songID,
                 title, artist, album, albumArtist, duration,
             ])
-            let queueID: Int64? = try Int64.fetchOne(db, sql: """
-            SELECT id FROM scrobble_queue
-             WHERE subsonic_server_id = ? AND subsonic_song_id = ? AND played_at = ?
-            """, arguments: [serverIDString, songID, playedAtEpoch])
+            let queueID: Int64? = try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT id FROM scrobble_queue
+                 WHERE subsonic_server_id = ? AND subsonic_song_id = ? AND played_at = ?
+                """,
+                arguments: [serverIDString, songID, playedAtEpoch]
+            )
             guard let queueID else { return nil }
             for pid in providerIDs {
                 try db.execute(sql: """
@@ -194,56 +110,64 @@ public actor ScrobbleQueueRepository {
         return try await self.db.read { db in
             // LEFT JOIN tracks because Subsonic-sourced rows have NULL track_id;
             // their metadata is carried in the q.payload_* columns instead.
-            let rows = try Row.fetchAll(db, sql: """
-            SELECT q.id, q.track_id, q.played_at, q.duration_played,
-                   q.subsonic_server_id, q.subsonic_song_id,
-                   q.payload_title, q.payload_artist, q.payload_album,
-                   q.payload_album_artist, q.payload_duration,
-                   s.attempts, s.next_attempt_at,
-                   t.title AS track_title, t.duration AS track_duration,
-                   t.musicbrainz_recording_id,
-                   a.name AS artist_name,
-                   aa.name AS album_artist_name,
-                   al.title AS album_title
-              FROM scrobble_submissions s
-              JOIN scrobble_queue q ON q.id = s.queue_id
-              LEFT JOIN tracks t ON t.id = q.track_id
-              LEFT JOIN artists a ON a.id = t.artist_id
-              LEFT JOIN artists aa ON aa.id = t.album_artist_id
-              LEFT JOIN albums al ON al.id = t.album_id
-             WHERE s.provider_id = ?
-               AND s.status IN ('pending', 'retry')
-               AND q.dead = 0
-               AND (s.next_attempt_at IS NULL OR s.next_attempt_at <= ?)
-             ORDER BY q.played_at ASC
-             LIMIT ?
-            """, arguments: [providerID, nowEpoch, limit])
-            return rows.map { row in
-                let subsonicServerID = (row["subsonic_server_id"] as String?).flatMap(UUID.init(uuidString:))
-                let subsonicSongID = row["subsonic_song_id"] as String?
-                let title = (row["track_title"] as String?) ?? (row["payload_title"] as String?) ?? ""
-                let artist = (row["artist_name"] as String?) ?? (row["payload_artist"] as String?) ?? ""
-                let albumArtist = (row["album_artist_name"] as String?) ?? (row["payload_album_artist"] as String?)
-                let album = (row["album_title"] as String?) ?? (row["payload_album"] as String?)
-                let duration = (row["track_duration"] as Double?) ?? (row["payload_duration"] as Double?) ?? 0
-                return PendingRow(
-                    queueID: row["id"],
-                    trackID: (row["track_id"] as Int64?) ?? -1,
-                    playedAt: Date(timeIntervalSince1970: TimeInterval(row["played_at"] as Int)),
-                    durationPlayed: row["duration_played"] ?? 0,
-                    attempts: row["attempts"],
-                    nextAttemptAt: (row["next_attempt_at"] as Int?).map { Date(timeIntervalSince1970: TimeInterval($0)) },
-                    title: title,
-                    artist: artist,
-                    albumArtist: albumArtist,
-                    album: album,
-                    duration: duration,
-                    mbid: row["musicbrainz_recording_id"],
-                    subsonicServerID: subsonicServerID,
-                    subsonicSongID: subsonicSongID
-                )
-            }
+            let rows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT q.id, q.track_id, q.played_at, q.duration_played,
+                       q.subsonic_server_id, q.subsonic_song_id,
+                       q.payload_title, q.payload_artist, q.payload_album,
+                       q.payload_album_artist, q.payload_duration,
+                       s.attempts, s.next_attempt_at,
+                       t.title AS track_title, t.duration AS track_duration,
+                       t.musicbrainz_recording_id,
+                       a.name AS artist_name,
+                       aa.name AS album_artist_name,
+                       al.title AS album_title
+                  FROM scrobble_submissions s
+                  JOIN scrobble_queue q ON q.id = s.queue_id
+                  LEFT JOIN tracks t ON t.id = q.track_id
+                  LEFT JOIN artists a ON a.id = t.artist_id
+                  LEFT JOIN artists aa ON aa.id = t.album_artist_id
+                  LEFT JOIN albums al ON al.id = t.album_id
+                 WHERE s.provider_id = ?
+                   AND s.status IN ('pending', 'retry')
+                   AND q.dead = 0
+                   AND (s.next_attempt_at IS NULL OR s.next_attempt_at <= ?)
+                 ORDER BY q.played_at ASC
+                 LIMIT ?
+                """,
+                arguments: [providerID, nowEpoch, limit]
+            )
+            return rows.map { Self.pendingRow(from: $0) }
         }
+    }
+
+    /// Maps one `fetchPending` result row. The local-track columns win; the
+    /// `payload_*` columns fill in for Subsonic-sourced rows.
+    private static func pendingRow(from row: Row) -> PendingRow {
+        let subsonicServerID = (row["subsonic_server_id"] as String?).flatMap(UUID.init(uuidString:))
+        let subsonicSongID = row["subsonic_song_id"] as String?
+        let title = (row["track_title"] as String?) ?? (row["payload_title"] as String?) ?? ""
+        let artist = (row["artist_name"] as String?) ?? (row["payload_artist"] as String?) ?? ""
+        let albumArtist = (row["album_artist_name"] as String?) ?? (row["payload_album_artist"] as String?)
+        let album = (row["album_title"] as String?) ?? (row["payload_album"] as String?)
+        let duration = (row["track_duration"] as Double?) ?? (row["payload_duration"] as Double?) ?? 0
+        return PendingRow(
+            queueID: row["id"],
+            trackID: (row["track_id"] as Int64?) ?? -1,
+            playedAt: Date(timeIntervalSince1970: TimeInterval(row["played_at"] as Int)),
+            durationPlayed: row["duration_played"] ?? 0,
+            attempts: row["attempts"],
+            nextAttemptAt: (row["next_attempt_at"] as Int?).map { Date(timeIntervalSince1970: TimeInterval($0)) },
+            title: title,
+            artist: artist,
+            albumArtist: albumArtist,
+            album: album,
+            duration: duration,
+            mbid: row["musicbrainz_recording_id"],
+            subsonicServerID: subsonicServerID,
+            subsonicSongID: subsonicSongID
+        )
     }
 
     /// Mark a submission row succeeded (and the queue row submitted, if every provider succeeded).
@@ -257,10 +181,14 @@ public actor ScrobbleQueueRepository {
             """, arguments: [nowEpoch, queueID, providerID])
             // If every submission row for this queue_id is in a successful terminal
             // state, mark the queue row submitted.
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -286,10 +214,14 @@ public actor ScrobbleQueueRepository {
                SET status = 'sent_unconfirmed', submitted_at = ?, last_error = ?
              WHERE queue_id = ? AND provider_id = ?
             """, arguments: [nowEpoch, reason, queueID, providerID])
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -329,10 +261,14 @@ public actor ScrobbleQueueRepository {
             """, arguments: [reason, queueID, providerID])
             // If every submission row for this queue is in a terminal state and at
             // least one is failed, we mark the queue row dead so the UI can surface it.
-            let alive = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status IN ('pending', 'retry')
-            """, arguments: [queueID]) ?? 0
+            let alive = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status IN ('pending', 'retry')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if alive == 0 {
                 try db.execute(sql: """
                 UPDATE scrobble_queue
@@ -355,10 +291,14 @@ public actor ScrobbleQueueRepository {
             // markSucceeded / markSentUnconfirmed. Without it, a queue row whose
             // last live submission ends ignored strands at submitted = 0: counted
             // by the pending badge forever but never claimable by any worker.
-            let pending = try Int.fetchOne(db, sql: """
-            SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
-            """, arguments: [queueID]) ?? 0
+            let pending = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM scrobble_submissions
+                 WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+                """,
+                arguments: [queueID]
+            ) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
             }
@@ -391,18 +331,22 @@ public actor ScrobbleQueueRepository {
     /// without going through the queue. Used by the now-playing path.
     public func fetchTrackMetadata(trackID: Int64) async throws -> PendingRow? {
         try await self.db.read { db in
-            let row = try Row.fetchOne(db, sql: """
-            SELECT t.id AS track_id,
-                   t.title, t.duration, t.musicbrainz_recording_id,
-                   a.name AS artist_name,
-                   aa.name AS album_artist_name,
-                   al.title AS album_title
-              FROM tracks t
-              LEFT JOIN artists a ON a.id = t.artist_id
-              LEFT JOIN artists aa ON aa.id = t.album_artist_id
-              LEFT JOIN albums al ON al.id = t.album_id
-             WHERE t.id = ?
-            """, arguments: [trackID])
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT t.id AS track_id,
+                       t.title, t.duration, t.musicbrainz_recording_id,
+                       a.name AS artist_name,
+                       aa.name AS album_artist_name,
+                       al.title AS album_title
+                  FROM tracks t
+                  LEFT JOIN artists a ON a.id = t.artist_id
+                  LEFT JOIN artists aa ON aa.id = t.album_artist_id
+                  LEFT JOIN albums al ON al.id = t.album_id
+                 WHERE t.id = ?
+                """,
+                arguments: [trackID]
+            )
             guard let row else { return nil }
             return PendingRow(
                 queueID: -1,
@@ -434,146 +378,15 @@ public actor ScrobbleQueueRepository {
             """) ?? 0
             let calendar = Calendar(identifier: .gregorian)
             let startOfDay = calendar.startOfDay(for: now)
-            let submittedToday = try Int.fetchOne(db, sql: """
-            SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-             WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
-            """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
+            let submittedToday = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
+                 WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
+                """,
+                arguments: [Int(startOfDay.timeIntervalSince1970)]
+            ) ?? 0
             return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
-        }
-    }
-
-    // MARK: - Recent scrobbles
-
-    /// Fetch the most recent `limit` scrobble-queue entries, optionally filtered to a single
-    /// provider. Returns one `RecentRow` per queue entry with per-provider statuses attached.
-    public func fetchRecent(limit: Int = 50, providerID: String? = nil) async throws -> [RecentRow] {
-        try await self.db.read { db in
-            try Self.queryRecent(db: db, limit: limit, providerID: providerID)
-        }
-    }
-
-    /// Live stream of recent scrobbles. Re-emits whenever `scrobble_queue` or
-    /// `scrobble_submissions` change (e.g. a pending item becomes sent).
-    public nonisolated func observeRecent(limit: Int = 50, providerID: String? = nil) -> AsyncThrowingStream<[RecentRow], Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task { [database = self.db] in
-                let upstream = await database.observe(value: { db -> [RecentRow] in
-                    try Self.queryRecent(db: db, limit: limit, providerID: providerID)
-                })
-                do {
-                    for try await value in upstream {
-                        continuation.yield(value)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
-
-    // MARK: - Private helpers
-
-    /// Shared implementation for `fetchRecent` and `observeRecent`.
-    private static func queryRecent(
-        db: GRDB.Database,
-        limit: Int,
-        providerID: String?
-    ) throws -> [RecentRow] {
-        // Build the queue-row query, optionally restricting to a provider.
-        // LEFT JOIN (not INNER) so Subsonic-sourced rows -- which have
-        // track_id IS NULL because the streamed song was never inserted into
-        // `tracks` -- are still returned. For those rows the local-track columns
-        // are NULL, so fall back to the payload_* columns captured at enqueue
-        // time (see M021SubsonicScrobble). (#291)
-        var queueSQL = """
-        SELECT q.id AS queue_id, q.played_at,
-               COALESCE(t.title, q.payload_title) AS title,
-               COALESCE(a.name, q.payload_artist) AS artist_name,
-               COALESCE(al.title, q.payload_album) AS album_title
-          FROM scrobble_queue q
-          LEFT JOIN tracks t ON t.id = q.track_id
-          LEFT JOIN artists a ON a.id = t.artist_id
-          LEFT JOIN albums al ON al.id = t.album_id
-        """
-        var queueArgs: StatementArguments = []
-        if let pid = providerID {
-            queueSQL += """
-             WHERE EXISTS (
-               SELECT 1 FROM scrobble_submissions s
-                WHERE s.queue_id = q.id AND s.provider_id = ?
-             )
-            """
-            queueArgs = [pid]
-        }
-        queueSQL += " ORDER BY q.played_at DESC LIMIT ?"
-        queueArgs += [limit]
-
-        let queueRows = try Row.fetchAll(db, sql: queueSQL, arguments: queueArgs)
-        guard !queueRows.isEmpty else { return [] }
-
-        // Gather all matching queue IDs.
-        let queueIDs: [Int64] = queueRows.map { $0["queue_id"] }
-
-        // Fetch per-provider submission statuses in one query.
-        let placeholders = queueIDs.map { _ in "?" }.joined(separator: ",")
-        let subRows = try Row.fetchAll(
-            db,
-            sql: "SELECT queue_id, provider_id, status FROM scrobble_submissions WHERE queue_id IN (\(placeholders))",
-            arguments: StatementArguments(queueIDs)
-        )
-
-        // Group statuses by queue_id.
-        var statusMap: [Int64: [String: RecentRow.SubmissionStatus]] = [:]
-        for sub in subRows {
-            let qid: Int64 = sub["queue_id"]
-            let pid: String = sub["provider_id"]
-            let rawStatus: String = sub["status"] ?? "pending"
-            statusMap[qid, default: [:]][pid] = RecentRow.SubmissionStatus(rawValue: rawStatus) ?? .pending
-        }
-
-        return queueRows.map { row in
-            let qid: Int64 = row["queue_id"]
-            return RecentRow(
-                queueID: qid,
-                playedAt: Date(timeIntervalSince1970: TimeInterval(row["played_at"] as Int)),
-                title: row["title"] ?? "",
-                artist: row["artist_name"] ?? "",
-                album: row["album_title"],
-                statusByProvider: statusMap[qid] ?? [:]
-            )
-        }
-    }
-
-    /// Stream live `Stats` for the UI.
-    public nonisolated func observeStats(now: @Sendable @escaping () -> Date = { Date() }) -> AsyncThrowingStream<Stats, Error> {
-        AsyncThrowingStream { continuation in
-            let task = Task { [database = self.db] in
-                let upstream = await database.observe(value: { db -> Stats in
-                    let pending = try Int.fetchOne(db, sql: """
-                    SELECT COUNT(*) FROM scrobble_queue WHERE submitted = 0 AND dead = 0
-                    """) ?? 0
-                    let dead = try Int.fetchOne(db, sql: """
-                    SELECT COUNT(*) FROM scrobble_queue WHERE dead = 1
-                    """) ?? 0
-                    let startOfDay = Calendar(identifier: .gregorian).startOfDay(for: now())
-                    let submittedToday = try Int.fetchOne(db, sql: """
-                    SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-                     WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
-                    """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
-                    return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
-                })
-                do {
-                    for try await value in upstream {
-                        continuation.yield(value)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

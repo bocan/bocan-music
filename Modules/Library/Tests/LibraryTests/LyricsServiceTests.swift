@@ -219,7 +219,8 @@ struct LyricsServiceTests {
 
         // First emission — should be nil (no lyrics yet)
         let first = try await iterator.next()
-        #expect(first == nil || first! == nil)
+        let firstDocument = first.flatMap(\.self)
+        #expect(firstDocument == nil)
 
         // Save something
         try await svc.setLyrics(.unsynced("New lyrics"), for: id)

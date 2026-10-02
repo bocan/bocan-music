@@ -31,7 +31,10 @@ struct ManifestRoutesTests {
         _ = try await LibraryRootRepository(database: database).upsert(LibraryRoot(path: "/Music", bookmark: Data([0x01]), addedAt: 0))
         _ = try await TrackRepository(database: database).insert(Track(
             fileURL: URL(fileURLWithPath: "/Music/a.flac").absoluteString,
-            fileFormat: "flac", contentHash: "aa", addedAt: 0, updatedAt: 0
+            fileFormat: "flac",
+            contentHash: "aa",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let response = await self.makeRouter(database).dispatch(self.request("/v1/manifest"), context: self.trustedContext())
@@ -48,7 +51,10 @@ struct ManifestRoutesTests {
         _ = try await LibraryRootRepository(database: database).upsert(LibraryRoot(path: "/Music", bookmark: Data([0x01]), addedAt: 0))
         _ = try await TrackRepository(database: database).insert(Track(
             fileURL: URL(fileURLWithPath: "/Music/a.flac").absoluteString,
-            fileFormat: "flac", contentHash: "aa", addedAt: 0, updatedAt: 0
+            fileFormat: "flac",
+            contentHash: "aa",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let request = HttpRequest(
@@ -90,7 +96,7 @@ struct ManifestRoutesTests {
         let response = await self.makeRouter(database).dispatch(self.request("/v1/ping"), context: self.trustedContext())
 
         #expect(response.status == 500)
-        let body = String(decoding: response.body, as: UTF8.self)
+        let body = try #require(String(bytes: response.body, encoding: .utf8))
         #expect(!body.contains("\"serverId\""), "an empty id reads as a different Mac to the phone")
     }
 

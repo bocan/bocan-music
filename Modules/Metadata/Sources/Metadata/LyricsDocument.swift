@@ -35,8 +35,8 @@ public enum LyricsDocument: Sendable, Hashable {
 
         public init(
             start: TimeInterval,
-            end: TimeInterval? = nil,
             text: String,
+            end: TimeInterval? = nil,
             words: [WordTime]? = nil,
             malformed: Bool = false
         ) {
@@ -81,6 +81,7 @@ extension LyricsDocument: Codable {
         case .unsynced:
             let text = try c.decode(String.self, forKey: .text)
             self = .unsynced(text)
+
         case .synced:
             let lines = try c.decode([LyricsLine].self, forKey: .lines)
             let offset = try c.decodeIfPresent(Int.self, forKey: .offsetMS) ?? 0
@@ -94,6 +95,7 @@ extension LyricsDocument: Codable {
         case let .unsynced(text):
             try c.encode(TypeKey.unsynced, forKey: .type)
             try c.encode(text, forKey: .text)
+
         case let .synced(lines, offsetMS):
             try c.encode(TypeKey.synced, forKey: .type)
             try c.encode(lines, forKey: .lines)
@@ -104,20 +106,27 @@ extension LyricsDocument: Codable {
 
 // MARK: - Helpers
 
+/// Derived properties and LRC serialisation.
 public extension LyricsDocument {
     /// Returns `true` when the document contains at least one non-empty line / non-empty text.
     var isEmpty: Bool {
         switch self {
-        case let .unsynced(text): text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case let .synced(lines, _): lines.isEmpty
+        case let .unsynced(text):
+            text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        case let .synced(lines, _):
+            lines.isEmpty
         }
     }
 
     /// The effective offset in milliseconds (positive = lyrics lead the audio).
     var offsetMS: Int {
         switch self {
-        case .unsynced: 0
-        case let .synced(_, offset): offset
+        case .unsynced:
+            0
+
+        case let .synced(_, offset):
+            offset
         }
     }
 
@@ -130,6 +139,7 @@ public extension LyricsDocument {
         switch self {
         case let .unsynced(text):
             return text
+
         case let .synced(lines, offsetMS):
             var parts: [String] = []
             if offsetMS != 0 {

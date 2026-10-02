@@ -14,9 +14,12 @@ public actor TranscriptFetcher {
     private let now: @Sendable () -> Date
     private let log = AppLogger.make(.podcasts)
 
+    /// Creates a fetcher that stores into `repo`. `maxBytes` is the size cap
+    /// for a transcript body, 5 MB by default; `now` is the clock, injectable
+    /// for tests.
     public init(
-        http: any HTTPClient = URLSession.shared,
         repo: TranscriptRepository,
+        http: any HTTPClient = URLSession.shared,
         maxBytes: Int = 5 * 1024 * 1024,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -70,6 +73,9 @@ public actor TranscriptFetcher {
         }
 
         // Decode UTF-8 strictly, falling back to a lossy decode rather than failing.
+        // The lossy decode is the contract here: a transcript with a few bad
+        // bytes is stored with replacement characters, not refused.
+        // swiftlint:disable:next optional_data_string_conversion
         let content = String(data: data, encoding: .utf8) ?? String(decoding: data, as: UTF8.self)
         let mime = http.value(forHTTPHeaderField: "Content-Type")
         let format = TranscriptFormat.infer(fromURL: transcriptURL, mime: mime)

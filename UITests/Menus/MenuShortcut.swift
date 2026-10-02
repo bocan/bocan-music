@@ -17,10 +17,10 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
 
     struct Modifiers: OptionSet, Hashable {
         let rawValue: Int
-        static let control = Modifiers(rawValue: 1 << 0)
-        static let option = Modifiers(rawValue: 1 << 1)
-        static let shift = Modifiers(rawValue: 1 << 2)
-        static let command = Modifiers(rawValue: 1 << 3)
+        static let control = Self(rawValue: 1 << 0)
+        static let option = Self(rawValue: 1 << 1)
+        static let shift = Self(rawValue: 1 << 2)
+        static let command = Self(rawValue: 1 << 3)
     }
 
     let key: Key
@@ -47,14 +47,29 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
             out += "⌘"
         }
         switch self.key {
-        case let .char(c): out += String(c).uppercased()
-        case .space: out += "Space"
-        case .returnKey: out += "↩"
-        case .delete: out += "⌫"
-        case .upArrow: out += "↑"
-        case .downArrow: out += "↓"
-        case .leftArrow: out += "←"
-        case .rightArrow: out += "→"
+        case let .char(c):
+            out += String(c).uppercased()
+
+        case .space:
+            out += "Space"
+
+        case .returnKey:
+            out += "↩"
+
+        case .delete:
+            out += "⌫"
+
+        case .upArrow:
+            out += "↑"
+
+        case .downArrow:
+            out += "↓"
+
+        case .leftArrow:
+            out += "←"
+
+        case .rightArrow:
+            out += "→"
         }
         return out
     }
@@ -62,32 +77,55 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
     // MARK: Display-string parsing ("⌘⇧O", "⌘→", "Space")
 
     /// Parses a help-book display string. Modifier order is not significant.
-    static func fromDisplay(_ display: String) -> MenuShortcut? {
+    static func fromDisplay(_ display: String) -> Self? {
         var modifiers: Modifiers = []
         var rest = Substring(display)
         loop: while let first = rest.first {
             switch first {
-            case "⌘": modifiers.insert(.command)
-            case "⇧": modifiers.insert(.shift)
-            case "⌥": modifiers.insert(.option)
-            case "⌃": modifiers.insert(.control)
-            default: break loop
+            case "⌘":
+                modifiers.insert(.command)
+
+            case "⇧":
+                modifiers.insert(.shift)
+
+            case "⌥":
+                modifiers.insert(.option)
+
+            case "⌃":
+                modifiers.insert(.control)
+
+            default:
+                break loop
             }
             rest = rest.dropFirst()
         }
         guard let key = self.key(fromDisplayToken: String(rest)) else { return nil }
-        return MenuShortcut(key, modifiers)
+        return Self(key, modifiers)
     }
 
     private static func key(fromDisplayToken token: String) -> Key? {
         switch token {
-        case "Space", "␣": return .space
-        case "↩", "⏎": return .returnKey
-        case "⌫": return .delete
-        case "↑": return .upArrow
-        case "↓": return .downArrow
-        case "←": return .leftArrow
-        case "→": return .rightArrow
+        case "Space", "␣":
+            return .space
+
+        case "↩", "⏎":
+            return .returnKey
+
+        case "⌫":
+            return .delete
+
+        case "↑":
+            return .upArrow
+
+        case "↓":
+            return .downArrow
+
+        case "←":
+            return .leftArrow
+
+        case "→":
+            return .rightArrow
+
         default:
             guard token.count == 1, let c = token.first else { return nil }
             return .char(Character(String(c).lowercased()))
@@ -100,7 +138,7 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
     /// `.keyboardShortcut(...)`: a key literal (`"o"`, `" "`, `.return`,
     /// `.rightArrow`, ...) plus an optional `modifiers:` clause. An omitted
     /// modifiers clause means `.command` (the SwiftUI default).
-    static func fromSwiftArguments(_ arguments: String) -> MenuShortcut? {
+    static func fromSwiftArguments(_ arguments: String) -> Self? {
         let key: Key? = if let literal = self.firstStringLiteral(in: arguments) {
             literal == " " ? .space : literal.count == 1
                 ? .char(Character(literal.lowercased()))
@@ -111,7 +149,7 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
         guard let key else { return nil }
 
         guard let modifiersRange = arguments.range(of: "modifiers:") else {
-            return MenuShortcut(key, .command)
+            return Self(key, .command)
         }
         var modifiers: Modifiers = []
         let clause = arguments[modifiersRange.upperBound...]
@@ -127,7 +165,7 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
         if clause.contains(".control") {
             modifiers.insert(.control)
         }
-        return MenuShortcut(key, modifiers)
+        return Self(key, modifiers)
     }
 
     private static func firstStringLiteral(in text: String) -> String? {

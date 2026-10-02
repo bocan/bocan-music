@@ -9,12 +9,15 @@ import Testing
 /// commas inside the redundant utc_time column, blank MBIDs, and junk rows.
 @Suite("LastFMExportParser")
 struct LastFMExportParserTests {
-    /// Verbatim shape of the official export, quoted commas and all.
+    /// Verbatim shape of the official export, quoted commas and all. A
+    /// trailing backslash joins two source lines into one CSV row.
     private static let sample = """
     uts,utc_time,artist,artist_mbid,album,album_mbid,track,track_mbid
     "1784613695","21 Jul 2026, 06:01","William Michael Morgan","1d782734-6d89-4166-b8a5-a4c581e48d3b","RED","","RED",""
-    "1784560028","20 Jul 2026, 15:07","Jason Scott & The High Heat","e8a873f4-9009-4e66-80dd-d618530627dc","How To Get Away With Murder","","How To Get Away With Murder",""
-    "1784540348","20 Jul 2026, 09:39","Cole Gibbs","","Don't Lie","c6b4a219-deb8-4f82-86e7-3400fc5e20dc","Don't Lie","11111111-2222-3333-4444-555555555555"
+    "1784560028","20 Jul 2026, 15:07","Jason Scott & The High Heat","e8a873f4-9009-4e66-80dd-d618530627dc",\
+    "How To Get Away With Murder","","How To Get Away With Murder",""
+    "1784540348","20 Jul 2026, 09:39","Cole Gibbs","","Don't Lie","c6b4a219-deb8-4f82-86e7-3400fc5e20dc",\
+    "Don't Lie","11111111-2222-3333-4444-555555555555"
     """
 
     @Test("The official export header and rows parse cleanly")

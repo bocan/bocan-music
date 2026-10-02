@@ -99,86 +99,222 @@ public enum Comparator: Sendable, Codable, Hashable, CaseIterable {
 
 // MARK: - Raw representable
 
+/// String form of a comparator, as stored in the criteria JSON.
 public extension Comparator {
+    /// The comparator named `rawValue`. Never fails: a name this build does
+    /// not know becomes `.unknown(rawValue)`.
     init(rawValue: String) {
         switch rawValue {
-        case "is": self = .is
-        case "isNot": self = .isNot
-        case "contains": self = .contains
-        case "doesNotContain": self = .doesNotContain
-        case "startsWith": self = .startsWith
-        case "endsWith": self = .endsWith
-        case "matchesRegex": self = .matchesRegex
-        case "isEmpty": self = .isEmpty
-        case "isNotEmpty": self = .isNotEmpty
-        case "equalTo": self = .equalTo
-        case "notEqualTo": self = .notEqualTo
-        case "lessThan": self = .lessThan
-        case "greaterThan": self = .greaterThan
-        case "lessThanOrEqual": self = .lessThanOrEqual
-        case "greaterThanOrEqual": self = .greaterThanOrEqual
-        case "between": self = .between
-        case "isNull": self = .isNull
-        case "isNotNull": self = .isNotNull
-        case "inLastDays": self = .inLastDays
-        case "inLastMonths": self = .inLastMonths
-        case "inLastYears": self = .inLastYears
-        case "beforeDate": self = .beforeDate
-        case "afterDate": self = .afterDate
-        case "onDate": self = .onDate
-        case "isTrue": self = .isTrue
-        case "isFalse": self = .isFalse
-        case "memberOf": self = .memberOf
-        case "notMemberOf": self = .notMemberOf
-        case "pathUnder": self = .pathUnder
-        default: self = .unknown(rawValue)
+        case "is":
+            self = .is
+
+        case "isNot":
+            self = .isNot
+
+        case "contains":
+            self = .contains
+
+        case "doesNotContain":
+            self = .doesNotContain
+
+        case "startsWith":
+            self = .startsWith
+
+        case "endsWith":
+            self = .endsWith
+
+        case "matchesRegex":
+            self = .matchesRegex
+
+        case "isEmpty":
+            self = .isEmpty
+
+        case "isNotEmpty":
+            self = .isNotEmpty
+
+        case "equalTo":
+            self = .equalTo
+
+        case "notEqualTo":
+            self = .notEqualTo
+
+        case "lessThan":
+            self = .lessThan
+
+        case "greaterThan":
+            self = .greaterThan
+
+        case "lessThanOrEqual":
+            self = .lessThanOrEqual
+
+        case "greaterThanOrEqual":
+            self = .greaterThanOrEqual
+
+        default:
+            self = Self(rangeDateOrMembershipRawValue: rawValue)
         }
     }
 
+    /// The second half of `init(rawValue:)`: the range, null, date, flag and
+    /// membership comparators, then `.unknown`.
+    private init(rangeDateOrMembershipRawValue rawValue: String) {
+        switch rawValue {
+        case "between":
+            self = .between
+
+        case "isNull":
+            self = .isNull
+
+        case "isNotNull":
+            self = .isNotNull
+
+        case "inLastDays":
+            self = .inLastDays
+
+        case "inLastMonths":
+            self = .inLastMonths
+
+        case "inLastYears":
+            self = .inLastYears
+
+        case "beforeDate":
+            self = .beforeDate
+
+        case "afterDate":
+            self = .afterDate
+
+        case "onDate":
+            self = .onDate
+
+        case "isTrue":
+            self = .isTrue
+
+        case "isFalse":
+            self = .isFalse
+
+        case "memberOf":
+            self = .memberOf
+
+        case "notMemberOf":
+            self = .notMemberOf
+
+        case "pathUnder":
+            self = .pathUnder
+
+        default:
+            self = .unknown(rawValue)
+        }
+    }
+
+    /// The case name as written to JSON; for `.unknown`, the original string
+    /// unchanged, so a newer app's value survives a round trip.
     var rawValue: String {
         switch self {
-        case .is: "is"
-        case .isNot: "isNot"
-        case .contains: "contains"
-        case .doesNotContain: "doesNotContain"
-        case .startsWith: "startsWith"
-        case .endsWith: "endsWith"
-        case .matchesRegex: "matchesRegex"
-        case .isEmpty: "isEmpty"
-        case .isNotEmpty: "isNotEmpty"
-        case .equalTo: "equalTo"
-        case .notEqualTo: "notEqualTo"
-        case .lessThan: "lessThan"
-        case .greaterThan: "greaterThan"
-        case .lessThanOrEqual: "lessThanOrEqual"
-        case .greaterThanOrEqual: "greaterThanOrEqual"
-        case .between: "between"
-        case .isNull: "isNull"
-        case .isNotNull: "isNotNull"
-        case .inLastDays: "inLastDays"
-        case .inLastMonths: "inLastMonths"
-        case .inLastYears: "inLastYears"
-        case .beforeDate: "beforeDate"
-        case .afterDate: "afterDate"
-        case .onDate: "onDate"
-        case .isTrue: "isTrue"
-        case .isFalse: "isFalse"
-        case .memberOf: "memberOf"
-        case .notMemberOf: "notMemberOf"
-        case .pathUnder: "pathUnder"
-        case let .unknown(raw): raw
+        case .is:
+            "is"
+
+        case .isNot:
+            "isNot"
+
+        case .contains:
+            "contains"
+
+        case .doesNotContain:
+            "doesNotContain"
+
+        case .startsWith:
+            "startsWith"
+
+        case .endsWith:
+            "endsWith"
+
+        case .matchesRegex:
+            "matchesRegex"
+
+        case .isEmpty:
+            "isEmpty"
+
+        case .isNotEmpty:
+            "isNotEmpty"
+
+        case .equalTo:
+            "equalTo"
+
+        case .notEqualTo:
+            "notEqualTo"
+
+        case .lessThan:
+            "lessThan"
+
+        case .greaterThan:
+            "greaterThan"
+
+        case .lessThanOrEqual:
+            "lessThanOrEqual"
+
+        case .greaterThanOrEqual:
+            "greaterThanOrEqual"
+
+        case .between:
+            "between"
+
+        case .isNull:
+            "isNull"
+
+        case .isNotNull:
+            "isNotNull"
+
+        case .inLastDays:
+            "inLastDays"
+
+        case .inLastMonths:
+            "inLastMonths"
+
+        case .inLastYears:
+            "inLastYears"
+
+        case .beforeDate:
+            "beforeDate"
+
+        case .afterDate:
+            "afterDate"
+
+        case .onDate:
+            "onDate"
+
+        case .isTrue:
+            "isTrue"
+
+        case .isFalse:
+            "isFalse"
+
+        case .memberOf:
+            "memberOf"
+
+        case .notMemberOf:
+            "notMemberOf"
+
+        case .pathUnder:
+            "pathUnder"
+
+        case let .unknown(raw):
+            raw
         }
     }
 }
 
 // MARK: - Codable
 
+/// Codes a comparator as a single JSON string, its `rawValue`.
 public extension Comparator {
+    /// Decodes from a single string. Throws only when the value is not a
+    /// string; an unrecognised name decodes as `.unknown`.
     init(from decoder: any Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
         self = Self(rawValue: raw)
     }
 
+    /// Encodes `rawValue` as a single string.
     func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
@@ -187,7 +323,10 @@ public extension Comparator {
 
 // MARK: - CaseIterable
 
+/// Hand-written because the `unknown` payload case blocks synthesis.
 public extension Comparator {
+    /// Every comparator this build knows, in declaration order. `.unknown`
+    /// is not included.
     static var allCases: [Comparator] {
         [
             .is,

@@ -22,9 +22,8 @@ struct OPMLImportTests {
             transcriptRepo: TranscriptRepository(database: db),
             chaptersRepo: ChaptersRepository(database: db),
             fetcher: FeedFetcher(http: feedMock),
-            artwork: PodcastArtworkCache(http: MockHTTPClient(), root: artTemp),
-            now: { Date(timeIntervalSince1970: 1_700_000_000) }
-        )
+            artwork: PodcastArtworkCache(http: MockHTTPClient(), root: artTemp)
+        ) { Date(timeIntervalSince1970: 1_700_000_000) }
         return Bed(service: service, feedMock: feedMock)
     }
 
@@ -33,12 +32,12 @@ struct OPMLImportTests {
         return try Data(contentsOf: url)
     }
 
-    private static func ok(_ url: URL, _ body: Data) -> (Data, HTTPURLResponse) {
-        (body, HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+    private static func ok(_ url: URL, _ body: Data) throws -> (Data, HTTPURLResponse) {
+        try (body, stubResponse(url: url))
     }
 
-    private static func serverError(_ url: URL) -> (Data, HTTPURLResponse) {
-        (Data(), HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil)!)
+    private static func serverError(_ url: URL) throws -> (Data, HTTPURLResponse) {
+        try (Data(), stubResponse(url: url, status: 500))
     }
 
     private final class ProgressBox: @unchecked Sendable {
@@ -50,8 +49,8 @@ struct OPMLImportTests {
         let bed = try await makeBed()
         let rss = try rssData()
         bed.feedMock.handler = { request in
-            let url = request.url ?? URL(string: "https://invalid.example.com")!
-            return (url.host?.contains("broken") ?? false) ? Self.serverError(url) : Self.ok(url, rss)
+            let url = try #require(request.url)
+            return try (url.host?.contains("broken") ?? false) ? Self.serverError(url) : Self.ok(url, rss)
         }
 
         // Pre-subscribe an existing feed (stored as https://existing.example.com/feed).
@@ -94,7 +93,7 @@ struct OPMLImportTests {
         let bed = try await makeBed()
         let rss = try rssData()
         bed.feedMock.handler = { request in
-            Self.ok(request.url ?? URL(string: "https://x.example.com")!, rss)
+            try Self.ok(#require(request.url), rss)
         }
         let opml = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -115,7 +114,7 @@ struct OPMLImportTests {
         let bed = try await makeBed()
         let rss = try rssData()
         bed.feedMock.handler = { request in
-            Self.ok(request.url ?? URL(string: "https://x.example.com")!, rss)
+            try Self.ok(#require(request.url), rss)
         }
         let opml = """
         <?xml version="1.0" encoding="UTF-8"?>

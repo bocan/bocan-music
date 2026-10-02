@@ -33,20 +33,28 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
         switch self {
         case let .bookmarkStale(url):
             "Library: bookmark stale for \(url.path)"
+
         case let .invalidPath(path):
             "Library: invalid path '\(path)'"
+
         case let .databaseUnavailable(reason):
             "Library: database unavailable: \(reason)"
+
         case .scanAlreadyInProgress:
             "Library: a scan is already in progress"
+
         case let .rootNotFound(id):
             "Library: root \(id) not found"
+
         case .missingID:
             "Library: track has no database ID"
+
         case let .invalidFileURL(raw):
             "Library: invalid file URL '\(raw)'"
+
         case let .underlying(err):
             "Library: \(err)"
+
         case let .listenExportUnreadable(reason):
             "Library: listening-history export unreadable: \(reason)"
         }

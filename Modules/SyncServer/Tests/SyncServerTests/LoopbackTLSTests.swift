@@ -35,9 +35,8 @@ struct LoopbackTLSTests {
         let listener = SyncListener(
             identity: serverIdentity,
             router: router,
-            trusted: trusted,
-            pairingMode: { pairing.withLock { $0 } }
-        )
+            trusted: trusted
+        ) { pairing.withLock { $0 } }
         let port = try await listener.start()
         defer { Task { await listener.stop() } }
 

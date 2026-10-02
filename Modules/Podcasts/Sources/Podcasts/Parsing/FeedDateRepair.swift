@@ -83,10 +83,12 @@ struct FeedDateRepair {
             switch verdict {
             case .keep:
                 output += source.substring(with: match.range)
+
             case let .rewrite(date):
                 let name = source.substring(with: match.range(at: 1))
                 output += "<\(name)>\(date)</\(name)>"
                 rewritten += 1
+
             case .drop:
                 dropped += 1
             }

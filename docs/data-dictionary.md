@@ -13,7 +13,7 @@ Rows reviewed: 58. Rows with only a migration reference: 239.
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `album_id` (pk) | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+39) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
+| `album_id` (pk) | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+42) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+21) | M001 |  |
 | `eq_preset_id` | TEXT | DSPAssignmentRepository.swift, DSPState.swift, DSPViewModel.swift, EQView.swift | DSPChain.swift | M010 |  |
 
 ## `albums`
@@ -24,17 +24,17 @@ Record: `Album.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `album_artist_id` | INTEGER | AlbumRepository.swift, AlbumsViewModel.swift, ArtistRepository.swift, EditTransaction.swift, LibraryStatsRepository+Hygiene.swift (+5) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, BatchCoverArtViewModel.swift, DeepDiveService.swift (+10) | M001 |  |
+| `album_artist_id` | INTEGER | AlbumRepository.swift, AlbumsViewModel.swift, ArtistRepository.swift, EditTransaction+TrackPhase.swift, LibraryStatsRepository+Hygiene.swift (+5) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, BatchCoverArtViewModel.swift, DeepDiveService.swift (+10) | M001 |  |
 | `year` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `musicbrainz_release_id` | TEXT | AlbumRepository.swift, BackupRing.swift, EditTransaction.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, TagEditorViewModel+Identifiers.swift | ADR-003:102, #402 | Rolled up by AlbumRepository.recomputeMusicBrainzIDs (TrackImporter, EditTransaction, M042): the single value when every tagged track agrees, NULL for mixed pressings. Hygiene counts an album as missing an MBID only when this and the release group are both NULL. |
-| `musicbrainz_release_group_id` | TEXT | AlbumRepository.swift, BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction.swift, IdentifyTrackViewModel.swift (+5) | DeepDiveService.swift, LibraryStatsRepository+Hygiene.swift | ADR-003:102, #402 | Most common non-empty value across the album's tracks, same rollup path. Preferred key for 'same album, different pressing'. |
-| `cover_art_hash` | TEXT | AlbumRepository.swift, CoverArtRepository.swift, EditTransaction.swift, MetadataEditService.swift, TrackImporter.swift | AlbumDetailView.swift, Artwork.swift, BackupRing.swift, BatchCoverArtViewModel.swift, FieldDefinitions.swift (+5) | M001 |  |
+| `musicbrainz_release_id` | TEXT | AlbumRepository.swift, BackupRing.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, EditTransaction.swift, FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, TagEditorViewModel+Identifiers.swift | ADR-003:102, #402 | Rolled up by AlbumRepository.recomputeMusicBrainzIDs (TrackImporter, EditTransaction, M042): the single value when every tagged track agrees, NULL for mixed pressings. Hygiene counts an album as missing an MBID only when this and the release group are both NULL. |
+| `musicbrainz_release_group_id` | TEXT | AlbumRepository.swift, BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift (+5) | DeepDiveService.swift, EditTransaction.swift, LibraryStatsRepository+Hygiene.swift | ADR-003:102, #402 | Most common non-empty value across the album's tracks, same rollup path. Preferred key for 'same album, different pressing'. |
+| `cover_art_hash` | TEXT | AlbumRepository.swift, CoverArtRepository.swift, EditTransaction+TrackPhase.swift, EditTransaction.swift, MetadataEditService.swift (+1) | AlbumDetailView.swift, Artwork.swift, BackupRing.swift, BatchCoverArtViewModel.swift, FieldDefinitions.swift (+5) | M001 |  |
 | `release_type` | TEXT | AlbumRepository.swift, ReleaseKindLabel.swift, TagReader.swift, TagWriter.swift, TrackImporter.swift (+1) | AlbumDetailView.swift | ADR-003:101, #403 | MusicBrainz primary type (album, single, ep, broadcast, other; lowercased) from the first RELEASETYPE value via TrackTags.releaseType and AlbumRepository.setReleaseType in TrackImporter; the full multi-valued list stays in tracks.extended_tags. Read by the AlbumDetailView kind badge (hidden for plain albums). M046 requests the backfill rescan. |
 | `total_tracks` | INTEGER | AlbumRepository.swift | AlbumDetailView.swift, LibraryStatsRepository+Hygiene.swift, TrackImporter.swift | ADR-003:100, #404 | MAX(tracks.track_total) via AlbumRepository.recomputeTotals, called by TrackImporter and EditTransaction; M040 backfilled. NULL when no track carries a total. Drives AlbumDetailView's 'N songs'. |
 | `total_discs` | INTEGER | AlbumRepository.swift | TrackImporter.swift | ADR-003:100, #404 | MAX(tracks.disc_total), same path as total_tracks. |
-| `cover_art_path` | TEXT | AlbumRepository.swift, MetadataEditService.swift, NowPlayingCentre.swift, PlaylistFolderTree.swift, PlaylistRepository.swift (+3) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, ArtistsView.swift, BackupRing.swift (+9) | M001 |  |
-| `force_gapless` | INTEGER | AlbumRepository.swift, GaplessScheduler.swift, LibraryViewModel+Scanning.swift, QueuePlayer.swift | AlbumsGridView.swift, ArtistsView.swift | M003 |  |
-| `excluded_from_shuffle` | INTEGER | AlbumRepository.swift, Field.swift, LibraryViewModel+Scanning.swift, QueueItem.swift, QueuePersistence.swift (+8) | AlbumsGridView.swift, ArtistsView.swift, FieldDefinitions.swift, PlaybackQueue.swift, QueuePlayer.swift (+4) | M001 |  |
+| `cover_art_path` | TEXT | AlbumRepository.swift, MetadataEditService.swift, NowPlayingCentre.swift, PlaylistFolderTree.swift, PlaylistRepository.swift (+4) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, ArtistsView.swift, BackupRing.swift (+10) | M001 |  |
+| `force_gapless` | INTEGER | AlbumRepository.swift, GaplessScheduler.swift, LibraryViewModel+Scanning.swift, QueuePlayer+Gapless.swift | AlbumsGridView.swift, ArtistsView.swift | M003 |  |
+| `excluded_from_shuffle` | INTEGER | AlbumRepository.swift, Field.swift, LibraryViewModel+Scanning.swift, QueueItem.swift, QueuePersistence.swift (+8) | AlbumsGridView.swift, ArtistsView.swift, FieldDefinitions.swift, PlaybackQueue.swift, QueuePlayer+QueueOperations.swift (+4) | M001 |  |
 
 ## `app_metadata`
 
@@ -51,8 +51,8 @@ Record: `Artist.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `name` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `sort_name` | TEXT | ArtistEnrichmentService.swift, ArtistRepository.swift, DeepDiveModels.swift, DeepDiveService.swift, EditTransaction.swift (+4) | ArtistInfoSheet.swift, ArtistsViewModel.swift | ADR-003:155, #400 | ARTISTSORT / ALBUMARTISTSORT via ArtistRepository.findOrCreate(name:sortName:) from TrackImporter and EditTransaction; tags win, else derived by Artist.derivedSortName (English articles only); NULL when neither applies. M041 backfilled the derivation. Read by fetchAll (COALESCE ordering), ArtistsViewModel, artists_fts. |
-| `musicbrainz_artist_id` | TEXT | ArtistRepository.swift, BackupRing.swift, EditTransaction.swift, TagReader.swift, TagWriter.swift (+3) | ArtistEnrichmentService.swift, ArtistInfoSheet.swift, DeepDiveService.swift, TagEditorViewModel+Identifiers.swift | #399, #413 | Filled via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); the first tagged id wins and is never overwritten by another tag (a conflict is the shared-name problem, #401), but a tagged id replaces a confirmed Deep Dive guess (see musicbrainz_id_source). Also written by setMusicBrainzID when the user confirms a name match. M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive. |
+| `sort_name` | TEXT | ArtistEnrichmentService.swift, ArtistRepository.swift, DeepDiveModels.swift, DeepDiveService.swift, EditTransaction+TrackPhase.swift (+4) | ArtistInfoSheet.swift, ArtistsViewModel.swift | ADR-003:155, #400 | ARTISTSORT / ALBUMARTISTSORT via ArtistRepository.findOrCreate(name:sortName:) from TrackImporter and EditTransaction; tags win, else derived by Artist.derivedSortName (English articles only); NULL when neither applies. M041 backfilled the derivation. Read by fetchAll (COALESCE ordering), ArtistsViewModel, artists_fts. |
+| `musicbrainz_artist_id` | TEXT | ArtistRepository.swift, BackupRing.swift, EditTransaction+PatchApplication.swift, TagReader.swift, TagWriter.swift (+3) | ArtistEnrichmentService.swift, ArtistInfoSheet.swift, DeepDiveService.swift, EditTransaction+TrackPhase.swift, TagEditorViewModel+Identifiers.swift | #399, #413 | Filled via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); the first tagged id wins and is never overwritten by another tag (a conflict is the shared-name problem, #401), but a tagged id replaces a confirmed Deep Dive guess (see musicbrainz_id_source). Also written by setMusicBrainzID when the user confirms a name match. M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive. |
 | `disambiguation` | TEXT | n/a (common identifier, see notes) | n/a | ADR-003:103, #401, #413 | MusicBrainz disambiguation from ArtistEnrichmentService (one artist lookup each, background, shared 1 req/s limiter), NULL when MusicBrainz has none. Read by the artist page header subtitle and reusable by Deep Dive. |
 | `musicbrainz_fetched_at` | INTEGER | ArtistRepository.swift | ArtistEnrichmentProgress.swift, ArtistEnrichmentService.swift | #401 | Unix seconds of the last MusicBrainz artist lookup; NULL = never. Set by ArtistRepository.setEnrichment (including on a 404, so a stale MBID is not retried every launch); read by fetchNeedingEnrichment. |
 | `musicbrainz_id_source` | TEXT | ArtistRepository.swift |  | #413 | Provenance of musicbrainz_artist_id: 'tag' (scanner, ArtistRepository.findOrCreate; M052 backfilled every existing id) or 'search' (a Deep Dive name match the user confirmed, ArtistRepository.setMusicBrainzID via DeepDiveService.confirmArtistMBID). Read by findOrCreate so a tagged id replaces a 'search' one on the next scan. NULL only while the id is NULL. |
@@ -79,12 +79,12 @@ Record: `ImportedListen.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+5) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
+| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+7) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
 | `artist` | TEXT | n/a (common identifier, see notes) | n/a | M014 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `album` | TEXT | n/a (common identifier, see notes) | n/a | M004 |  |
 | `track_mbid` | TEXT | LastFMExportParser.swift, ListenImportRepository.swift |  | M035 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 
 ## `library_roots`
 
@@ -104,11 +104,11 @@ Record: `Lyrics.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
-| `lyrics_text` | TEXT | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | FieldDefinitions.swift, MetadataEditService.swift | M001 |  |
-| `is_synced` | BOOLEAN | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | LyricsPane.swift, TrackTagPatch.swift | M001 |  |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `lyrics_text` | TEXT | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | FieldDefinitions.swift, LyricsService+Parsing.swift, MetadataEditService.swift | M001 |  |
+| `is_synced` | BOOLEAN | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | EditTransaction+PatchApplication.swift, LyricsPane.swift, TrackTagPatch.swift | M001 |  |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `offset_ms` | INTEGER | LRCParser.swift, LyricsDocument.swift, LyricsService.swift | LyricsViewModel.swift | ADR-015:85, #415 | The user's per-track sync adjustment (LRC convention: positive = lyrics ahead). Written by LyricsService.setUserOffset from LyricsViewModel.commitOffset (debounced slider, popover dismiss); preserved by setLyrics; folded into the document by LyricsService.parse. Not the LRC [offset:] tag, which stays in the text. |
+| `offset_ms` | INTEGER | LRCParser.swift, LyricsDocument.swift, LyricsService+Parsing.swift, LyricsService.swift | LyricsViewModel.swift | ADR-015:85, #415 | The user's per-track sync adjustment (LRC convention: positive = lyrics ahead). Written by LyricsService.setUserOffset from LyricsViewModel.commitOffset (debounced slider, popover dismiss); preserved by setLyrics; folded into the document by LyricsService.parse. Not the LRC [offset:] tag, which stays in the text. |
 
 ## `pending_maintenance`
 
@@ -125,9 +125,9 @@ Record: `PendingMaintenance.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
-| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+5) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
-| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | ADR-094 | Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song. |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+7) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
+| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | ADR-094 | Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song. |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | ADR-094 | Always 'queue' today: radio, podcasts and Subsonic plays never reach the recorder's local write. Not shown on the History page for that reason; reserved for a second local source. |
 
 ## `playlist_tracks`
@@ -137,7 +137,7 @@ Record: `PlaylistTrack.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `playlist_id` (pk) | INTEGER | ContentPane.swift, LibraryViewModel+PlaylistDrop.swift, LibraryViewModel+PlaylistSync.swift, LibraryViewModel.swift, ManifestBuilder.swift (+19) | PlaylistImportSheet.swift, TracksView+Actions.swift | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `position` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 
 ## `playlists`
@@ -154,7 +154,7 @@ Record: `Playlist.swift`
 | `created_at` | INTEGER | BackupRing.swift, PlaylistService.swift, SmartPlaylistService.swift, SubsonicServer.swift, SubsonicServerRepository.swift (+2) |  | M001 |  |
 | `updated_at` | INTEGER | MetadataEditService.swift, PlaylistRepository.swift, PlaylistService.swift, SettingsRepository.swift, SmartPlaylistService.swift (+2) | CoverMosaicGenerator.swift, PlaylistDetailViewModel.swift | M001 |  |
 | `parent_id` | INTEGER | LibraryViewModel+PlaylistDrop.swift, Manifest.swift, ManifestBuilder.swift, NewPlaylistSheet.swift, NewSmartPlaylistSheet.swift (+8) | PlaylistRow.swift, ProfileMembership.swift | M001 |  |
-| `cover_art_path` | TEXT | AlbumRepository.swift, MetadataEditService.swift, NowPlayingCentre.swift, PlaylistFolderTree.swift, PlaylistRepository.swift (+3) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, ArtistsView.swift, BackupRing.swift (+9) | M001 |  |
+| `cover_art_path` | TEXT | AlbumRepository.swift, MetadataEditService.swift, NowPlayingCentre.swift, PlaylistFolderTree.swift, PlaylistRepository.swift (+4) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, ArtistsView.swift, BackupRing.swift (+10) | M001 |  |
 | `kind` | TEXT | n/a (common identifier, see notes) | n/a | M007 |  |
 | `accent_color` | TEXT | Manifest.swift, ManifestBuilder.swift, PlaylistRepository.swift | AccentColorSheet.swift, AccentPalette.swift, AlbumDetailView.swift, AlbumsGridView.swift, AppearanceSettingsView.swift (+49) | M007 |  |
 | `smart_limit_sort` | TEXT | SmartPlaylistService.swift |  | M008 |  |
@@ -168,10 +168,10 @@ Record: `PodcastChapters.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+27) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | ADR-066, #608 | Show the cached chapters document belongs to; cascades away with the show. Written by ChaptersRepository.upsert (from PodcastService.chapters); read by ChaptersRepository.fetchCurrent and guidsWithCurrentChapters. |
+| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+30) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | ADR-066, #608 | Show the cached chapters document belongs to; cascades away with the show. Written by ChaptersRepository.upsert (from PodcastService.chapters); read by ChaptersRepository.fetchCurrent and guidsWithCurrentChapters. |
 | `guid` (pk) | TEXT | n/a (common identifier, see notes) | n/a | ADR-066, #608 | Episode GUID; composite key with podcast_id, the same identity as podcast_episodes and podcast_episode_state. |
 | `content` | TEXT | n/a (common identifier, see notes) | n/a | ADR-066, #608 | The Podcasting 2.0 chapters JSON exactly as the publisher served it. Stored only when it parses to at least one chapter. Served unchanged by Phone Sync (ChapterServing, GET /v1/chapters/{episodeId}) and parsed by PodcastService.chapters when the network fetch fails. |
-| `source_url` | TEXT | CUESheetReader.swift, ChaptersRepository.swift, CueMarkerService.swift, FeedParser.swift, M3UReader.swift (+8) | NowPlayingViewModel.swift | ADR-066, #608 | The episode chapters_url the body was fetched from. Every read joins on podcast_episodes.chapters_url = source_url, so a feed that moves or drops its chapters retires the row without a delete. |
+| `source_url` | TEXT | CUESheetReader.swift, ChaptersRepository.swift, CueMarkerService.swift, FeedParser.swift, M3UReader.swift (+10) | NowPlayingViewModel.swift | ADR-066, #608 | The episode chapters_url the body was fetched from. Every read joins on podcast_episodes.chapters_url = source_url, so a feed that moves or drops its chapters retires the row without a delete. |
 
 ## `podcast_episode_state`
 
@@ -179,16 +179,16 @@ Record: `PodcastEpisodeState.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+27) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
+| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+30) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
 | `guid` (pk) | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `play_position` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift | ContinueListeningRail.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, ManifestBuilder.swift (+1) | M023 |  |
 | `play_state` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, Manifest.swift, ManifestBuilder.swift, TranscriptRepository.swift | AutoDownloadCoordinator.swift, EpisodeDownloadManager.swift, EpisodeList.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+PodcastBehaviour.swift (+3) | M023 |  |
 | `last_played_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift (+10) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
-| `completed_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, PodcastService.swift, TranscriptRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, PodcastsGridView.swift | M023 |  |
+| `completed_at` | REAL | EpisodeRepository.swift, EpisodeStateRepository.swift, TranscriptRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, PodcastService.swift, PodcastsGridView.swift | M023 |  |
 | `download_state` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift | AutoDownloadCoordinator.swift, EpisodeDownloadManager.swift, EpisodeList.swift, EpisodeStatusIndicator.swift, LibraryStatsRepository+Podcasts.swift (+2) | M023 |  |
-| `download_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+Podcasts.swift, PodcastService.swift | M023 |  |
+| `download_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+Podcasts.swift, PodcastService+Playback.swift | M023 |  |
 | `download_bytes` | INTEGER | EpisodeRepository.swift, EpisodeStateRepository.swift | EpisodeDownloadManager.swift, LibraryStatsRepository+Podcasts.swift, ManifestBuilder.swift | M023 |  |
-| `content_hash` | TEXT | EpisodeStateRepository.swift, TrackImporter.swift, TrackRepository.swift | ContentHashService.swift, DownloadStore.swift, EpisodeDownloadManager.swift, FileServing.swift, ManifestBuilder.swift (+3) | M001 |  |
+| `content_hash` | TEXT | EpisodeStateRepository.swift, TrackImporter.swift, TrackRepository.swift | ContentHashService.swift, DownloadStore.swift, EpisodeDownloadManager.swift, FileServing.swift, ManifestBuilder+Tracks.swift (+4) | M001 |  |
 
 ## `podcast_episode_transcript`
 
@@ -196,12 +196,12 @@ Record: `PodcastTranscript.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+27) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
+| `podcast_id` (pk) | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+30) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
 | `guid` (pk) | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `content` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `format` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `language` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
-| `source_url` | TEXT | CUESheetReader.swift, ChaptersRepository.swift, CueMarkerService.swift, FeedParser.swift, M3UReader.swift (+8) | NowPlayingViewModel.swift | M026 |  |
+| `source_url` | TEXT | CUESheetReader.swift, ChaptersRepository.swift, CueMarkerService.swift, FeedParser.swift, M3UReader.swift (+10) | NowPlayingViewModel.swift | M026 |  |
 | `fetched_at` | REAL | ArtistEnrichmentService.swift, ArtistRepository.swift, DeepDiveAlbumView.swift, DeepDiveArtistView.swift, DeepDiveModels.swift (+6) |  | M020 |  |
 
 ## `podcast_episodes`
@@ -211,22 +211,22 @@ Record: `PodcastEpisode.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `podcast_id` | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+27) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
+| `podcast_id` | INTEGER | AutoDownloadCoordinator.swift, ChapterServing.swift, ChaptersRepository.swift, ContentPane.swift, ContinueListeningRail.swift (+30) | LibraryStatsRepository+PodcastBehaviour.swift, PodcastTransportControls.swift | M023 |  |
 | `guid` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `subtitle` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `description_html` | TEXT | EpisodeRepository.swift, FeedParser.swift, Manifest.swift, ManifestBuilder.swift, ParsedEpisode.swift (+2) | ShowNotesView.swift | M023 |  |
-| `audio_url` | TEXT | CueMarkerService.swift, EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift (+1) | EpisodeDownloadManager.swift, EpisodeList.swift, PodcastEpisodeResolving.swift, PodcastService.swift, QueuePlayer.swift | M023 |  |
-| `audio_mime` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift | EpisodeDownloadManager.swift, FileServing.swift, ManifestBuilder.swift | M023 |  |
+| `audio_url` | TEXT | CueMarkerService.swift, EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift (+1) | EpisodeDownloadManager.swift, EpisodeList.swift, PodcastEpisodeResolving.swift, PodcastService+Playback.swift, QueuePlayer+URLResolution.swift | M023 |  |
+| `audio_mime` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift | EpisodeDownloadManager.swift, FileServing+MIME.swift, FileServing.swift, ManifestBuilder.swift | M023 |  |
 | `audio_byte_length` | INTEGER | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift |  | M023 |  |
 | `duration` | REAL | n/a (common identifier, see notes) | n/a | M001 |  |
 | `published_at` | REAL | EpisodeRepository.swift, FeedParser.swift, Manifest.swift, ManifestBuilder.swift, ParsedEpisode.swift (+2) | EpisodeList.swift, LibraryStatsRepository+PodcastBehaviour.swift, LibraryStatsRepository+Podcasts.swift, PodcastDetailView.swift, PodcastRepository.swift | M023 |  |
 | `season` | INTEGER | n/a (common identifier, see notes) | n/a | M023 |  |
 | `episode_number` | INTEGER | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift |  | M023 |  |
 | `episode_type` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift |  | M023 |  |
-| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
-| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService.swift, PodcastsGridView.swift (+1) | ADR-041:100, ADR-047:43, ADR-070:42, #410 | Local path of the episode's own itunes:image, cached lazily by PodcastService when playback resolves the episode (not for every episode on refresh); upsertOne keeps it across refreshes. Read by Continue Listening (COALESCE with show art) and Now Playing (episode art overrides show art). Not in the sync manifest (ADR-070). |
-| `chapters_url` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift, PodcastService.swift | ChaptersRepository.swift, EpisodeList.swift, ShowNotesView.swift | M023 |  |
+| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService+Refresh.swift (+1) | M023 |  |
+| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService+Refresh.swift, PodcastService.swift (+2) | ADR-041:100, ADR-047:43, ADR-070:42, #410 | Local path of the episode's own itunes:image, cached lazily by PodcastService when playback resolves the episode (not for every episode on refresh); upsertOne keeps it across refreshes. Read by Continue Listening (COALESCE with show art) and Now Playing (episode art overrides show art). Not in the sync manifest (ADR-070). |
+| `chapters_url` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift | ChaptersRepository.swift, EpisodeList.swift, PodcastService+Chapters.swift, ShowNotesView.swift | M023 |  |
 | `transcript_url` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift, PodcastService.swift (+1) | EpisodeList.swift | M023 |  |
 | `link` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `explicit` | INTEGER | n/a (common identifier, see notes) | n/a | M023 |  |
@@ -240,12 +240,12 @@ Record: `Podcast.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `feed_url` | TEXT | FeedFetcher.swift, ITunesSearchClient.swift, NowPlayingViewModel.swift, OPMLModels.swift, OPMLReader.swift (+14) | OPMLWriter.swift, PodcastDetailView.swift, PodcastsGridView.swift, PodrollShelf.swift | M023 |  |
+| `feed_url` | TEXT | FeedFetcher.swift, ITunesSearchClient.swift, NowPlayingViewModel.swift, OPMLModels.swift, OPMLReader.swift (+18) | OPMLWriter.swift, PodcastDetailView.swift, PodcastsGridView.swift, PodrollShelf.swift | M023 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `author` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `description` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
-| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
-| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService.swift, PodcastsGridView.swift (+1) | M023 |  |
+| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService+Refresh.swift (+1) | M023 |  |
+| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService+Refresh.swift, PodcastService.swift (+2) | M023 |  |
 | `link` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `language` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `explicit` | INTEGER | n/a (common identifier, see notes) | n/a | M023 |  |
@@ -256,21 +256,21 @@ Record: `Podcast.swift`
 | `funding_url` | TEXT | FeedParser.swift, ParsedFeed+Records.swift, ParsedFeed.swift, PodcastNamespaceSupplement.swift | PodcastShowView.swift | M023 |  |
 | `itunes_collection_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastRepository.swift, PodcastSeams.swift, PodcastSearchResult.swift (+3) |  | ADR-040:305, ADR-041:95, #409 | From the search result via PodcastDetail, the PodcastActions seam (subscribe(feedURL:podcastIndexID:itunesCollectionID:)), PodcastService, ParsedFeed.toPodcast(hints:); preserved by upsertByFeedURL across refreshes since #409. NULL for hand-typed or OPML feeds. No reader yet. |
 | `podcast_index_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastIndexClient.swift, PodcastRepository.swift, PodcastSeams.swift (+4) |  | ADR-040:305, ADR-041:95, #409 | Same path as itunes_collection_id. Candidate key for the feed-moved case (ADR-058) and for an 'Open in Podcast Index' link; no reader yet. |
-| `http_etag` | TEXT | ParsedFeed+Records.swift | PodcastService.swift | M023 |  |
-| `http_last_modified` | TEXT | ParsedFeed+Records.swift | PodcastService.swift | M023 |  |
-| `last_refreshed_at` | REAL | ParsedFeed+Records.swift, PodcastService.swift | PodcastRepository.swift | M023 |  |
-| `last_refresh_error` | TEXT | ParsedFeed+Records.swift, PodcastService.swift |  | M023 |  |
+| `http_etag` | TEXT | ParsedFeed+Records.swift | PodcastService+Refresh.swift | M023 |  |
+| `http_last_modified` | TEXT | ParsedFeed+Records.swift | PodcastService+Refresh.swift | M023 |  |
+| `last_refreshed_at` | REAL | ParsedFeed+Records.swift, PodcastService+Refresh.swift | PodcastRepository.swift | M023 |  |
+| `last_refresh_error` | TEXT | ParsedFeed+Records.swift, PodcastService+Refresh.swift |  | M023 |  |
 | `auto_download` | INTEGER | PodcastRepository.swift, PodcastService.swift, PodcastShowSettingsView.swift, PodcastsViewModel+Downloads.swift | A11yIdentifiers.swift, AutoDownloadCoordinator.swift, PodcastShowView.swift | M023 |  |
 | `added_at` | REAL | EpisodeRepository.swift, Field.swift, LibraryScanner.swift, LibraryViewModel+Radio.swift, LimitAndSortView.swift (+15) | BuiltInSmartPresets.swift, FieldDefinitions.swift, SmartPlaylist.swift, TagEditorSheet+InfoTabs.swift, TrackTable+ColSpecs.swift | M001 |  |
 | `podcast_guid` | TEXT | FeedParser.swift, NowPlayingViewModel.swift, ParsedFeed+Records.swift, ParsedFeed.swift | NowPlayingStrip.swift, PodcastTransportControls.swift | M024 |  |
 | `funding_text` | TEXT | FeedParser.swift, ParsedFeed+Records.swift, ParsedFeed.swift, PodcastNamespaceSupplement.swift | FundingLink.swift, PodcastShowView.swift | M025 |  |
 | `playback_speed` | DOUBLE | Manifest.swift, ManifestBuilder.swift, PodcastRepository.swift, PodcastsViewModel.swift | NowPlayingViewModel.swift, PodcastShowSettingsView.swift | M027 |  |
 | `episode_sort` | TEXT | PodcastRepository.swift, PodcastsViewModel.swift | EpisodeRepository.swift, PodcastShowSettingsView.swift | M027 |  |
-| `retention_limit` | INTEGER | PodcastRepository.swift, PodcastsViewModel.swift | PodcastService.swift, PodcastShowSettingsView.swift | M027 |  |
+| `retention_limit` | INTEGER | PodcastRepository.swift, PodcastsViewModel.swift | PodcastService+Refresh.swift, PodcastService.swift, PodcastShowSettingsView.swift | M027 |  |
 | `show_type` | TEXT | FeedParser.swift, ParsedFeed+Records.swift, ParsedFeed.swift | EpisodeRepository.swift, PodcastRepository.swift, PodcastShowSettingsView.swift | M027 |  |
 | `persons_json` | BLOB | EpisodeRepository.swift, ParsedFeed+Records.swift |  | M028, CHANGELOG 'podcast:person' | Show-level credits; written via GRDB record encoding, so it works. |
 | `podroll_json` | BLOB | ParsedFeed+Records.swift |  | M029 |  |
-| `artwork_hash` | TEXT | Manifest.swift, ManifestBuilder.swift, PodcastRepository.swift | PodcastArtworkCache.swift, PodcastService.swift, SyncMetaRepository.swift | M033 |  |
+| `artwork_hash` | TEXT | Manifest.swift, ManifestBuilder+Tracks.swift, ManifestBuilder.swift, PodcastRepository.swift | PodcastArtworkCache.swift, PodcastService+Refresh.swift, SyncMetaRepository.swift | M033 |  |
 
 ## `radio_stations`
 
@@ -280,7 +280,7 @@ Record: `RadioStation.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `name` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `stream_url` | TEXT | LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, PlayableSource.swift, PlaylistImportService.swift, RadioStationRepository.swift (+3) | A11yIdentifiers.swift, NowPlayingViewModel.swift, QueuePlayer.swift, RadioStationInfoSheet.swift, RadioView.swift (+3) | M036 |  |
+| `stream_url` | TEXT | LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, PlayableSource.swift, PlaylistImportService.swift, RadioStationRepository.swift (+3) | A11yIdentifiers.swift, NowPlayingViewModel.swift, QueuePlayer+URLResolution.swift, RadioStationInfoSheet.swift, RadioView.swift (+3) | M036 |  |
 | `home_page_url` | TEXT | LibraryViewModel+Radio.swift, RadioStationRepository.swift, RadioViewModel.swift | LibraryViewModel+Subsonic.swift, RadioStationInfoSheet.swift, RadioStationSheet.swift, RadioView.swift, SubsonicInternetRadioView.swift | M036 |  |
 | `genre` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `station_description` | TEXT | LibraryViewModel+Radio.swift, RadioStationInfoSheet.swift, RadioStationRepository.swift |  | M036 |  |
@@ -299,18 +299,18 @@ Record: `ScrobbleQueueItem.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
-| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+5) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
-| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+7) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
+| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | M001 |  |
 | `submitted` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
 | `submission_attempts` | INTEGER | ScrobbleQueueRepository.swift, ScrobbleRepository.swift |  | M001 |  |
 | `dead` | BOOLEAN | n/a (common identifier, see notes) | n/a | M012 |  |
 | `last_error` | TEXT | ArtworkEditor.swift, BatchCoverArtViewModel.swift, CoverArtFetchViewModel.swift, IdentityStore.swift, PlaylistDetailViewModel.swift (+8) | BatchCoverArtSheet.swift, CoverArtFetchSheet.swift, ErrorState.swift | M012 |  |
-| `subsonic_server_id` | TEXT | PlayEvent.swift, PlayableSource.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift, ScrobbleService.swift (+1) | ContentPane.swift, SubsonicScrobbleProvider.swift | M021 |  |
-| `subsonic_song_id` | TEXT | PlayEvent.swift, PlayableSource.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift, ScrobbleService.swift | SubsonicScrobbleProvider.swift | M021 |  |
-| `payload_title` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only snapshot; local plays join tracks/albums at submit time. |
-| `payload_artist` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only, see payload_title. |
-| `payload_album` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029, #408 | Subsonic-only snapshot (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408; was hardcoded nil before. |
+| `subsonic_server_id` | TEXT | PlayEvent.swift, PlayableSource.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift (+2) | ContentPane.swift, SubsonicScrobbleProvider.swift | M021 |  |
+| `subsonic_song_id` | TEXT | PlayEvent.swift, PlayableSource.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift (+1) | SubsonicScrobbleProvider.swift | M021 |  |
+| `payload_title` | TEXT | ScrobbleQueueRepository+Observation.swift, ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only snapshot; local plays join tracks/albums at submit time. |
+| `payload_artist` | TEXT | ScrobbleQueueRepository+Observation.swift, ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only, see payload_title. |
+| `payload_album` | TEXT | ScrobbleQueueRepository+Observation.swift, ScrobbleQueueRepository.swift |  | M021, ADR-029, #408 | Subsonic-only snapshot (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408; was hardcoded nil before. |
 | `payload_album_artist` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029, #408 | Subsonic-only. Still nil: the Subsonic Child a queue item is built from has no album-artist field, and the track artist would be wrong for compilations. |
 | `payload_duration` | REAL | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only, see payload_title. |
 
@@ -318,12 +318,12 @@ Record: `ScrobbleQueueItem.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `queue_id` (pk) | INTEGER | LastFmProvider.swift, ListenBrainzProvider.swift, PlayEvent.swift, RockskyProvider.swift, ScrobbleQueueRepository.swift (+3) | RecentScrobblesView.swift | M012 |  |
-| `provider_id` (pk) | TEXT | LastFmCompatibleTransport.swift, LastFmProvider.swift, ListenBrainzCompatibleTransport.swift, ListenBrainzProvider.swift, RecentScrobblesView.swift (+3) | ScrobbleProvider.swift | M012 |  |
+| `queue_id` (pk) | INTEGER | LastFmProvider.swift, ListenBrainzProvider.swift, PlayEvent.swift, RockskyProvider.swift, ScrobbleQueueRepository+Observation.swift (+5) | RecentScrobblesView.swift | M012 |  |
+| `provider_id` (pk) | TEXT | LastFmCompatibleTransport.swift, LastFmProvider.swift, ListenBrainzCompatibleTransport.swift, ListenBrainzProvider.swift, RecentScrobblesView.swift (+4) | ScrobbleProvider.swift | M012 |  |
 | `status` | TEXT | n/a (common identifier, see notes) | n/a | M012 |  |
-| `submitted_at` | INTEGER | ScrobbleQueueRepository.swift |  | M012 |  |
+| `submitted_at` | INTEGER | ScrobbleQueueRepository+Observation.swift, ScrobbleQueueRepository.swift |  | M012 |  |
 | `attempts` | INTEGER | n/a (common identifier, see notes) | n/a | M012 |  |
-| `next_attempt_at` | INTEGER | ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift |  | M012 |  |
+| `next_attempt_at` | INTEGER | ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift |  | M012 |  |
 | `last_error` | TEXT | ArtworkEditor.swift, BatchCoverArtViewModel.swift, CoverArtFetchViewModel.swift, IdentityStore.swift, PlaylistDetailViewModel.swift (+8) | BatchCoverArtSheet.swift, CoverArtFetchSheet.swift, ErrorState.swift | M012 |  |
 
 ## `settings`
@@ -340,7 +340,7 @@ Record: `Setting.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `server_id` (pk) | TEXT | ContentPane.swift, LibraryViewModel+Subsonic.swift, LibraryViewModel.swift, Manifest.swift, ManifestBuilder.swift (+55) | DockTileController.swift, NoopBrowseDataSource.swift, SubsonicServer.swift | M020 |  |
+| `server_id` (pk) | TEXT | ContentPane.swift, LibraryViewModel+Subsonic.swift, LibraryViewModel.swift, Manifest.swift, ManifestBuilder.swift (+54) | DockTileController.swift, NoopBrowseDataSource.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift (+2) | M020 |  |
 | `entity_kind` (pk) | TEXT | SubsonicAlbumsViewModel.swift, SubsonicArtistsViewModel.swift, SubsonicGenresViewModel.swift, SubsonicMetadataCaching.swift, SubsonicServerRepository.swift (+1) |  | M020 |  |
 | `entity_id` (pk) | TEXT | NowPlayingViewModel.swift, SubsonicAlbumDetailView.swift, SubsonicAlbumsView.swift, SubsonicAlbumsViewModel.swift, SubsonicArtistDetailView.swift (+14) |  | M020 |  |
 | `payload_json` | BLOB | SubsonicServerRepository.swift |  | M020 |  |
@@ -359,12 +359,12 @@ Record: `Setting.swift`
 | `allow_self_signed_tls` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicService.swift, SubsonicSettingsView.swift | M020 |  |
 | `max_bitrate` | TEXT | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift |  | M020 |  |
 | `preferred_format` | TEXT | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicSettingsView.swift | M020 |  |
-| `precache_next` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | QueuePlayer.swift, SubsonicSettingsView.swift, SubsonicStreamResolving.swift | M020 |  |
+| `precache_next` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | QueuePlayer+Loading.swift, SubsonicSettingsView.swift, SubsonicStreamResolving.swift | M020 |  |
 | `include_in_search` | INTEGER | SubsonicServerRepository.swift, SubsonicServerStore.swift |  | M020 |  |
 | `show_in_sidebar` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | LibraryViewModel.swift, SidebarSectionExpansion.swift, SubsonicSettingsView.swift | M020 |  |
 | `scrobble` | INTEGER | n/a (common identifier, see notes) | n/a | M020 |  |
-| `sync_stars` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicAnnotations.swift, SubsonicService.swift, SubsonicSettingsView.swift | M020 |  |
-| `sync_ratings` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicAnnotations.swift, SubsonicService.swift, SubsonicSettingsView.swift | M020 |  |
+| `sync_stars` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicAnnotations.swift, SubsonicService+Endpoints.swift, SubsonicService.swift, SubsonicSettingsView.swift | M020 |  |
+| `sync_ratings` | INTEGER | SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift | SubsonicAnnotations.swift, SubsonicService+Endpoints.swift, SubsonicService.swift, SubsonicSettingsView.swift | M020 |  |
 | `sort_index` | INTEGER | SidebarSectionExpansion.swift, SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift, SubsonicSettingsViewModel.swift |  | M020 |  |
 | `created_at` | REAL | BackupRing.swift, PlaylistService.swift, SmartPlaylistService.swift, SubsonicServer.swift, SubsonicServerRepository.swift (+2) |  | M001 |  |
 | `last_connected_at` | REAL | RadioStationRepository.swift, SubsonicServer.swift, SubsonicServerRepository.swift, SubsonicServerStore.swift | RadioStationInfoSheet.swift | M020 |  |
@@ -375,7 +375,7 @@ Record: `Setting.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `server_id` | TEXT | ContentPane.swift, LibraryViewModel+Subsonic.swift, LibraryViewModel.swift, Manifest.swift, ManifestBuilder.swift (+55) | DockTileController.swift, NoopBrowseDataSource.swift, SubsonicServer.swift | M020 |  |
+| `server_id` | TEXT | ContentPane.swift, LibraryViewModel+Subsonic.swift, LibraryViewModel.swift, Manifest.swift, ManifestBuilder.swift (+54) | DockTileController.swift, NoopBrowseDataSource.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift (+2) | M020 |  |
 | `generation` | INTEGER | n/a (common identifier, see notes) | n/a | M031 |  |
 
 ## `sync_profile`
@@ -391,7 +391,7 @@ Record: `SyncTranscode.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | ADR-088 | Track the artifact belongs to; cascades away with the track. |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | ADR-088 | Track the artifact belongs to; cascades away with the track. |
 | `preset` (pk) | TEXT | n/a (common identifier, see notes) | n/a | ADR-088 | Transcode preset raw value (e.g. mp3_320); opaque to Persistence, vocabulary owned by AudioEngine. Composite key with track_id. |
 | `source_content_hash` | TEXT | FileServing.swift, SyncTranscodeRepository.swift, TranscodeCoordinator.swift, TranscodeStore.swift |  | ADR-088 | The track's content_hash the artifact was derived from; the row is valid only while it still matches, so a retag invalidates the artifact. |
 | `sha256` | TEXT | n/a (common identifier, see notes) | n/a | ADR-088 | SHA-256 of the artifact bytes, advertised as the manifest sha256 and used as the file endpoint's ETag. Hashed once at encode time; the ledger outlives the bytes. |
@@ -404,7 +404,7 @@ Record: `SyncTranscode.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `eq_preset_id` | TEXT | DSPAssignmentRepository.swift, DSPState.swift, DSPViewModel.swift, EQView.swift | DSPChain.swift | ADR-013, #418 | Per-track EQ preset override (EQPreset.id or NULL = global). The effect columns M010 sketched next to it were dropped in M049; per-track effects were never built. |
 
 ## `track_markers`
@@ -414,7 +414,7 @@ Record: `TrackMarker.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+69) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `position_ms` | INTEGER | CueMarkerService.swift | MarkerNavigation.swift, NowPlayingStrip.swift, NowPlayingViewModel.swift, TagEditorSheet+InfoTabs.swift | M038 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `performer` | TEXT | n/a (common identifier, see notes) | n/a | M038 |  |
@@ -426,66 +426,66 @@ Record: `Track.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `file_url` | TEXT | BackupRing.swift, CueMarkerService.swift, EditTransaction.swift, Fingerprinter.swift, LibraryScanner.swift (+17) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, CoverArtCache.swift, DeepDiveCache.swift (+25) | M001 |  |
-| `file_bookmark` | BLOB | MetadataEditService.swift, TrackImporter.swift | ContentHashService.swift, EditTransaction.swift, FileServing.swift, FingerprintService.swift, LibraryViewModel+Provenance.swift (+7) | M001 |  |
-| `file_size` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift, TrackRow.swift (+1) | ChangeDetector.swift, CoverArtCache.swift, DownloadStore.swift, DuplicateReviewSheet.swift, FileServing.swift (+8) | M001 |  |
-| `file_mtime` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift, TrackRow.swift (+1) | LibraryScanner.swift, TagEditorSheet+InfoTabs.swift, TrackRepository+Provenance.swift, TrackTable+ColSpecs.swift | M001 |  |
-| `file_format` | TEXT | Field.swift, RuleRowView.swift, TrackImporter.swift, TrackRow.swift, TrackTable+Helpers.swift | AVFoundationDecoder.swift, FieldDefinitions.swift, FileServing.swift, LibraryStatsRepository+AudioQuality.swift, ManifestBuilder.swift (+6) | M001 |  |
+| `file_url` | TEXT | BackupRing.swift, CoverArtCache.swift, CueMarkerService.swift, EditTransaction+TrackPhase.swift, EditTransaction.swift (+19) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, DeepDiveCache.swift, DownloadStore.swift (+29) | M001 |  |
+| `file_bookmark` | BLOB | MetadataEditService.swift, TrackImporter.swift | ContentHashService.swift, EditTransaction+TrackPhase.swift, FileServing.swift, FingerprintService.swift, LibraryViewModel+Provenance.swift (+7) | M001 |  |
+| `file_size` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator+Import.swift, ScanCoordinator.swift, TrackImporter.swift (+2) | ChangeDetector.swift, CoverArtCache.swift, DownloadStore.swift, DuplicateReviewSheet.swift, FileServing.swift (+9) | M001 |  |
+| `file_mtime` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator+Import.swift, ScanCoordinator.swift, TrackImporter.swift (+2) | LibraryScanner.swift, TagEditorSheet+InfoTabs.swift, TrackRepository+Provenance.swift, TrackTable+ColSpecs.swift | M001 |  |
+| `file_format` | TEXT | Field.swift, RuleRowView.swift, TrackImporter.swift, TrackRow.swift, TrackTable+Helpers.swift | AVFoundationDecoder.swift, FieldDefinitions.swift, FileServing.swift, LibraryStatsRepository+AudioQuality.swift, ManifestBuilder+Tracks.swift (+6) | M001 |  |
 | `duration` | REAL | n/a (common identifier, see notes) | n/a | M001 |  |
 | `sample_rate` | INTEGER | AVFoundationProperties.swift, AudioEngine+GaplessAPI.swift, AudioEngine.swift, AudioTap.swift, AudioTime.swift (+24) | A11yIdentifiers.swift, AVFoundationDecoder.swift, AppLogger.swift, AudioTranscoder+Pipeline.swift, BufferPump+Overlap.swift (+17) | M001 |  |
-| `bit_depth` | INTEGER | Field.swift, LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, Manifest.swift, ManifestBuilder.swift (+9) | FieldDefinitions.swift, LibraryStatsRepository+AudioQuality.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift, TrackInfoPanel.swift (+1) | ADR-009:52, ADR-065:134, #405 | Container bit depth (FLAC, WAV, AIFF, APE, WavPack, ALAC); NULL for lossy formats. Was NULL everywhere until #405; full rescan backfills. |
+| `bit_depth` | INTEGER | Field.swift, LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, Manifest.swift, ManifestBuilder+Tracks.swift (+9) | FieldDefinitions.swift, LibraryStatsRepository+AudioQuality.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift, TrackInfoPanel.swift (+1) | ADR-009:52, ADR-065:134, #405 | Container bit depth (FLAC, WAV, AIFF, APE, WavPack, ALAC); NULL for lossy formats. Was NULL everywhere until #405; full rescan backfills. |
 | `bitrate` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `channel_count` | INTEGER | FFmpegDecoder+StreamDetails.swift, LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, Manifest.swift, ManifestBuilder.swift (+6) | AVFoundationProperties.swift, AudioTap.swift, CrossfadeMix.swift, DecoderFactory.swift, FFmpegDecoder.swift (+12) | ADR-091, #513 | Channel count from the tag reader: TagLib, or AVFoundation for a raw Dolby file TagLib cannot parse. Read by TrackInfoPanel.swift and TagEditorSheet+InfoTabs.swift, which show it as a layout name (Mono, Stereo, 5.1, 7.1, else a count) with hover text saying a surround mix plays folded to stereo. Playback folds every source channel into stereo, so the value describes the file, not what is heard. |
-| `is_lossless` | BOOLEAN | Field.swift, Manifest.swift, ManifestBuilder.swift, RuleRowView.swift, TrackImporter.swift (+2) | BuiltInSmartPresets.swift, FieldDefinitions.swift, LibraryStatsRepository+AudioQuality.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift (+3) | M001 |  |
+| `channel_count` | INTEGER | FFmpegDecoder+StreamDetails.swift, LibraryViewModel+Radio.swift, LibraryViewModel+Subsonic.swift, Manifest.swift, ManifestBuilder+Tracks.swift (+6) | AVFoundationProperties.swift, AudioTap.swift, CrossfadeMix.swift, DecoderFactory.swift, FFmpegDecoder.swift (+12) | ADR-091, #513 | Channel count from the tag reader: TagLib, or AVFoundation for a raw Dolby file TagLib cannot parse. Read by TrackInfoPanel.swift and TagEditorSheet+InfoTabs.swift, which show it as a layout name (Mono, Stereo, 5.1, 7.1, else a count) with hover text saying a surround mix plays folded to stereo. Playback folds every source channel into stereo, so the value describes the file, not what is heard. |
+| `is_lossless` | BOOLEAN | Field.swift, Manifest.swift, ManifestBuilder+Tracks.swift, RuleRowView.swift, TrackImporter.swift (+2) | BuiltInSmartPresets.swift, FieldDefinitions.swift, LibraryStatsRepository+AudioQuality.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift (+3) | M001 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `artist_id` | INTEGER | AlbumRepository+CollectionCards.swift, AlbumRepository.swift, ArtistEnrichmentService.swift, ArtistInfoSheet.swift, ArtistRepository.swift (+25) | AlbumDetailView.swift, AlbumsViewModel.swift, BatchCoverArtViewModel.swift, DuplicateReviewViewModel.swift, FieldDefinitions.swift (+17) | M001 |  |
-| `album_artist_id` | INTEGER | AlbumRepository.swift, AlbumsViewModel.swift, ArtistRepository.swift, EditTransaction.swift, LibraryStatsRepository+Hygiene.swift (+5) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, BatchCoverArtViewModel.swift, DeepDiveService.swift (+10) | M001 |  |
-| `album_id` | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+39) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+18) | M001 |  |
-| `track_number` | INTEGER | BackupRing.swift, EditTransaction.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+25) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator.swift, SmartPlaylist.swift (+9) | M001 |  |
-| `disc_number` | INTEGER | BackupRing.swift, EditTransaction.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+18) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator.swift, SyncMetaRepository.swift (+6) | M001 |  |
+| `artist_id` | INTEGER | AlbumRepository+CollectionCards.swift, AlbumRepository.swift, ArtistEnrichmentService.swift, ArtistInfoSheet.swift, ArtistRepository.swift (+25) | AlbumDetailView.swift, AlbumsViewModel.swift, BatchCoverArtViewModel.swift, DuplicateReviewViewModel.swift, FieldDefinitions.swift (+18) | M001 |  |
+| `album_artist_id` | INTEGER | AlbumRepository.swift, AlbumsViewModel.swift, ArtistRepository.swift, EditTransaction+TrackPhase.swift, LibraryStatsRepository+Hygiene.swift (+5) | AlbumDetailView.swift, AlbumRepository+CollectionCards.swift, AlbumsGridView.swift, BatchCoverArtViewModel.swift, DeepDiveService.swift (+10) | M001 |  |
+| `album_id` | INTEGER | A11yIdentifiers.swift, AlbumDetailView.swift, AlbumRepository.swift, AlbumsGridView.swift, AlbumsViewModel.swift (+42) | AlbumRepository+CollectionCards.swift, Artwork.swift, CrossfadeScheduler.swift, FieldDefinitions.swift, HistoryTableCoordinator.swift (+21) | M001 |  |
+| `track_number` | INTEGER | BackupRing.swift, EditTransaction+PatchApplication.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+25) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator+Import.swift, SmartPlaylist.swift (+9) | M001 |  |
+| `disc_number` | INTEGER | BackupRing.swift, EditTransaction+PatchApplication.swift, Field.swift, FieldSelectionGrid.swift, FingerprintResult.swift (+18) | FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, LibraryStatsRepository+ListeningBehaviour.swift, ScanCoordinator+Import.swift, SyncMetaRepository.swift (+6) | M001 |  |
 | `year` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `genre` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `composer` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `bpm` | REAL | n/a (common identifier, see notes) | n/a | M001 |  |
 | `key` | TEXT | n/a (common identifier, see notes) | n/a | #407 | Musical key from INITIALKEY (ID3 TKEY, MP4 atom via TagLib) or a bare KEY Vorbis comment; written back under whichever name the file uses. Legitimately NULL in a library tagged without a key detector (0 files carried either tag on 2026-08-28). No smart-playlist field. |
 | `isrc` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `musicbrainz_track_id` | TEXT | BackupRing.swift, EditTransaction.swift, TagReader.swift, TagWriter.swift, TrackImporter.swift (+2) | ListenImportRepository.swift | M001 |  |
-| `musicbrainz_recording_id` | TEXT | BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, ScrobbleQueueRepository.swift, TagEditorViewModel+Identifiers.swift, TrackRow.swift | M001 |  |
-| `replaygain_track_gain` | REAL | BackupRing.swift, LibraryViewModel.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | EditTransaction.swift, ManifestBuilder.swift, QueueReplayGain.swift, ReplayGainAlbumPass.swift, SyncMetaRepository.swift (+2) | ADR-013, #423 | From tags when present, else the app-computed value, which TrackImporter now keeps on rescan (#423). A full rescan on 2026-08-28 wiped 13,000 computed values before the fix. |
-| `replaygain_track_peak` | REAL | BackupRing.swift, LibraryViewModel.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryStatsRepository+AudioQuality.swift, ManifestBuilder.swift, QueueReplayGain.swift, ReplayGainAlbumPass.swift, SyncMetaRepository.swift (+2) | M001 |  |
-| `replaygain_album_gain` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryViewModel.swift, ManifestBuilder.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift (+1) | ADR-013, #579 | From tags when present, else computed by ReplayGainAlbumPass after a ReplayGain batch: the power mean of the album's track loudness, written to every track of an album whose tracks all have a track gain. TrackImporter keeps it on rescan. Read at playback in Album and Auto modes (#573). |
-| `replaygain_album_peak` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | ManifestBuilder.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift, TagReader.swift | M001 |  |
+| `musicbrainz_track_id` | TEXT | BackupRing.swift, EditTransaction+PatchApplication.swift, TagReader.swift, TagWriter.swift, TrackImporter.swift (+2) | ListenImportRepository.swift | M001 |  |
+| `musicbrainz_recording_id` | TEXT | BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, ScrobbleQueueRepository.swift, TagEditorViewModel+Identifiers.swift, TrackRow.swift | M001 |  |
+| `replaygain_track_gain` | REAL | BackupRing.swift, LibraryViewModel.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | EditTransaction+PatchApplication.swift, ManifestBuilder+Tracks.swift, QueueReplayGain.swift, ReplayGainAlbumPass.swift, SyncMetaRepository.swift (+2) | ADR-013, #423 | From tags when present, else the app-computed value, which TrackImporter now keeps on rescan (#423). A full rescan on 2026-08-28 wiped 13,000 computed values before the fix. |
+| `replaygain_track_peak` | REAL | BackupRing.swift, LibraryViewModel.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryStatsRepository+AudioQuality.swift, ManifestBuilder+Tracks.swift, QueueReplayGain.swift, ReplayGainAlbumPass.swift, SyncMetaRepository.swift (+2) | M001 |  |
+| `replaygain_album_gain` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | LibraryViewModel.swift, ManifestBuilder+Tracks.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift (+1) | ADR-013, #579 | From tags when present, else computed by ReplayGainAlbumPass after a ReplayGain batch: the power mean of the album's track loudness, written to every track of an album whose tracks all have a track gain. TrackImporter keeps it on rescan. Read at playback in Album and Auto modes (#573). |
+| `replaygain_album_peak` | REAL | BackupRing.swift, ReplayGainAlbumPass.swift, TagDiff.swift, TagWriter.swift, TrackImporter.swift (+2) | ManifestBuilder+Tracks.swift, QueueReplayGain.swift, SyncMetaRepository.swift, TagEditorSheet+InfoTabs.swift, TagReader.swift | M001 |  |
 | `play_count` | INTEGER | Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift, PlayHistoryRecorder.swift, QueueItem.swift (+10) | BuiltInSmartPresets.swift, FieldDefinitions.swift, LibraryChangeObserver.swift, LibraryListeningBehaviourPane.swift, SmartPlaylist.swift (+4) | M001 |  |
 | `skip_count` | INTEGER | Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, PlayHistoryRecorder.swift, RuleRowView.swift, TrackImporter.swift (+2) | FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, TagEditorSheet+InfoTabs.swift, TrackTable+ColSpecs.swift | M001 |  |
 | `last_played_at` | INTEGER | EpisodeRepository.swift, EpisodeStateRepository.swift, Field.swift, LibraryStatsRepository+ListeningBehaviour.swift, LimitAndSortView.swift (+10) | BuiltInSmartPresets.swift, EpisodeDownloadManager.swift, FieldDefinitions.swift, LibraryListeningBehaviourPane.swift, LibraryStatsRepository+PodcastBehaviour.swift (+8) | M001 |  |
 | `rating` | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `loved` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
-| `excluded_from_shuffle` | BOOLEAN | AlbumRepository.swift, Field.swift, LibraryViewModel+Scanning.swift, QueueItem.swift, QueuePersistence.swift (+8) | AlbumsGridView.swift, ArtistsView.swift, FieldDefinitions.swift, PlaybackQueue.swift, QueuePlayer.swift (+4) | M001 |  |
+| `excluded_from_shuffle` | BOOLEAN | AlbumRepository.swift, Field.swift, LibraryViewModel+Scanning.swift, QueueItem.swift, QueuePersistence.swift (+8) | AlbumsGridView.swift, ArtistsView.swift, FieldDefinitions.swift, PlaybackQueue.swift, QueuePlayer+QueueOperations.swift (+4) | M001 |  |
 | `added_at` | INTEGER | EpisodeRepository.swift, Field.swift, LibraryScanner.swift, LibraryViewModel+Radio.swift, LimitAndSortView.swift (+15) | BuiltInSmartPresets.swift, FieldDefinitions.swift, SmartPlaylist.swift, TagEditorSheet+InfoTabs.swift, TrackTable+ColSpecs.swift | M001 |  |
 | `updated_at` | INTEGER | MetadataEditService.swift, PlaylistRepository.swift, PlaylistService.swift, SettingsRepository.swift, SmartPlaylistService.swift (+2) | CoverMosaicGenerator.swift, PlaylistDetailViewModel.swift | M001 |  |
 | `play_duration_total` | REAL | PlayHistoryRecorder.swift, TrackImporter.swift | LibraryStatsRepository+CollectionShape.swift, SyncMetaRepository.swift | M001 |  |
 | `skip_after_seconds` | REAL | PlayHistoryRecorder.swift, TrackImporter.swift | LibraryStatsRepository+ListeningBehaviour.swift | #423 | User setting (LibraryViewModel); preserved across rescans by TrackImporter since #423. |
 | `file_path_display` | TEXT | TrackImporter.swift | TagEditorSheet+InfoTabs.swift, TrackInfoPanel.swift | M001 |  |
-| `content_hash` | TEXT | EpisodeStateRepository.swift, TrackImporter.swift, TrackRepository.swift | ContentHashService.swift, DownloadStore.swift, EpisodeDownloadManager.swift, FileServing.swift, ManifestBuilder.swift (+3) | ADR-065, #423 | Sync ETag from ContentHashService; kept on rescan while file_mtime is unchanged, cleared when the file changed (same rule as provenance). |
+| `content_hash` | TEXT | EpisodeStateRepository.swift, TrackImporter.swift, TrackRepository.swift | ContentHashService.swift, DownloadStore.swift, EpisodeDownloadManager.swift, FileServing.swift, ManifestBuilder+Tracks.swift (+4) | ADR-065, #423 | Sync ETag from ContentHashService; kept on rescan while file_mtime is unchanged, cleared when the file changed (same rule as provenance). |
 | `disabled` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
 | `album_track_sort_key` | TEXT | TrackImporter.swift, TrackRepository.swift |  | M001 |  |
-| `cover_art_hash` | TEXT | AlbumRepository.swift, CoverArtRepository.swift, EditTransaction.swift, MetadataEditService.swift, TrackImporter.swift | AlbumDetailView.swift, Artwork.swift, BackupRing.swift, BatchCoverArtViewModel.swift, FieldDefinitions.swift (+5) | M001 |  |
-| `user_edited` | BOOLEAN | ConflictResolver.swift, EditTransaction.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift (+1) | DeepDiveTagSaving.swift, TagEditorSheet+InfoTabs.swift, TagEditorViewModel+Conflict.swift | M002 |  |
-| `musicbrainz_album_artist_id` | TEXT | BackupRing.swift, EditTransaction.swift, IdentifyTrackViewModel.swift, TagReader.swift, TagWriter.swift (+3) |  | ADR-012:68, #399 | Album-artist MBID per track (Picard MUSICBRAINZ_ALBUMARTISTID). The identify UI labels this 'Artist MBID'. Track-artist MBID has no column yet (#399). |
-| `musicbrainz_release_id` | TEXT | AlbumRepository.swift, BackupRing.swift, EditTransaction.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, TagEditorViewModel+Identifiers.swift | ADR-012:68, ADR-009:58 | Populated per track; never rolled up to albums (#402). |
-| `musicbrainz_release_group_id` | TEXT | AlbumRepository.swift, BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction.swift, IdentifyTrackViewModel.swift (+5) | DeepDiveService.swift, LibraryStatsRepository+Hygiene.swift | ADR-012:68 | Populated per track; never rolled up to albums (#402). |
-| `track_total` | INTEGER | BackupRing.swift, EditTransaction.swift, FieldSelectionGrid.swift, FingerprintResult.swift, FingerprintService.swift (+16) | AlbumRepository.swift, ScanCoordinator.swift, SyncMetaRepository.swift, TagEditorSheet.swift, TagEditorViewModel+Conflict.swift (+2) | M002, #404 | From TRACKTOTAL / TOTALTRACKS, or the N of an n/N TRACKNUMBER (ID3v2 TRCK, MP4 trkn) since #404. |
-| `disc_total` | INTEGER | BackupRing.swift, EditTransaction.swift, FieldSelectionGrid.swift, FingerprintResult.swift, FingerprintService.swift (+14) | AlbumRepository.swift, ScanCoordinator.swift, SyncMetaRepository.swift, TagEditorSheet.swift, TagEditorViewModel+Conflict.swift (+2) | M002, #404 | Same sources as track_total, via DISCTOTAL / TOTALDISCS or n/N DISCNUMBER. |
+| `cover_art_hash` | TEXT | AlbumRepository.swift, CoverArtRepository.swift, EditTransaction+TrackPhase.swift, EditTransaction.swift, MetadataEditService.swift (+1) | AlbumDetailView.swift, Artwork.swift, BackupRing.swift, BatchCoverArtViewModel.swift, FieldDefinitions.swift (+5) | M001 |  |
+| `user_edited` | BOOLEAN | ConflictResolver.swift, EditTransaction+TrackPhase.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift (+1) | DeepDiveTagSaving.swift, TagEditorSheet+InfoTabs.swift, TagEditorViewModel+Conflict.swift | M002 |  |
+| `musicbrainz_album_artist_id` | TEXT | BackupRing.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift, TagReader.swift, TagWriter.swift (+3) | EditTransaction+TrackPhase.swift | ADR-012:68, #399 | Album-artist MBID per track (Picard MUSICBRAINZ_ALBUMARTISTID). The identify UI labels this 'Artist MBID'. Track-artist MBID has no column yet (#399). |
+| `musicbrainz_release_id` | TEXT | AlbumRepository.swift, BackupRing.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift, TagReader.swift (+4) | DeepDiveService.swift, EditTransaction.swift, FieldDefinitions.swift, LibraryStatsRepository+Hygiene.swift, TagEditorViewModel+Identifiers.swift | ADR-012:68, ADR-009:58 | Populated per track; never rolled up to albums (#402). |
+| `musicbrainz_release_group_id` | TEXT | AlbumRepository.swift, BackupRing.swift, DeepDiveTagSaving.swift, EditTransaction+PatchApplication.swift, IdentifyTrackViewModel.swift (+5) | DeepDiveService.swift, EditTransaction.swift, LibraryStatsRepository+Hygiene.swift | ADR-012:68 | Populated per track; never rolled up to albums (#402). |
+| `track_total` | INTEGER | BackupRing.swift, EditTransaction+PatchApplication.swift, FieldSelectionGrid.swift, FingerprintResult.swift, FingerprintService.swift (+16) | AlbumRepository.swift, EditTransaction.swift, ScanCoordinator+Import.swift, SyncMetaRepository.swift, TagEditorSheet.swift (+3) | M002, #404 | From TRACKTOTAL / TOTALTRACKS, or the N of an n/N TRACKNUMBER (ID3v2 TRCK, MP4 trkn) since #404. |
+| `disc_total` | INTEGER | BackupRing.swift, EditTransaction+PatchApplication.swift, FieldSelectionGrid.swift, FingerprintResult.swift, FingerprintService.swift (+14) | AlbumRepository.swift, EditTransaction.swift, ScanCoordinator+Import.swift, SyncMetaRepository.swift, TagEditorSheet.swift (+3) | M002, #404 | Same sources as track_total, via DISCTOTAL / TOTALDISCS or n/N DISCNUMBER. |
 | `year_text` | TEXT | TrackImporter.swift, TrackRow.swift, TrackTagPatch.swift | SQL.swift, TrackTable+ColSpecs.swift, TrackTable+Helpers.swift, TracksView+Actions.swift | M005 |  |
 | `acoustid_fingerprint` | TEXT | FingerprintStore.swift, TrackImporter.swift |  | ADR-011, #423 | See acoustid_id. |
 | `acoustid_id` | TEXT | FingerprintService.swift, FingerprintStore.swift, TrackImporter.swift | DeepDiveService.swift | ADR-011, #423 | Identify result; preserved across rescans since #423 (a retag or re-encode does not change the recording). |
 | `extended_tags` | TEXT | TagReader.swift, TrackImporter.swift, TrackTags.swift |  | M015 |  |
-| `needs_conflict_review` | BOOLEAN | MetadataEditService.swift, ScanCoordinator.swift | ConflictDiffSheet.swift, TagEditorSheet.swift, TagEditorViewModel+Conflict.swift, TagEditorViewModel.swift | M018 |  |
+| `needs_conflict_review` | BOOLEAN | MetadataEditService.swift, ScanCoordinator.swift | ConflictDiffSheet.swift, ScanCoordinator+Import.swift, TagEditorSheet.swift, TagEditorViewModel+Conflict.swift, TagEditorViewModel.swift | M018 |  |
 | `provenance_suspected` | BOOLEAN | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |
 | `provenance_confidence` | DOUBLE | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |
 | `provenance_shelf_hz` | INTEGER | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |
 | `provenance_analysed_at` | INTEGER | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |
-| `musicbrainz_artist_id` | TEXT | ArtistRepository.swift, BackupRing.swift, EditTransaction.swift, TagReader.swift, TagWriter.swift (+3) | ArtistEnrichmentService.swift, ArtistInfoSheet.swift, DeepDiveService.swift, TagEditorViewModel+Identifiers.swift | #399, #413 | Picard MUSICBRAINZ_ARTISTID (first value) via the bridge, TrackImporter, TrackTagPatch / EditTransaction / BackupRing. Read by the tag editor's Identifiers section (Artist MBID row). Added in M043. |
+| `musicbrainz_artist_id` | TEXT | ArtistRepository.swift, BackupRing.swift, EditTransaction+PatchApplication.swift, TagReader.swift, TagWriter.swift (+3) | ArtistEnrichmentService.swift, ArtistInfoSheet.swift, DeepDiveService.swift, EditTransaction+TrackPhase.swift, TagEditorViewModel+Identifiers.swift | #399, #413 | Picard MUSICBRAINZ_ARTISTID (first value) via the bridge, TrackImporter, TrackTagPatch / EditTransaction / BackupRing. Read by the tag editor's Identifiers section (Artist MBID row). Added in M043. |
 
 ## `trusted_devices`
 

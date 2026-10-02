@@ -179,9 +179,9 @@ struct TranscodeCoordinatorResilienceTests {
         let coordinator = TranscodeCoordinator(
             database: database,
             store: store,
-            encoder: encoder,
             prepareWindowBytes: .max / 2,
-            debounce: .milliseconds(10)
+            debounce: .milliseconds(10),
+            encoder: encoder
         )
         let tracks = TrackRepository(database: database)
         let ledger = SyncTranscodeRepository(database: database)
@@ -220,9 +220,9 @@ struct TranscodeCoordinatorResilienceTests {
         let coordinator = TranscodeCoordinator(
             database: database,
             store: store,
-            encoder: encoder,
             prepareWindowBytes: .max / 2,
-            debounce: .milliseconds(10)
+            debounce: .milliseconds(10),
+            encoder: encoder
         )
         let tracks = TrackRepository(database: database)
         let ledger = SyncTranscodeRepository(database: database)
@@ -232,14 +232,13 @@ struct TranscodeCoordinatorResilienceTests {
         encoder.setFailing([bad])
 
         await coordinator.runPass()
-        #expect(encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 1)
+        let attemptsAfterFirstPass = encoder.attemptedTrackIDs.count { $0 == bad }
+        #expect(attemptsAfterFirstPass == 1)
         #expect(try await ledger.allValid(preset: "opus_128").map(\.trackID) == [good])
 
         await coordinator.runPass()
-        #expect(
-            encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 1,
-            "the memo skips the known-bad file"
-        )
+        let attemptsAfterSecondPass = encoder.attemptedTrackIDs.count { $0 == bad }
+        #expect(attemptsAfterSecondPass == 1, "the memo skips the known-bad file")
 
         // A repaired file (new content hash) gets one fresh try.
         encoder.setFailing([])
@@ -247,7 +246,8 @@ struct TranscodeCoordinatorResilienceTests {
         track.contentHash = "h-fixed"
         _ = try await tracks.upsert(track)
         await coordinator.runPass()
-        #expect(encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 2)
+        let attemptsAfterRepair = encoder.attemptedTrackIDs.count { $0 == bad }
+        #expect(attemptsAfterRepair == 2)
         #expect(try await ledger.allValid(preset: "opus_128").count == 2)
 
         try self.removeIfPresent(root)

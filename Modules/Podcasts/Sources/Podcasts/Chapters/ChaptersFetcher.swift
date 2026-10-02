@@ -14,6 +14,8 @@ public actor ChaptersFetcher {
     private let log = AppLogger.make(.podcasts)
     private var cache: [URL: [Chapter]] = [:]
 
+    /// Creates a fetcher with an empty in-memory cache. `maxBytes` is the
+    /// size cap for a chapters document, 1 MB by default.
     public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 1024 * 1024) {
         self.http = http
         self.maxBytes = maxBytes

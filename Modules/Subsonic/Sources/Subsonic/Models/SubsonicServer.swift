@@ -22,8 +22,11 @@ public enum SubsonicBitrate: Sendable, Codable, Hashable {
     /// Serialised string used in the database `max_bitrate` column.
     public var storedValue: String {
         switch self {
-        case .original: "original"
-        case let .kbps(n): String(n)
+        case .original:
+            "original"
+
+        case let .kbps(n):
+            String(n)
         }
     }
 
@@ -41,8 +44,11 @@ public enum SubsonicBitrate: Sendable, Codable, Hashable {
     /// Value to pass as `maxBitRate` to `SwiftSonicClient.streamURL`.
     public var intValue: Int? {
         switch self {
-        case .original: nil
-        case let .kbps(n): n
+        case .original:
+            nil
+
+        case let .kbps(n):
+            n
         }
     }
 }
@@ -133,6 +139,9 @@ public struct SubsonicServer: Identifiable, Hashable, Sendable, Codable {
     // MARK: Init
 
     public init(
+        // Memberwise initialiser used across modules; the labels follow the
+        // stored-property order, as the Persistence record does.
+        // swiftlint:disable:next function_default_parameter_at_end
         id: UUID = UUID(),
         name: String,
         serverURL: URL,

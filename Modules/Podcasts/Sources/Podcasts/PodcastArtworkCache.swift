@@ -27,6 +27,9 @@ public actor PodcastArtworkCache {
     /// past 5 MB, so the cap is generous; it still bounds a hostile or runaway URL.
     public static let defaultMaxBytes = 15 * 1024 * 1024
 
+    /// Creates the cache and marks its folder as excluded from backups.
+    /// `root` defaults to the Application Support artwork folder; `maxBytes`
+    /// is the largest image the cache accepts.
     public init(http: any HTTPClient = URLSession.shared, root: URL? = nil, maxBytes: Int = defaultMaxBytes) {
         self.http = http
         self.root = root ?? Self.defaultRoot
@@ -38,7 +41,16 @@ public actor PodcastArtworkCache {
     }
 
     private static let defaultRoot: URL = {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        // If the system reports no Application Support directory, use the
+        // conventional path under the home directory (as `DatabaseLocation`
+        // does) so the artwork still lands where macOS does not purge it.
+        let appSupport: URL
+        if let reported = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            appSupport = reported
+        } else {
+            appSupport = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
+            AppLogger.make(.podcasts).warning("artwork.root.fallback", ["root": appSupport.path])
+        }
         return appSupport
             .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
             .appendingPathComponent("Podcasts", isDirectory: true)

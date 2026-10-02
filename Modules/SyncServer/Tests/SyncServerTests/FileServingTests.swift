@@ -96,8 +96,12 @@ struct FileServingTests {
         try bytes.write(to: audioURL)
         let bookmark = try audioURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
         let trackId = try await TrackRepository(database: server.database).insert(Track(
-            fileURL: audioURL.absoluteString, fileBookmark: bookmark, fileFormat: "flac",
-            contentHash: "hash123", addedAt: 0, updatedAt: 0
+            fileURL: audioURL.absoluteString,
+            fileBookmark: bookmark,
+            fileFormat: "flac",
+            contentHash: "hash123",
+            addedAt: 0,
+            updatedAt: 0
         ))
 
         let full = try await server.client.request(port: server.port, path: "/v1/file/track/\(trackId)")
@@ -236,7 +240,7 @@ private struct LoopbackFileServer {
     let scratch: URL
     let downloadRoot: URL
 
-    static func make() async throws -> LoopbackFileServer {
+    static func make() async throws -> Self {
         let database = try await Database(location: .inMemory)
         let serverStore = KeychainIdentityStore(service: "io.cloudcauldron.bocan.sync.test.server.\(UUID().uuidString)")
         let clientStore = KeychainIdentityStore(service: "io.cloudcauldron.bocan.sync.test.client.\(UUID().uuidString)")
@@ -253,13 +257,18 @@ private struct LoopbackFileServer {
         let downloadRoot = scratch.appendingPathComponent("downloads")
 
         let router = Router(routes: FileServing(database: database, downloadRoot: downloadRoot).routes())
-        let listener = SyncListener(identity: serverIdentity, router: router, trusted: trusted, pairingMode: { false })
+        let listener = SyncListener(identity: serverIdentity, router: router, trusted: trusted) { false }
         let port = try await listener.start()
 
-        return LoopbackFileServer(
-            database: database, port: port, client: LoopbackClient(clientIdentity: clientIdentity),
-            listener: listener, serverStore: serverStore, clientStore: clientStore,
-            scratch: scratch, downloadRoot: downloadRoot
+        return Self(
+            database: database,
+            port: port,
+            client: LoopbackClient(clientIdentity: clientIdentity),
+            listener: listener,
+            serverStore: serverStore,
+            clientStore: clientStore,
+            scratch: scratch,
+            downloadRoot: downloadRoot
         )
     }
 

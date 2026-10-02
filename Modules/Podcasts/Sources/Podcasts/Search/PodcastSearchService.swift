@@ -10,6 +10,8 @@ public actor PodcastSearchService {
     private let itunes: ITunesSearchClient
     private let log: AppLogger
 
+    /// Creates the service. Pass `nil` for `podcastIndex` when there are no
+    /// Podcast Index credentials; search then uses iTunes only.
     public init(
         podcastIndex: PodcastIndexClient?,
         itunes: ITunesSearchClient,
@@ -58,7 +60,9 @@ public actor PodcastSearchService {
         // Capture feeds; log warnings for individual source failures.
         let piFeeds: [PodcastSearchResult]
         switch piResult {
-        case let .success(feeds): piFeeds = feeds
+        case let .success(feeds):
+            piFeeds = feeds
+
         case let .failure(err):
             piFeeds = []
             self.log.warning("search.pi.failed", ["term": trimmed, "error": String(reflecting: err)])
@@ -66,7 +70,9 @@ public actor PodcastSearchService {
 
         let itFeeds: [PodcastSearchResult]
         switch itResult {
-        case let .success(feeds): itFeeds = feeds
+        case let .success(feeds):
+            itFeeds = feeds
+
         case let .failure(err):
             itFeeds = []
             self.log.warning("search.itunes.failed", ["term": trimmed, "error": String(reflecting: err)])

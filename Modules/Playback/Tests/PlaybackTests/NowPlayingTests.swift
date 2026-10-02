@@ -31,9 +31,8 @@ struct NowPlayingTests {
         let track = self.makeTrack()
         centre.update(
             track: track,
-            duration: 240,
-            positionProvider: { 0 }
-        )
+            duration: 240
+        ) { 0 }
         centre.clear()
     }
 
@@ -44,9 +43,8 @@ struct NowPlayingTests {
         let track = self.makeTrack(title: "Test Song")
         centre.update(
             track: track,
-            duration: 180,
-            positionProvider: { 42 }
-        )
+            duration: 180
+        ) { 42 }
         // NowPlayingCentre updates MPNowPlayingInfoCenter.default().nowPlayingInfo
         // We can't assert on MPNowPlayingInfoCenter in a unit test (it requires
         // a running app with audio session), but we verify no crash occurs.
@@ -60,9 +58,8 @@ struct NowPlayingTests {
         centre.updatePodcast(
             title: "Episode 42",
             showName: "The Show",
-            duration: 1800,
-            positionProvider: { 12 }
-        )
+            duration: 1800
+        ) { 12 }
         // As with update(track:), we cannot assert MPNowPlayingInfoCenter state
         // in a unit test (it requires a running app); verify no crash occurs.
         centre.setPlaying(true)
@@ -77,9 +74,8 @@ struct NowPlayingTests {
         let track = self.makeTrack()
         centre.update(
             track: track,
-            duration: 100,
-            positionProvider: { 10 }
-        )
+            duration: 100
+        ) { 10 }
         centre.setPlaying(true)
         centre.setPlaying(false)
         // Verify no crash; actual MPNowPlayingInfoCenter state is app-level.
@@ -93,9 +89,8 @@ struct NowPlayingTests {
         centre.update(
             track: track,
             duration: 200,
-            coverArtPath: "/nonexistent/cover.jpg",
-            positionProvider: { 0 }
-        )
+            coverArtPath: "/nonexistent/cover.jpg"
+        ) { 0 }
         // Give the off-main load a moment to settle before clearing.
         try await Task.sleep(nanoseconds: 200_000_000)
         centre.clear()
@@ -109,16 +104,14 @@ struct NowPlayingTests {
         centre.update(
             track: self.makeTrack(title: "A"),
             duration: 100,
-            coverArtPath: "/nonexistent/a.jpg",
-            positionProvider: { 0 }
-        )
+            coverArtPath: "/nonexistent/a.jpg"
+        ) { 0 }
         // Second update supersedes it immediately with a different track and no art.
         centre.update(
             track: self.makeTrack(title: "B"),
             duration: 100,
-            coverArtPath: nil,
-            positionProvider: { 0 }
-        )
+            coverArtPath: nil
+        ) { 0 }
         try await Task.sleep(nanoseconds: 200_000_000)
         centre.clear()
     }

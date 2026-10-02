@@ -15,13 +15,26 @@ public enum LogLevel: Int, Sendable, CaseIterable, Comparable, Codable {
     /// Upper-case label shown in the console ("DEBUG", "WARNING", ...).
     public var label: String {
         switch self {
-        case .trace: "TRACE"
-        case .debug: "DEBUG"
-        case .info: "INFO"
-        case .notice: "NOTICE"
-        case .warning: "WARNING"
-        case .error: "ERROR"
-        case .fault: "FAULT"
+        case .trace:
+            "TRACE"
+
+        case .debug:
+            "DEBUG"
+
+        case .info:
+            "INFO"
+
+        case .notice:
+            "NOTICE"
+
+        case .warning:
+            "WARNING"
+
+        case .error:
+            "ERROR"
+
+        case .fault:
+            "FAULT"
         }
     }
 }

@@ -39,13 +39,13 @@ public struct CueMarkerService: Sendable {
         guard !cues.isEmpty else { return 0 }
 
         // Prefer complete sheets: all FILE targets present on disk.
-        let ranked = cues.sorted { a, b in
-            let aComplete = Self.allTargetsExist(inCueAt: a)
-            let bComplete = Self.allTargetsExist(inCueAt: b)
-            if aComplete != bComplete {
-                return aComplete
+        let ranked = cues.sorted { lhs, rhs in
+            let lhsComplete = Self.allTargetsExist(inCueAt: lhs)
+            let rhsComplete = Self.allTargetsExist(inCueAt: rhs)
+            if lhsComplete != rhsComplete {
+                return lhsComplete
             }
-            return a.lastPathComponent < b.lastPathComponent
+            return lhs.lastPathComponent < rhs.lastPathComponent
         }
 
         var claimed: Set<Int64> = []
@@ -61,17 +61,7 @@ public struct CueMarkerService: Sendable {
     /// overlapping sheets can't fight. Returns tracks that received markers.
     @discardableResult
     public func attachMarkers(fromCueAt url: URL, claimed: inout Set<Int64>) async -> Int {
-        let sheet: CUESheet
-        do {
-            let data = try Data(contentsOf: url)
-            sheet = try CUESheetReader.parse(data: data, sourceURL: url)
-        } catch {
-            self.log.warning("cue.markers.unreadable", [
-                "cue": url.lastPathComponent,
-                "error": String(reflecting: error),
-            ])
-            return 0
-        }
+        guard let sheet = self.readSheet(at: url) else { return 0 }
 
         var touched = 0
         for file in sheet.files {
@@ -91,23 +81,7 @@ public struct CueMarkerService: Sendable {
                 await self.clearMarkers(forAudioAt: audioURL)
                 continue
             }
-            let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
-            let track: Track?
-            do {
-                track = try await self.trackRepo.fetchOne(fileURL: canonical)
-            } catch {
-                // Distinct from "not indexed" below: the cue is skipped
-                // because the read failed, not because the audio is new (#492).
-                self.log.warning("cue.markers.lookupFailed", [
-                    "audio": audioURL.lastPathComponent,
-                    "error": String(reflecting: error),
-                ])
-                continue
-            }
-            guard let trackID = track?.id else {
-                self.log.debug("cue.markers.notIndexed", ["audio": audioURL.lastPathComponent])
-                continue
-            }
+            guard let trackID = await self.indexedTrackID(forAudioAt: audioURL) else { continue }
             guard !claimed.contains(trackID) else { continue }
 
             let markers = file.tracks.map { cueTrack in
@@ -134,6 +108,46 @@ public struct CueMarkerService: Sendable {
             }
         }
         return touched
+    }
+
+    /// Reads and parses the cue sheet at `url`, or logs why it cannot and
+    /// returns `nil`.
+    private func readSheet(at url: URL) -> CUESheet? {
+        let sheet: CUESheet
+        do {
+            let data = try Data(contentsOf: url)
+            sheet = try CUESheetReader.parse(data: data, sourceURL: url)
+        } catch {
+            self.log.warning("cue.markers.unreadable", [
+                "cue": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+        return sheet
+    }
+
+    /// The id of the indexed track backing `audioURL`, or `nil` (with a log
+    /// line) when the lookup fails or the audio is not in the library.
+    private func indexedTrackID(forAudioAt audioURL: URL) async -> Int64? {
+        let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
+        let track: Track?
+        do {
+            track = try await self.trackRepo.fetchOne(fileURL: canonical)
+        } catch {
+            // Distinct from "not indexed" below: the cue is skipped
+            // because the read failed, not because the audio is new (#492).
+            self.log.warning("cue.markers.lookupFailed", [
+                "audio": audioURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+        guard let trackID = track?.id else {
+            self.log.debug("cue.markers.notIndexed", ["audio": audioURL.lastPathComponent])
+            return nil
+        }
+        return trackID
     }
 
     /// Deletes any markers on the track backing `audioURL`. Read-first so

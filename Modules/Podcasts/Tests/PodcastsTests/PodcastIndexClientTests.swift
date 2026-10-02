@@ -20,7 +20,8 @@ struct PodcastIndexClientTests {
         // Independently compute the expected SHA-1 to verify algorithm and input order.
         let input = "testkey" + "testsecret" + "1717200000"
         let expected = Insecure.SHA1.hash(data: Data(input.utf8))
-            .map { String(format: "%02x", $0) }.joined()
+            .map { String(format: "%02x", $0) }
+            .joined()
 
         #expect(headers["Authorization"] == expected)
         // SHA-1 digest is always 40 hex chars.
@@ -44,19 +45,13 @@ struct PodcastIndexClientTests {
 
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (data, HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (data, stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         let results = try await client.search(term: "swift")
 
@@ -88,19 +83,13 @@ struct PodcastIndexClientTests {
 
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (data, HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (data, stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         let feedURL = try #require(URL(string: "https://www.swiftbysundell.com/feed/podcast/"))
         let result = try await client.podcast(byFeedURL: feedURL)
@@ -117,19 +106,13 @@ struct PodcastIndexClientTests {
     func http401ThrowsSearchUnavailable() async throws {
         let mock = MockHTTPClient()
         mock.handler = { _ in
-            (Data(), HTTPURLResponse(
-                url: URL(string: "https://api.podcastindex.org")!,
-                statusCode: 401,
-                httpVersion: nil,
-                headerFields: nil
-            )!)
+            try (Data(), stubResponse("https://api.podcastindex.org", status: 401))
         }
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         do {
             _ = try await client.search(term: "test")
@@ -147,22 +130,13 @@ struct PodcastIndexClientTests {
         var capturedHeaders: [String: String] = [:]
         mock.handler = { request in
             capturedHeaders = request.allHTTPHeaderFields ?? [:]
-            return (
-                Data("{\"feeds\":[]}".utf8),
-                HTTPURLResponse(
-                    url: URL(string: "https://api.podcastindex.org")!,
-                    statusCode: 200,
-                    httpVersion: nil,
-                    headerFields: nil
-                )!
-            )
+            return try (Data("{\"feeds\":[]}".utf8), stubResponse("https://api.podcastindex.org"))
         }
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         _ = try? await client.search(term: "test")
 

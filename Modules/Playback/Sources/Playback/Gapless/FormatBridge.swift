@@ -14,14 +14,14 @@ import Foundation
 public struct FormatBridge: Sendable {
     public init() {}
 
-    /// Returns `true` when `a` and `b` can be scheduled back-to-back on the
+    /// Returns `true` when `lhs` and `rhs` can be scheduled back-to-back on the
     /// same `AVAudioPlayerNode` without an engine restart.
-    public func isCompatible(_ a: AVAudioFormat, _ b: AVAudioFormat) -> Bool {
-        a.sampleRate == b.sampleRate && a.channelCount == b.channelCount
+    public func isCompatible(_ lhs: AVAudioFormat, _ rhs: AVAudioFormat) -> Bool {
+        lhs.sampleRate == rhs.sampleRate && lhs.channelCount == rhs.channelCount
     }
 
     /// Convenience overload for `AudioSourceFormat` (queue-item level format description).
-    public func isCompatible(_ a: AudioSourceFormat, _ b: AudioSourceFormat) -> Bool {
-        a.isGaplessCompatible(with: b)
+    public func isCompatible(_ lhs: AudioSourceFormat, _ rhs: AudioSourceFormat) -> Bool {
+        lhs.isGaplessCompatible(with: rhs)
     }
 }

@@ -14,10 +14,14 @@ public actor TrackResolver {
     private let trackRepo: TrackRepository
     private let log = AppLogger.make(.library)
 
+    /// Creates a resolver that looks tracks up through `trackRepo`.
     public init(trackRepo: TrackRepository) {
         self.trackRepo = trackRepo
     }
 
+    /// Resolves every entry of `payload`. Each entry lands in `matches` or
+    /// `misses` with its index in the payload. `tolerance` is the duration
+    /// window, in seconds, for the fuzzy metadata match.
     public func resolve(_ payload: PlaylistPayload, tolerance: TimeInterval = 2.0) async -> Resolution {
         var matches: [Resolution.Match] = []
         var misses: [Resolution.Miss] = []
@@ -37,6 +41,9 @@ public actor TrackResolver {
 
     // MARK: - Single-entry resolution
 
+    /// The id of the library track that `entry` refers to, or `nil` when no
+    /// strategy matches. A database error in one step is logged and the next
+    /// step is tried.
     public func resolveEntry(_ entry: PlaylistPayload.Entry, tolerance: TimeInterval = 2.0) async -> Int64? {
         // Step 1: full file:// URL.
         if let url = entry.absoluteURL {

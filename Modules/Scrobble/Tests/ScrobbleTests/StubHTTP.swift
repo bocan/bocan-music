@@ -1,4 +1,5 @@
 import Foundation
+import Testing
 @testable import Scrobble
 
 // MARK: - StubLock
@@ -55,25 +56,38 @@ final class StubProtocol: URLProtocol {
         self.routes.append((matcher, response))
     }
 
-    static func registerJSON(matching substring: String, status: Int = 200, headers: [String: String] = [:], json: Any) {
+    static func registerJSON(matching substring: String, json: Any, status: Int = 200, headers: [String: String] = [:]) {
+        // Built here, in the test's own context: a response that cannot be
+        // built fails the test, and the route is not registered.
+        guard let resp = HTTPURLResponse(url: self.stubURL, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers) else {
+            Issue.record("could not build the stub response for \(substring)")
+            return
+        }
         self.register({ ($0.url?.absoluteString.contains(substring) ?? false) }, {
             let data = (try? JSONSerialization.data(withJSONObject: json)) ?? Data()
-            let url = URL(string: "https://stub")!
-            let resp = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
             return (data, resp)
         })
     }
 
-    override class func canInit(with request: URLRequest) -> Bool {
+    /// A canned response from the stub host. Call it in the test body, before
+    /// `register`: there a response that cannot be built fails the test, where
+    /// inside the route closure it would be on the URL loading thread.
+    static func response(status: Int, headers: [String: String]? = nil) throws -> HTTPURLResponse {
+        try #require(HTTPURLResponse(url: self.stubURL, statusCode: status, httpVersion: nil, headerFields: headers))
+    }
+
+    private static let stubURL = URL(string: "https://stub")!
+
+    override static func canInit(with request: URLRequest) -> Bool {
         true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 
     override func startLoading() {
-        StubProtocol.capturedRequests.append(self.request)
+        Self.capturedRequests.append(self.request)
         if let stream = request.httpBodyStream {
             stream.open()
             var body = Data()
@@ -87,11 +101,11 @@ final class StubProtocol: URLProtocol {
                 body.append(buf, count: read)
             }
             stream.close()
-            StubProtocol.capturedBodies.append(body)
+            Self.capturedBodies.append(body)
         } else {
-            StubProtocol.capturedBodies.append(self.request.httpBody ?? Data())
+            Self.capturedBodies.append(self.request.httpBody ?? Data())
         }
-        for route in StubProtocol.routes where route.matches(self.request) {
+        for route in Self.routes where route.matches(self.request) {
             let (data, response) = route.response()
             self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             self.client?.urlProtocol(self, didLoad: data)
@@ -118,6 +132,7 @@ extension URLSession {
 actor StubLastFmCreds: LastFmCredentialsStore {
     var sessionKey: String?
     var username: String?
+
     init(session: String? = nil, user: String? = nil) {
         self.sessionKey = session
         self.username = user
@@ -145,6 +160,7 @@ actor StubLastFmCreds: LastFmCredentialsStore {
 actor StubListenBrainzCreds: ListenBrainzCredentialsStore {
     var token: String?
     var username: String?
+
     init(token: String? = nil, user: String? = nil) {
         self.token = token
         self.username = user

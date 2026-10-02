@@ -15,10 +15,10 @@ private final class StubHTTP: HTTPClient, @unchecked Sendable {
     private(set) var requested: [URL] = []
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        let url = request.url!
+        let url = try #require(request.url)
         self.requested.append(url)
         let hit = url == self.feedURL
-        let response = HTTPURLResponse(url: url, statusCode: hit ? 200 : 404, httpVersion: nil, headerFields: nil)!
+        let response = try #require(HTTPURLResponse(url: url, statusCode: hit ? 200 : 404, httpVersion: nil, headerFields: nil))
         return (hit ? self.feedData : Data(), response)
     }
 }
@@ -67,9 +67,8 @@ private func makeBed() async throws -> Bed {
         fetcher: FeedFetcher(http: http),
         artwork: PodcastArtworkCache(http: http, root: tmp.appendingPathComponent("art")),
         downloadStore: DownloadStore(root: tmp.appendingPathComponent("dl")),
-        transcriptHTTP: http,
-        now: { Date(timeIntervalSince1970: 1_720_000_000) }
-    )
+        transcriptHTTP: http
+    ) { Date(timeIntervalSince1970: 1_720_000_000) }
     let player = QueuePlayer(engine: AudioEngine(), database: db)
     return Bed(db: db, service: service, http: http, player: player)
 }
@@ -124,7 +123,8 @@ struct AppPodcastActionsTests {
         let bed = try await makeBed()
         let actions = AppPodcastActions(service: bed.service, player: bed.player, downloads: nil)
         let id = try await actions.subscribe(feedURL: feedURL)
-        let opml = try await String(decoding: actions.exportOPML(), as: UTF8.self)
+        let exported = try await actions.exportOPML()
+        let opml = try #require(String(bytes: exported, encoding: .utf8))
         #expect(opml.contains("example.test/feed.rss"))
         try await actions.unsubscribe(podcastID: id)
         #expect(try await PodcastRepository(database: bed.db).fetchByFeedURL(feedURL.absoluteString) == nil)
