@@ -270,6 +270,26 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Scrobble/Sources/Scrobble/Auth/Credentials.swift`
 
+### A login-keychain item written a moment ago can read as "not found"
+
+**Problem:** the `KeychainIdentityStore` test "loadOrCreate persists a stable identity across calls" failed in about half of the full SyncServer runs (#617). The second call did not find the certificate that the first call had stored, and made a new one.
+
+**Rule:** never treat one `errSecItemNotFound` as proof that an item does not exist when the result is the replacement of stored material. Read again with a wait first (`KeychainIdentityStore.readAgain`), and replace only when the miss is stable.
+
+**Why:** measured on 2026-10-02 with eight threads that each made identities: 31 of 96 reads of a generic-password item done directly after its `SecItemAdd` answered `errSecItemNotFound`, and the same read succeeded 30 to 100 ms later. An item older than 300 ms was never missed in 3840 reads under the same load, and the key was never missed. So this is a read-after-write delay while other writes are in progress, not a loss of data. A new Phone Sync identity breaks every pairing (#622), so the cost of a wrong "not found" is high.
+
+**Canonical file:** `Modules/SyncServer/Sources/SyncServer/Identity/IdentityStore.swift`
+
+### The Keychain labels a certificate with its common name, whatever label you give it
+
+**Problem:** every `KeychainIdentityStore` that a test made left its certificate in the login keychain of the machine that ran the tests. The cleanup deleted by a `kSecAttrLabel` of its own, which matched nothing, so each run added more.
+
+**Rule:** find a stored certificate by its subject common name (that is its `kSecAttrLabel`) or by `kSecAttrPublicKeyHash`, which equals the `kSecAttrApplicationLabel` of its key. Never send a certificate `SecItemDelete` without a label: on macOS a delete removes every match. A test that adds a Keychain item proves the cleanup with a query after it.
+
+**Why:** the file-based keychain ignores a label given to `SecItemAdd` for a certificate and writes the common name. The delete then fails without an error, because "not found" is a normal answer for a cleanup.
+
+**Canonical file:** `Modules/SyncServer/Sources/SyncServer/Identity/IdentityStore.swift`
+
 ### The debug build and the installed release app use different libraries
 
 **Problem:** numbers quoted from "the library" are wrong, or a destructive change appears to have hit the real data when it did not, or the reverse.
