@@ -413,10 +413,7 @@ public actor LyricsService {
             self.log.warning("lyrics.root_scope.rootsUnavailable", ["error": String(reflecting: error)])
             return nil
         }
-        guard let root = roots.first(where: {
-            let prefix = $0.path == "/" ? "/" : $0.path + "/"
-            return path.hasPrefix(prefix)
-        }) else { return nil }
+        guard let root = roots.first(where: { $0.contains(filePath: path) }) else { return nil }
         var isStale = false
         do {
             let rootURL = try URL(
