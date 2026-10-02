@@ -8,6 +8,15 @@ updates:
     commit-message:
       prefix: "build(deps)"
 
+  # The website's build tools (Eleventy and markdown-it). Nothing else watches
+  # website/package.json: the drift script reads GitHub releases, not npm.
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
   - package-ecosystem: swift
     directory: /Modules/Observability
     schedule:
