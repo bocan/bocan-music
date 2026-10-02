@@ -14,7 +14,8 @@ Two kinds of pin are checked:
 
 Not checked, because they are not pinned: the Homebrew libraries (TagLib,
 LAME, Opus, OpenSSL), which every build takes at Homebrew's current version.
-GitHub Actions versions are Dependabot's (.github/dependabot.yml).
+GitHub Actions versions and the website's npm packages are Dependabot's
+(.github/dependabot.yml).
 
 Each pinned version is compared against the newest release tag upstream.
 
