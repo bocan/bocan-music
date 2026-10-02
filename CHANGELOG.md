@@ -7,35 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Bòcan Music Help now has pages for Podcasts and Internet Radio, and new topics on searching as you type, moving back and forward, and viewing logs. Several help topics said things the app does not do, and are corrected: where the Miniplayer is in the menus, what the server status colours mean, how server search and streaming work, where to subscribe to a podcast, and what the server shortcuts do.
+We have a wiki now [here](https://github.com/bocan/bocan-music/wiki)
 
-Playback is less likely to crackle or drop out while the app is busy, for example when you open a menu or Settings. The crossfeed and stereo width effects no longer do work on the audio path that could make it wait.
+This is mainly a small release to fix a few bugs and add a few things that I felt were missing:
 
-A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.
+- A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.
 
-Right-click an album's cover in Albums, or at the top of the album's page, and choose Show Original Cover to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
+- Right-click an album's cover in Albums, or at the top of the album's page, and choose "Show Original Cover" to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
 
-Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
+- Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
 
-VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
+- VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
 
-With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.
+- With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.
 
-The podcast settings for refresh interval, refresh on launch and storefront country now do what they say. Manual only stops the automatic checks, and search uses the Apple Podcasts catalogue of the country you choose.
+- Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
 
-Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
-
-The hover text on the lyrics pane close button now shows the correct shortcut, Option-Command-L. The Love button on the play bar no longer shows a shortcut in its hover text, because that shortcut loves the selected tracks and not the track that is playing.
-
-Podcast chapters now reach your phone with Phone Sync, for episodes you have downloaded on the Mac. Chapters for those episodes also stay available on the Mac when you are offline.
-
-A smart playlist made by a newer version of the app, with a rule this version does not know, no longer makes the app quit when you open its rules. The rule is shown as unsupported and the playlist stays as it was. A podcast search or a scrobble that could not build its web address now reports an error in place of a crash.
-
-Phone Sync now checks again before it decides that the Mac's sync identity is missing. Before, one slow answer from the Keychain could make the Mac create a new identity, and every paired phone then had to be paired again.
-
-The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
-
-A rescan of one music folder no longer hides the songs of a second folder whose name starts with the same letters, for example Music and Music2. Before, those songs could disappear from the library until the second folder was scanned again.
+- The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
 
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
