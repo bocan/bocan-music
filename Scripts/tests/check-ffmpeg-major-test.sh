@@ -31,61 +31,70 @@ run_case() {
     pass "$name"
 }
 
-# Fixture: a pin of 9, bundled dylibs at .63/.61/.7, matching installed set.
+# Fixture: a major pin of 9, a source pin of 9.0.2, bundled dylibs at
+# .63/.61/.7 and a build with the same set.
 PIN="$WORK/.ffmpeg-major"
 echo "9" > "$PIN"
+SRC="$WORK/.ffmpeg-source"
+printf '# comment\nFFMPEG_VERSION=9.0.2\nFFMPEG_URL=https://example.invalid/ffmpeg-9.0.2.tar.xz\nFFMPEG_SHA256=00\n' > "$SRC"
+SRC10="$WORK/.ffmpeg-source-10"
+printf 'FFMPEG_VERSION=10.0\n' > "$SRC10"
 RES="$WORK/Resources"
 LIB="$WORK/lib"
 mkdir -p "$RES" "$LIB"
 for f in libavcodec.63.dylib libavformat.63.dylib libavutil.61.dylib libswresample.7.dylib; do
     touch "$RES/$f" "$LIB/$f"
 done
-VER9="ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers"
-VER10="ffmpeg version 10.0 Copyright (c) 2000-2027 the FFmpeg developers"
+LGPL="libavutil license: LGPL version 2.1 or later"
+GPL="libavutil license: GPL version 3 or later"
 
 echo "check-ffmpeg-major.sh:"
 
-run_case "matching major and dylibs passes" 0 "matches the primary pin" \
-    EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER9"
+run_case "matching pins, LGPL build and dylibs pass" 0 "FFmpeg 9.0.2 (LGPL version 2.1 or later)" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
 
-run_case "major mismatch fails with remediation" 1 "re-run 'make bundle-fpcalc'" \
-    EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER10"
+run_case "a source pin of another major fails with remediation" 1 "update .ffmpeg-major" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC10" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
 
-run_case "missing ffmpeg fails" 1 "not installed" \
-    EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE=""
+run_case "a missing build fails and names the make target" 1 "make ffmpeg-lgpl" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE=""
 
-run_case "missing pin file fails" 1 ".ffmpeg-major is missing" \
-    EXPECTED_FILE="$WORK/nope" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER9"
+run_case "a GPL build fails" 1 "not the LGPL build: libavutil license: GPL version 3 or later" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$GPL"
+
+run_case "an LGPL version 3 build fails" 1 "not the LGPL build" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" \
+    FFMPEG_LICENCE_LINE="libavutil license: LGPL version 3 or later"
+
+run_case "missing major pin fails" 1 ".ffmpeg-major is missing" \
+    EXPECTED_FILE="$WORK/nope" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
+
+run_case "missing source pin fails" 1 ".ffmpeg-source is missing" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$WORK/nope" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
 
 BAD_PIN="$WORK/bad-pin"
 echo "nine" > "$BAD_PIN"
-run_case "garbage pin fails" 1 "bare major version" \
-    EXPECTED_FILE="$BAD_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER9"
+run_case "garbage major pin fails" 1 "bare major version" \
+    EXPECTED_FILE="$BAD_PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
 
-# Dylib drift: installed set moves to .64 while Resources still bundles .63.
+BAD_SRC="$WORK/bad-source"
+echo "FFMPEG_URL=https://example.invalid/x.tar.xz" > "$BAD_SRC"
+run_case "a source pin with no version fails" 1 "does not set FFMPEG_VERSION" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$BAD_SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
+
+# Dylib drift: the build moves to .64 while Resources still bundles .63.
 LIB2="$WORK/lib2"
 mkdir -p "$LIB2"
 for f in libavcodec.64.dylib libavformat.64.dylib libavutil.61.dylib libswresample.7.dylib; do
     touch "$LIB2/$f"
 done
 run_case "bundled dylib drift fails" 1 "libavcodec major drift" \
-    EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER9"
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_LICENCE_LINE="$LGPL"
 
-# Nothing installed to compare against (Linux CI): dylib pass is skipped.
-run_case "absent installed lib dir is skipped" 0 "matches the primary pin" \
-    EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$WORK/absent" FFMPEG_VERSION_LINE="$VER9"
-
-# Accepted-list behaviour: "9 8" accepts an 8 install as secondary and skips
-# the bundled-dylib comparison (the committed dylibs track the primary).
-LIST_PIN="$WORK/list-pin"
-echo "9 8" > "$LIST_PIN"
-VER8="ffmpeg version 8.1.1 Copyright (c) 2000-2025 the FFmpeg developers"
-run_case "secondary accepted major passes and skips the dylib check" 0 "secondary; primary is 9" \
-    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER8"
-run_case "primary from a list still runs the dylib check" 1 "libavcodec major drift" \
-    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER9"
-run_case "a major outside the list fails" 1 "expected one of: 9 8" \
-    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER10"
+# Nothing bundled yet (a fresh clone before `make bundle-fpcalc`): the dylib
+# pass is skipped.
+run_case "an empty Resources is skipped" 0 "matches the pin" \
+    EXPECTED_FILE="$PIN" FFMPEG_SOURCE_FILE="$SRC" RESOURCES_DIR="$WORK/absent" FFMPEG_LIB_DIR="$LIB" FFMPEG_LICENCE_LINE="$LGPL"
 
 if [[ "$failures" -gt 0 ]]; then
     echo "$failures test(s) failed" >&2
