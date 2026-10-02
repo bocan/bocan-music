@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
+.PHONY: help bootstrap bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -62,6 +62,11 @@ bundle-fpcalc:
 ## Usage: make embed-deps APP=build/export/Bocan.app
 embed-deps:
 	bash Scripts/embed-deps.sh "$(APP)"
+
+## check-licence: Fail unless every FFmpeg library in a built app is LGPL (ADR-096)
+## Usage: make check-licence APP=build/export/Bocan.app
+check-licence:
+	@bash Scripts/check-bundle-licence.sh "$(APP)"
 
 ## brew-bundle: Install Brewfile dependencies
 brew-bundle:
