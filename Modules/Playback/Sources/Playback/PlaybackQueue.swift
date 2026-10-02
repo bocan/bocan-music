@@ -167,6 +167,7 @@ public actor PlaybackQueue {
     public func clear() {
         self.items.removeAll()
         self.sourceOrder.removeAll()
+        self.history.removeAll()
         let previous = self.currentIndex
         self.currentIndex = nil
         self.emit(.cleared)
