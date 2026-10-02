@@ -55,10 +55,20 @@ is_system_path() {
     return 1
 }
 
+# The project's LGPL FFmpeg (ADR-096) is linked by absolute path from its
+# build prefix, exactly as a Homebrew dylib is from /opt/homebrew, so it is
+# bundled and rewritten the same way.
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+FFMPEG_PREFIX="${FFMPEG_PREFIX:-$SCRIPT_ROOT/build/ffmpeg-lgpl}"
+if [[ -d "$FFMPEG_PREFIX" ]]; then
+    FFMPEG_PREFIX="$(cd "$FFMPEG_PREFIX" && pwd -P)"
+fi
+
 is_homebrew_path() {
     local p="$1"
-    [[ "$p" == /opt/homebrew/* ]] && return 0
-    [[ "$p" == /usr/local/*    ]] && return 0
+    [[ "$p" == /opt/homebrew/*    ]] && return 0
+    [[ "$p" == /usr/local/*       ]] && return 0
+    [[ "$p" == "$FFMPEG_PREFIX"/* ]] && return 0
     return 1
 }
 

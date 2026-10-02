@@ -38,13 +38,16 @@ settings:
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
     CLANG_ENABLE_OBJC_ARC: YES
     ALWAYS_SEARCH_USER_PATHS: NO
-    # Stable Homebrew prefix symlinks — version-independent, survive brew upgrades.
-    # Required so Xcode's explicit-module dependency scanner can find FFmpeg and
-    # TagLib headers without relying on pkg-config (which returns volatile
-    # /opt/homebrew/Cellar/<name>/<version>/include paths that break after upgrades).
-    HEADER_SEARCH_PATHS: /opt/homebrew/include /opt/homebrew/opt/ffmpeg/include
+    # FFmpeg is the project's own LGPL source build (`make ffmpeg-lgpl`,
+    # ADR-096); TagLib comes from its own Homebrew keg. Never add the shared
+    # /opt/homebrew/include or /opt/homebrew/lib here: they also hold Homebrew's
+    # GPL FFmpeg when it is installed, and the build would take it silently.
+    # Required so Xcode's explicit-module dependency scanner can find the
+    # FFmpeg and TagLib headers.
+    HEADER_SEARCH_PATHS: $(SRCROOT)/build/ffmpeg-lgpl/include
       /opt/homebrew/opt/taglib/include/taglib $(inherited)
-    LIBRARY_SEARCH_PATHS: /opt/homebrew/lib $(inherited)
+    LIBRARY_SEARCH_PATHS: $(SRCROOT)/build/ffmpeg-lgpl/lib
+      /opt/homebrew/opt/taglib/lib $(inherited)
     DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     ENABLE_TESTABILITY: YES
   configs:

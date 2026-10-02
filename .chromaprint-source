@@ -1,0 +1,11 @@
+# The Chromaprint source release that fpcalc is built from (ADR-096).
+# Read by Scripts/build-fpcalc.sh. Chromaprint is LGPL-2.1-or-later as a
+# whole (its LICENSE.md); it is built against the project's LGPL FFmpeg, with
+# Apple's vDSP for the FFT, so it brings no other licence in.
+#
+# To bump: change all three values, run `make bundle-fpcalc`, then compare a
+# fingerprint of one track before and after. The SHA-256 is of the tarball at
+# CHROMAPRINT_URL; confirm it against a second source before you commit it.
+CHROMAPRINT_VERSION=1.6.1
+CHROMAPRINT_URL=https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz
+CHROMAPRINT_SHA256=3368805af0ee47b9df74df10b5001a44569e01df2844dab520031720dde9ad23
