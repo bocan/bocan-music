@@ -1,7 +1,7 @@
 # The Chromaprint source release that fpcalc is built from (ADR-096).
-# Read by Scripts/build-fpcalc.sh. Chromaprint is LGPL-2.1-or-later as a
-# whole (its LICENSE.md); it is built against the project's LGPL FFmpeg, with
-# Apple's vDSP for the FFT, so it brings no other licence in.
+# Read by Scripts/build-fpcalc.sh. Chromaprint's LICENSE.md says that as a
+# whole it is under "the LGPL 2.1 license"; it is built against the project's
+# LGPL FFmpeg, with Apple's vDSP for the FFT, so it brings no other licence in.
 #
 # To bump: change all three values, run `make bundle-fpcalc`, then compare a
 # fingerprint of one track before and after. The SHA-256 is of the tarball at

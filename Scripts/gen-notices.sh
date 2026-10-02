@@ -1,18 +1,26 @@
 #!/bin/bash
 set -euo pipefail
 
-# Regenerate NOTICES.md with current dependency versions from Homebrew and
-# the workspace Package.resolved.
+# Regenerate NOTICES.md with current dependency versions from the two source
+# pins, Homebrew and the workspace Package.resolved.
 #
 # Usage: ./Scripts/gen-notices.sh
 #
 # This script:
 # 1. Extracts the app version from Resources/Info.plist
-# 2. Queries installed versions from Homebrew (ffmpeg, chromaprint, taglib)
-# 3. Extracts SPM versions from the workspace Package.resolved (the single
+# 2. Reads the FFmpeg and Chromaprint versions and source URLs from
+#    .ffmpeg-source and .chromaprint-source, the pins that
+#    Scripts/build-ffmpeg-lgpl.sh and Scripts/build-fpcalc.sh build from
+#    (ADR-096). Homebrew's ffmpeg and chromaprint are not used and are not
+#    asked.
+# 3. Copies the FFmpeg configure line out of Scripts/build-ffmpeg-lgpl.sh,
+#    so the notice cannot say something the build does not do
+# 4. Queries Homebrew for the installed versions of the libraries that still
+#    come from it (taglib, lame, opus, openssl@3, mpg123)
+# 5. Extracts SPM versions from the workspace Package.resolved (the single
 #    source of truth for what builds actually link; per-module resolved
 #    files are uncommitted side effects of local test runs)
-# 4. Rewrites NOTICES.md with current versions and the license texts below
+# 6. Rewrites NOTICES.md with current versions and the license texts below
 #
 # A missing pin is a hard error: silent fallbacks to hardcoded versions are
 # how this file drifted from reality once already.
@@ -23,20 +31,77 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLIST_PATH="${REPO_ROOT}/Resources/Info.plist"
 NOTICES_PATH="${REPO_ROOT}/NOTICES.md"
 RESOLVED_PATH="${REPO_ROOT}/Bocan.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+FFMPEG_PIN_PATH="${REPO_ROOT}/.ffmpeg-source"
+CHROMAPRINT_PIN_PATH="${REPO_ROOT}/.chromaprint-source"
+FFMPEG_BUILD_SCRIPT="${REPO_ROOT}/Scripts/build-ffmpeg-lgpl.sh"
+
+fail() {
+    echo "error: $1" >&2
+    exit 1
+}
 
 # Extract version from Info.plist CFBundleShortVersionString
 APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "${PLIST_PATH}")
 echo "📦 App version: ${APP_VERSION}"
 
-# Get installed versions from Homebrew
-FFMPEG_VERSION=$(brew list --versions ffmpeg 2>/dev/null | awk '{print $2}' || echo "unknown")
-CHROMAPRINT_VERSION=$(brew list --versions chromaprint 2>/dev/null | awk '{print $2}' || echo "unknown")
-TAGLIB_VERSION=$(brew list --versions taglib 2>/dev/null | awk '{print $2}' || echo "unknown")
+# Read one KEY=value from a pin file. The file is not sourced, so it cannot
+# run code here. A missing key is a hard error.
+read_pin() {
+    local file="$1" key="$2" value
+    [[ -f "$file" ]] || fail "$file is missing."
+    value="$(sed -nE "s/^${key}=(.*)\$/\1/p" "$file" | head -1)"
+    [[ -n "$value" ]] || fail "$file does not set $key."
+    echo "$value"
+}
+
+FFMPEG_VERSION=$(read_pin "$FFMPEG_PIN_PATH" FFMPEG_VERSION)
+FFMPEG_URL=$(read_pin "$FFMPEG_PIN_PATH" FFMPEG_URL)
+FFMPEG_SHA256=$(read_pin "$FFMPEG_PIN_PATH" FFMPEG_SHA256)
+CHROMAPRINT_VERSION=$(read_pin "$CHROMAPRINT_PIN_PATH" CHROMAPRINT_VERSION)
+CHROMAPRINT_URL=$(read_pin "$CHROMAPRINT_PIN_PATH" CHROMAPRINT_URL)
+CHROMAPRINT_SHA256=$(read_pin "$CHROMAPRINT_PIN_PATH" CHROMAPRINT_SHA256)
+
+# The FFmpeg configure line, copied from the CONFIGURE_ARGS array of the build
+# script with its comment lines left out. The shell variables stay as written
+# ($PREFIX and so on); the notice says what each one holds.
+[[ -f "$FFMPEG_BUILD_SCRIPT" ]] || fail "$FFMPEG_BUILD_SCRIPT is missing."
+FFMPEG_CONFIGURE_LINE="$(awk '
+    /^CONFIGURE_ARGS=\(/ { inside = 1; next }
+    inside && /^\)/      { inside = 0 }
+    inside && $1 !~ /^#/ { sub(/^[[:space:]]+/, ""); print "  " $0 " \\" }
+' "$FFMPEG_BUILD_SCRIPT" | sed '$ s/ \\$//')"
+[[ "$FFMPEG_CONFIGURE_LINE" == *"--enable-shared"* ]] \
+    || fail "could not read CONFIGURE_ARGS from $FFMPEG_BUILD_SCRIPT."
+# The notice below states an LGPL v2.1-or-later build. Refuse to write that
+# over a configure line that asks for something else.
+if grep -q -E -- '--enable-(gpl|version3|nonfree)( |$)' <<< "$FFMPEG_CONFIGURE_LINE"; then
+    fail "the configure line in $FFMPEG_BUILD_SCRIPT asks for the GPL, version 3 or nonfree code."
+fi
+
+# The installed version of a Homebrew formula. Not installed is a hard error.
+brew_version() {
+    local version
+    version="$(brew list --versions "$1" 2>/dev/null | awk '{print $2}' || true)"
+    [[ -n "$version" ]] || fail "Homebrew formula $1 is not installed. Run: brew bundle"
+    echo "$version"
+}
+
+TAGLIB_VERSION=$(brew_version taglib)
+LAME_VERSION=$(brew_version lame)
+OPUS_VERSION=$(brew_version opus)
+OPENSSL_VERSION=$(brew_version openssl@3)
+# Homebrew's lame links libmpg123, so libmpg123 is bundled with it. If a later
+# lame formula drops that dependency, remove the mpg123 section and this line.
+MPG123_VERSION=$(brew_version mpg123)
 
 echo "📌 Dependency versions:"
-echo "  - FFmpeg: ${FFMPEG_VERSION}"
-echo "  - Chromaprint: ${CHROMAPRINT_VERSION}"
+echo "  - FFmpeg: ${FFMPEG_VERSION} (.ffmpeg-source)"
+echo "  - Chromaprint: ${CHROMAPRINT_VERSION} (.chromaprint-source)"
 echo "  - TagLib: ${TAGLIB_VERSION}"
+echo "  - LAME: ${LAME_VERSION}"
+echo "  - Opus: ${OPUS_VERSION}"
+echo "  - OpenSSL: ${OPENSSL_VERSION}"
+echo "  - mpg123: ${MPG123_VERSION}"
 
 # Extract an SPM pin version from the workspace Package.resolved by identity.
 # Takes one or more identities and uses the first that resolves, so a package
@@ -95,16 +160,163 @@ reproduced below as required by each project's terms.
 
 <https://ffmpeg.org>
 
-Bòcan links against FFmpeg libraries built **without any GPL or non-free
-components**, making them available under the GNU Lesser General Public Licence,
-version 2.1 or later (LGPL 2.1+).
+Licensed under the **GNU Lesser General Public Licence, version 2.1 or later**
+(LGPL 2.1+).
+
+Bòcan builds FFmpeg itself, from the unmodified source release named below,
+and configures it with none of \`--enable-gpl\`, \`--enable-version3\` and
+\`--enable-nonfree\`. FFmpeg's own \`LICENSE.md\` says that in this
+configuration the LGPL v2.1 or later applies to FFmpeg, and each built
+library reports "LGPL version 2.1 or later". The release build stops if a
+bundled FFmpeg library reports anything else
+(\`Scripts/check-bundle-licence.sh\`).
+
+The app ships four FFmpeg libraries, as separate dynamic libraries:
+\`libavcodec\`, \`libavformat\`, \`libavutil\` and \`libswresample\`. There is
+one copy in \`Contents/Frameworks\` and one copy beside the \`fpcalc\` helper
+in \`Contents/Resources\`.
 
 The LGPL 2.1 full text is available at:
 <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
 
-FFmpeg source code is available at <https://ffmpeg.org/download.html>.
-The Homebrew formula used to build the bundled dylibs is
-\`homebrew-core/Formula/f/ffmpeg.rb\`.
+### Source and build recipe
+
+- Source: <${FFMPEG_URL}>
+- SHA-256 of that file: \`${FFMPEG_SHA256}\`
+- Build recipe: \`Scripts/build-ffmpeg-lgpl.sh\` in the Bòcan source
+  (<https://github.com/bocan/bocan-music>), run as \`make ffmpeg-lgpl\`. The
+  version, the address and the checksum are pinned in \`.ffmpeg-source\`.
+
+The script runs this configure line, then \`make\` and \`make install\`:
+
+\`\`\`bash
+./configure \\
+${FFMPEG_CONFIGURE_LINE}
+\`\`\`
+
+\`\$PREFIX\` is the directory the libraries are installed into
+(\`build/ffmpeg-lgpl\` by default). \`\$DEPLOYMENT_TARGET\` is the oldest
+macOS the app runs on (15.0). \`\$LAME_PREFIX\` is the Homebrew directory of
+the LAME library.
+
+### External libraries in this build
+
+The configure line turns autodetection off, so the build links only the
+libraries it names: LAME, Opus and OpenSSL (each has its own section below),
+the zlib and bzip2 libraries that come with macOS, and Apple's AudioToolbox
+framework.
+
+### Independent JPEG Group
+
+Three files in \`libavcodec\` (\`jfdctfst.c\`, \`jfdctint_template.c\` and
+\`jrevdct.c\`) come from libjpeg. This software is based in part on the work
+of the Independent JPEG Group.
+
+---
+
+## LAME ${LAME_VERSION}
+
+<https://lame.sourceforge.io>
+
+The MP3 encoder (\`libmp3lame\`). FFmpeg uses it when Phone Sync converts a
+track to MP3. Licensed under the **GNU Library General Public Licence,
+version 2 or later** (LGPL 2.0+). It is shipped as a separate dynamic
+library, unmodified, as built by Homebrew.
+
+The LGPL 2.0 full text is available at:
+<https://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>
+
+LAME source code is available at <https://lame.sourceforge.io>.
+
+---
+
+## mpg123 ${MPG123_VERSION}
+
+<https://www.mpg123.de>
+
+\`libmpg123\` is shipped because Homebrew's build of LAME links it. Licensed
+under the **GNU Lesser General Public Licence, version 2.1**. It is shipped
+as a separate dynamic library, unmodified, as built by Homebrew.
+
+The LGPL 2.1 full text is available at:
+<https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
+
+mpg123 source code is available at <https://www.mpg123.de/download/>.
+
+---
+
+## Opus ${OPUS_VERSION}
+
+<https://opus-codec.org>
+
+The Opus encoder (\`libopus\`). FFmpeg uses it when Phone Sync converts a
+track to Opus. It is shipped as a separate dynamic library, unmodified, as
+built by Homebrew.
+
+BSD 3-Clause License
+
+Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic,
+                    Jean-Marc Valin, Timothy B. Terriberry,
+                    CSIRO, Gregory Maxwell, Mark Borgerding,
+                    Erik de Castro Lopo, Mozilla, Amazon
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
+names of specific contributors, may be used to endorse or promote
+products derived from this software without specific prior written
+permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+\`\`AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Opus is subject to the royalty-free patent licenses which are
+specified at:
+
+Xiph.Org Foundation:
+<https://datatracker.ietf.org/ipr/1524/>
+
+Microsoft Corporation:
+<https://datatracker.ietf.org/ipr/1914/>
+
+Broadcom Corporation:
+<https://datatracker.ietf.org/ipr/1526/>
+
+---
+
+## OpenSSL ${OPENSSL_VERSION}
+
+<https://openssl-library.org>
+
+TLS for HTTPS streams (\`libssl\` and \`libcrypto\`), used by FFmpeg.
+Licensed under the **Apache License, Version 2.0**. It is shipped as
+separate dynamic libraries, unmodified, as built by Homebrew.
+
+FFmpeg's \`LICENSE.md\` says of OpenSSL: "To the best of our knowledge, they
+are compatible with the LGPL."
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+OpenSSL source code is available at <https://openssl-library.org/source/>.
 
 ---
 
@@ -133,14 +345,27 @@ TagLib source code is available at <https://github.com/taglib/taglib>.
 
 <https://acoustid.org/chromaprint>
 
-Licensed under the **GNU Lesser General Public Licence, version 2.1 or later**
-(LGPL 2.1+).
+Licensed, as a whole, under the **GNU Lesser General Public Licence, version
+2.1** (LGPL 2.1). Chromaprint's own code is under the MIT licence, and it
+includes parts of FFmpeg, which are under the LGPL (Chromaprint's
+\`LICENSE.md\`).
+
+Bòcan builds the \`fpcalc\` helper and \`libchromaprint\` itself, from the
+unmodified source release named below, against the FFmpeg build described
+above. Apple's Accelerate framework (vDSP) does the FFT, so no separate FFT
+library is linked.
 
 The LGPL 2.1 full text is available at:
 <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
 
-Chromaprint source code is available at
-<https://github.com/acoustid/chromaprint>.
+### Source and build recipe
+
+- Source: <${CHROMAPRINT_URL}>
+- SHA-256 of that file: \`${CHROMAPRINT_SHA256}\`
+- Build recipe: \`Scripts/build-fpcalc.sh\` in the Bòcan source
+  (<https://github.com/bocan/bocan-music>), run as \`make bundle-fpcalc\`.
+  The version, the address and the checksum are pinned in
+  \`.chromaprint-source\`. The CMake options are in that script.
 
 ---
 
@@ -394,8 +619,9 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan ${APP_VERSION}. Dependency versions are pinned in
-the workspace \`Package.resolved\`.*
+*This file was generated for Bòcan ${APP_VERSION}. The FFmpeg and Chromaprint
+versions are pinned in \`.ffmpeg-source\` and \`.chromaprint-source\`; the Swift
+package versions are pinned in the workspace \`Package.resolved\`.*
 EOF
 
 echo "✅ Generated ${NOTICES_PATH}"

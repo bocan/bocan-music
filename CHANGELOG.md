@@ -33,6 +33,8 @@ A smart playlist made by a newer version of the app, with a rule this version do
 
 Phone Sync now checks again before it decides that the Mac's sync identity is missing. Before, one slow answer from the Keychain could make the Mac create a new identity, and every paired phone then had to be paired again.
 
+The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
+
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
