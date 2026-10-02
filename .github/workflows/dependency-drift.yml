@@ -1,11 +1,14 @@
-# Weekly check that Package.resolved pins still match upstream releases.
+# Weekly check that the pinned dependencies still match upstream releases.
 #
 # Dependabot watches the github-actions ecosystem and each module's
 # Package.swift (.github/dependabot.yml), but its Swift support cannot see
-# the Xcode-level Package.resolved (Sparkle, transitives),
-# so this job is the alert for Swift dependency drift: it opens, or updates,
-# a single "Dependency drift" issue whenever any pin lags upstream, and
-# closes nothing (a human decides when and how to bump).
+# the Xcode-level Package.resolved (Sparkle, transitives), and nothing at all
+# watches the pins that live in a file of their own: the FFmpeg and
+# Chromaprint source releases (.ffmpeg-source, .chromaprint-source) and the
+# SwiftLint and SwiftFormat releases (.swiftlint-version,
+# .swiftformat-version). So this job is the alert for all of them: it opens,
+# or updates, a single "Dependency drift" issue whenever any pin lags
+# upstream, and closes nothing (a human decides when and how to bump).
 
 name: Dependency Drift
 
@@ -27,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      ISSUE_TITLE: "Dependency drift: Package.resolved lags upstream"
+      ISSUE_TITLE: "Dependency drift: pinned versions lag upstream"
     steps:
       - uses: actions/checkout@v7
 
