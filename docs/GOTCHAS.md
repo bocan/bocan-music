@@ -280,6 +280,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/SyncServer/Sources/SyncServer/Identity/IdentityStore.swift`
 
+### The Keychain labels a certificate with its common name, whatever label you give it
+
+**Problem:** every `KeychainIdentityStore` that a test made left its certificate in the login keychain of the machine that ran the tests. The cleanup deleted by a `kSecAttrLabel` of its own, which matched nothing, so each run added more.
+
+**Rule:** find a stored certificate by its subject common name (that is its `kSecAttrLabel`) or by `kSecAttrPublicKeyHash`, which equals the `kSecAttrApplicationLabel` of its key. Never send a certificate `SecItemDelete` without a label: on macOS a delete removes every match. A test that adds a Keychain item proves the cleanup with a query after it.
+
+**Why:** the file-based keychain ignores a label given to `SecItemAdd` for a certificate and writes the common name. The delete then fails without an error, because "not found" is a normal answer for a cleanup.
+
+**Canonical file:** `Modules/SyncServer/Sources/SyncServer/Identity/IdentityStore.swift`
+
 ### The debug build and the installed release app use different libraries
 
 **Problem:** numbers quoted from "the library" are wrong, or a destructive change appears to have hit the real data when it did not, or the reverse.

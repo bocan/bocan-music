@@ -20,9 +20,10 @@ protocol IdentityStoring: Sendable {
 /// (matching `SubsonicServerStore`, which found the data-protection Keychain did
 /// not survive local rebuilds). The private key is generated directly in the
 /// Keychain so it is stored reliably. The certificate is stored two ways: its DER
-/// as a generic-password blob (reliably queryable, unlike a certificate's
-/// `kSecAttrLabel`) for the load path, and as a `SecCertificate` item so
-/// `SecIdentityCreateWithCertificate` can pair it with the key.
+/// as a generic-password blob (reliably queryable by service) for the load path,
+/// and as a `SecCertificate` item so `SecIdentityCreateWithCertificate` can pair
+/// it with the key. The Keychain labels that item with the certificate's common
+/// name and ignores any label given on add.
 struct KeychainIdentityStore: IdentityStoring {
     let service: String
     /// Test seam: answers true to make one certificate read report "not found",
@@ -42,11 +43,11 @@ struct KeychainIdentityStore: IdentityStoring {
         Data("\(self.service).key".utf8)
     }
 
-    private var certLabel: String {
-        "\(self.service).cert"
-    }
-
     private static let certAccount = "cert"
+
+    /// Every certificate this module makes has a common name with this prefix
+    /// (`SelfSignedCert.makeCertificate`). Cleanup never touches another name.
+    private static let commonNamePrefix = "bocan-mac-"
 
     // MARK: - IdentityStoring
 
@@ -133,11 +134,12 @@ struct KeychainIdentityStore: IdentityStoring {
     /// Removes the key and certificate. Used by tests to clean up a unique
     /// service string; never called in production.
     func deleteAll() {
+        // Certificates first: they are found through the key.
+        self.deleteCertificate()
         SecItemDelete([
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: self.keyTag,
         ] as CFDictionary)
-        self.deleteCertificate()
     }
 
     // MARK: - Key helpers
@@ -210,6 +212,10 @@ struct KeychainIdentityStore: IdentityStoring {
         if self.simulateCertificateMiss() {
             return nil
         }
+        return try self.readCertificateBlob()
+    }
+
+    private func readCertificateBlob() throws -> Data? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
@@ -239,11 +245,36 @@ struct KeychainIdentityStore: IdentityStoring {
         let status = SecItemAdd([
             kSecClass as String: kSecClassCertificate,
             kSecValueRef as String: cert,
-            kSecAttrLabel as String: self.certLabel,
         ] as CFDictionary, nil)
         guard status == errSecSuccess || status == errSecDuplicateItem else {
             throw SyncServerError.identity(reason: "certStore", status: status)
         }
+        self.waitUntilReadable(der)
+    }
+
+    /// Waits, for a bounded time, until the blob and the certificate item just
+    /// written can be read back. The login Keychain can answer "not found" for
+    /// about 100 ms after a write (#617); a caller that reads or deletes directly
+    /// after `loadOrCreate()` must not meet that window.
+    private func waitUntilReadable(_ der: Data) {
+        let label = self.commonName(ofDER: der)
+        for attempt in 1 ... 10 {
+            var item: CFTypeRef?
+            let certStatus = SecItemCopyMatching([
+                kSecClass as String: kSecClassCertificate,
+                kSecAttrLabel as String: label,
+                kSecReturnRef as String: true,
+            ] as CFDictionary, &item)
+            do {
+                if certStatus == errSecSuccess, try self.readCertificateBlob() == der {
+                    return
+                }
+            } catch {
+                self.log.warning("identity.store.readBack.failed", ["error": String(reflecting: error)])
+            }
+            usleep(useconds_t(10000 * attempt))
+        }
+        self.log.warning("identity.store.notReadable", ["cn": label])
     }
 
     private func writeCertificateBlob(_ der: Data) throws {
@@ -268,16 +299,68 @@ struct KeychainIdentityStore: IdentityStoring {
         throw SyncServerError.identity(reason: "certBlobUpdate", status: update)
     }
 
+    /// Removes the certificate blob and every `SecCertificate` item of this
+    /// store. Call it while the key is still stored: the key is what finds a
+    /// certificate whose blob is gone.
     private func deleteCertificate() {
+        // The Keychain labels a certificate with its subject common name and
+        // ignores a label given on add, so the delete goes by that name. A class
+        // and a label together are a narrow query; a certificate delete is never
+        // sent without the label.
+        for label in self.storedCertificateLabels() {
+            SecItemDelete([
+                kSecClass as String: kSecClassCertificate,
+                kSecAttrLabel as String: label,
+            ] as CFDictionary)
+        }
         SecItemDelete([
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: Self.certAccount,
         ] as CFDictionary)
-        SecItemDelete([
-            kSecClass as String: kSecClassCertificate,
-            kSecAttrLabel as String: self.certLabel,
-        ] as CFDictionary)
+    }
+
+    /// The Keychain labels of this store's certificates: the one in the blob,
+    /// and every certificate made for the stored key (a certificate replaced
+    /// after a stable miss has no blob any more). Only names this module makes.
+    private func storedCertificateLabels() -> Set<String> {
+        var labels: Set<String> = []
+        do {
+            if let der = try self.readCertificateBlob() {
+                labels.insert(self.commonName(ofDER: der))
+            }
+        } catch {
+            self.log.warning("identity.cleanup.blobRead.failed", ["error": String(reflecting: error)])
+        }
+        if let publicKeyHash = self.storedKeyPublicKeyHash() {
+            var items: CFTypeRef?
+            let status = SecItemCopyMatching([
+                kSecClass as String: kSecClassCertificate,
+                kSecAttrPublicKeyHash as String: publicKeyHash,
+                kSecReturnAttributes as String: true,
+                kSecMatchLimit as String: kSecMatchLimitAll,
+            ] as CFDictionary, &items)
+            if status == errSecSuccess, let found = items as? [[String: Any]] {
+                labels.formUnion(found.compactMap { $0[kSecAttrLabel as String] as? String })
+            }
+        }
+        return labels.filter { $0.hasPrefix(Self.commonNamePrefix) }
+    }
+
+    /// The public key hash of the stored key, which the Keychain also records
+    /// on each certificate made for that key.
+    private func storedKeyPublicKeyHash() -> Data? {
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching([
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: self.keyTag,
+            kSecReturnAttributes as String: true,
+        ] as CFDictionary, &item)
+        guard status == errSecSuccess, let attributes = item as? [String: Any] else {
+            return nil
+        }
+        let hash = attributes[kSecAttrApplicationLabel as String] as? Data
+        return hash?.isEmpty == false ? hash : nil
     }
 
     private func commonName(ofDER der: Data) -> String {

@@ -61,6 +61,43 @@ struct KeychainIdentityStoreTests {
         #expect(first.privateKeyX963 == second.privateKeyX963)
     }
 
+    @Test("deleteAll removes every certificate item of the store")
+    func deleteAllRemovesCertificateItems() throws {
+        let service = "io.cloudcauldron.bocan.sync.test.\(UUID().uuidString)"
+        let store = KeychainIdentityStore(service: service)
+        let first = try store.loadOrCreate()
+        // A second certificate for the same key, whose blob replaces the first.
+        let second = try KeychainIdentityStore(service: service) { true }.loadOrCreate()
+        #expect(first.commonName != second.commonName)
+        // A read directly after the write can miss (#617), so wait for both items.
+        #expect(Self.certificateAppears(label: first.commonName))
+        #expect(Self.certificateAppears(label: second.commonName))
+
+        store.deleteAll()
+
+        #expect(Self.certificateStatus(label: first.commonName) == errSecItemNotFound)
+        #expect(Self.certificateStatus(label: second.commonName) == errSecItemNotFound)
+    }
+
+    private static func certificateAppears(label: String) -> Bool {
+        for _ in 0 ..< 50 {
+            if self.certificateStatus(label: label) == errSecSuccess {
+                return true
+            }
+            usleep(20000)
+        }
+        return false
+    }
+
+    private static func certificateStatus(label: String) -> OSStatus {
+        var item: CFTypeRef?
+        return SecItemCopyMatching([
+            kSecClass as String: kSecClassCertificate,
+            kSecAttrLabel as String: label,
+            kSecReturnRef as String: true,
+        ] as CFDictionary, &item)
+    }
+
     @Test("secIdentity pairs the stored key with its certificate")
     func secIdentityPairsKeyAndCert() throws {
         let store = self.uniqueStore()
