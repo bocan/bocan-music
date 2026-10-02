@@ -9,21 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 We have a wiki now [here](https://github.com/bocan/bocan-music/wiki)
 
-A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.
+This is mainly a small release to fix a few bugs and add a few things that I felt were missing:
 
-Right-click an album's cover in Albums, or at the top of the album's page, and choose "Show Original Cover" to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
+- A podcast no longer stops refreshing because one episode has a date the app cannot read. That episode appears without a date, or with the right day when the date is only written in an unusual way, and the rest of the show updates as normal.
 
-Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
+- Right-click an album's cover in Albums, or at the top of the album's page, and choose "Show Original Cover" to open it at full size in Preview. Very large covers are kept at their original resolution for this, even though the app shows a smaller copy.
 
-VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
+- Moving from an album with a cover to one without no longer leaves the first album's cover showing at the top of the page.
 
-With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.
+- VoiceOver and other assistive tools now describe the sleep timer button by what it does and how long is left, instead of the moon icon's own name, "do not disturb".
 
-The podcast settings for refresh interval, refresh on launch and storefront country now do what they say. Manual only stops the automatic checks, and search uses the Apple Podcasts catalogue of the country you choose.
+- With VoiceOver, each sidebar section heading now says its name and whether it is expanded, and offers collapsing and its add buttons (New Playlist, New Smart Playlist, New Folder, Add Source, Add Folder) as actions. Before, the add button in Playlists called itself "Collapse Playlists", and the collapse button could not be reached at all.
 
-Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
+- Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
 
-The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
+- The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
 
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
