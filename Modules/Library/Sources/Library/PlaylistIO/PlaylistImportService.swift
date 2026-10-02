@@ -284,8 +284,7 @@ public actor PlaylistImportService {
         for ref in unreadable {
             var coveredByRoot = false
             for root in roots where !root.isInaccessible {
-                let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
-                guard ref.path.hasPrefix(prefix) else { continue }
+                guard root.contains(filePath: ref.path) else { continue }
                 do {
                     coveredByRoot = try await SecurityScope.withAccess(root.bookmark) { _ in
                         FileManager.default.isReadableFile(atPath: ref.path)

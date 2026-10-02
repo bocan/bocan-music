@@ -46,6 +46,25 @@ public struct LibraryRoot: Codable, FetchableRecord, MutablePersistableRecord, S
 
     // swiftlint:enable function_default_parameter_at_end
 
+    // MARK: - Containment
+
+    /// Whether `filePath` is inside the directory `rootPath`.
+    ///
+    /// The comparison is on whole path components: `/Music` contains
+    /// `/Music/a.flac` and does not contain `/Music2/a.flac` (#621). A bare
+    /// `hasPrefix(rootPath)` gets that wrong. The directory does not contain
+    /// itself. Both paths must be in the same form (both with symlinks
+    /// resolved, or both without).
+    public static func directory(_ rootPath: String, contains filePath: String) -> Bool {
+        let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+        return filePath.hasPrefix(prefix)
+    }
+
+    /// Whether `filePath` is inside this root. See `directory(_:contains:)`.
+    public func contains(filePath: String) -> Bool {
+        Self.directory(self.path, contains: filePath)
+    }
+
     // MARK: - GRDB
 
     public mutating func didInsert(_ inserted: InsertionSuccess) {

@@ -367,10 +367,7 @@ actor EditTransaction {
             return nil
         }
         guard let filePath = URL(string: fileURLString)?.path else { return nil }
-        guard let root = roots.first(where: {
-            let prefix = $0.path == "/" ? "/" : $0.path + "/"
-            return filePath.hasPrefix(prefix)
-        }) else { return nil }
+        guard let root = roots.first(where: { $0.contains(filePath: filePath) }) else { return nil }
         var isStale = false
         let rootURL: URL
         do {

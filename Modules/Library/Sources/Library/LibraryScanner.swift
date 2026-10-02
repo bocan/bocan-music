@@ -278,9 +278,9 @@ public actor LibraryScanner {
     public func scanSingleFile(url: URL) async throws -> ScanProgress.Summary {
         let roots = try await self.rootRepo.fetchAll()
         let filePath = url.path
-        // Find the root whose path is a prefix of the file path so we can
-        // activate its security scope before reading tags / creating a bookmark.
-        if let root = roots.first(where: { filePath.hasPrefix($0.path) }) {
+        // Find the root that contains the file so we can activate its
+        // security scope before reading tags / creating a bookmark.
+        if let root = roots.first(where: { $0.contains(filePath: filePath) }) {
             let coordinator = self.coordinator
             return try await SecurityScope.withAccess(root.bookmark) { _ in
                 try await coordinator.scanSingleFile(url: url)
