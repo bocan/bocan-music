@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.20.0](https://github.com/bocan/bocan-music/compare/v2.19.0...v2.20.0) (2026-10-02)
+
 We have a wiki now [here](https://github.com/bocan/bocan-music/wiki)
 
 This is mainly a small release to fix a few bugs and add a few things that I felt were missing:
@@ -24,6 +26,27 @@ This is mainly a small release to fix a few bugs and add a few things that I fel
 - Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and the other scrobble services. They still count as plays in your library.
 
 - The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
+
+### For developers
+
+**Added**
+- ui: open an album's cover at full size from the Albums grid and the album page ([#599](https://github.com/bocan/bocan-music/pull/599))
+- ui: make the in-app Help window the one help surface, and correct it ([#602](https://github.com/bocan/bocan-music/pull/602))
+- audio: build FFmpeg and fpcalc from source under the LGPL, for every build ([#626](https://github.com/bocan/bocan-music/pull/626))
+
+**Fixed**
+- ui: describe the sleep timer button by its state, not "do not disturb" ([#593](https://github.com/bocan/bocan-music/pull/593))
+- ui: give VoiceOver every control in the sidebar section headers ([#598](https://github.com/bocan/bocan-music/pull/598))
+- podcasts: keep a feed refreshing when one episode date is unreadable ([#600](https://github.com/bocan/bocan-music/pull/600))
+- audio: keep Swift off the real-time thread in the crossfeed and width units ([#601](https://github.com/bocan/bocan-music/pull/601))
+- app: correct five defects from the docs-against-code audit ([#618](https://github.com/bocan/bocan-music/pull/618))
+- lint: lint every module, and correct the 1983 violations that this exposes ([#623](https://github.com/bocan/bocan-music/pull/623))
+- sync: keep the Phone Sync identity when a Keychain read answers late ([#624](https://github.com/bocan/bocan-music/pull/624))
+- playback: clear the play history when the queue is cleared ([#625](https://github.com/bocan/bocan-music/pull/625))
+- library: match a library root on whole path components, not a bare prefix ([#634](https://github.com/bocan/bocan-music/pull/634))
+
+**Changed**
+- library: remove the unreachable iTunes Library.xml reader ([#614](https://github.com/bocan/bocan-music/pull/614))
 
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
