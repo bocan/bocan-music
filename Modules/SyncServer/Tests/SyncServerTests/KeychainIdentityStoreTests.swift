@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Security
 import Testing
 @testable import SyncServer
@@ -23,6 +24,41 @@ struct KeychainIdentityStoreTests {
         #expect(first.certificateDER == second.certificateDER)
         #expect(first.privateKeyX963 == second.privateKeyX963)
         #expect(first.commonName.hasPrefix("bocan-mac-"))
+    }
+
+    @Test("a certificate read that misses once returns the same identity")
+    func oneMissedReadKeepsIdentity() throws {
+        let service = "io.cloudcauldron.bocan.sync.test.\(UUID().uuidString)"
+        let store = KeychainIdentityStore(service: service)
+        defer { store.deleteAll() }
+        let first = try store.loadOrCreate()
+
+        let missesLeft = OSAllocatedUnfairLock(initialState: 1)
+        let flaky = KeychainIdentityStore(service: service) {
+            missesLeft.withLock { left in
+                guard left > 0 else { return false }
+                left -= 1
+                return true
+            }
+        }
+        let second = try flaky.loadOrCreate()
+
+        #expect(missesLeft.withLock { $0 } == 0)
+        #expect(first.certificateDER == second.certificateDER)
+        #expect(first.privateKeyX963 == second.privateKeyX963)
+    }
+
+    @Test("a certificate that stays missing is made again for the same key")
+    func stableMissMakesNewCertificate() throws {
+        let service = "io.cloudcauldron.bocan.sync.test.\(UUID().uuidString)"
+        let store = KeychainIdentityStore(service: service)
+        defer { store.deleteAll() }
+        let first = try store.loadOrCreate()
+
+        let second = try KeychainIdentityStore(service: service) { true }.loadOrCreate()
+
+        #expect(first.certificateDER != second.certificateDER)
+        #expect(first.privateKeyX963 == second.privateKeyX963)
     }
 
     @Test("secIdentity pairs the stored key with its certificate")

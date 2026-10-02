@@ -25,10 +25,17 @@ protocol IdentityStoring: Sendable {
 /// `SecIdentityCreateWithCertificate` can pair it with the key.
 struct KeychainIdentityStore: IdentityStoring {
     let service: String
+    /// Test seam: answers true to make one certificate read report "not found",
+    /// the way the login Keychain does for an item written a moment before.
+    private let simulateCertificateMiss: @Sendable () -> Bool
     private let log = AppLogger.make(.sync)
 
-    init(service: String = "io.cloudcauldron.bocan.sync") {
+    init(
+        service: String = "io.cloudcauldron.bocan.sync",
+        simulateCertificateMiss: @escaping @Sendable () -> Bool = { false }
+    ) {
         self.service = service
+        self.simulateCertificateMiss = simulateCertificateMiss
     }
 
     private var keyTag: Data {
@@ -44,8 +51,18 @@ struct KeychainIdentityStore: IdentityStoring {
     // MARK: - IdentityStoring
 
     func loadOrCreate() throws -> SelfSignedCert.Material {
-        let existingKey = try self.loadKey()
-        let existingCertDER = try self.loadCertificateDER()
+        var existingKey = try self.loadKey()
+        var existingCertDER = try self.loadCertificateDER()
+
+        // One half without the other is the state a late Keychain read leaves:
+        // the login Keychain can answer "not found" for an item written a moment
+        // before while other writes are in progress (#617). Read the missing half
+        // again before replacing an identity that paired phones trust (#622).
+        if existingKey != nil, existingCertDER == nil {
+            existingCertDER = try self.readAgain("cert") { try self.loadCertificateDER() }
+        } else if existingKey == nil, existingCertDER != nil {
+            existingKey = try self.readAgain("key") { try self.loadKey() }
+        }
 
         // Both present: return the stable stored identity.
         if let existingKey, let existingCertDER {
@@ -88,6 +105,27 @@ struct KeychainIdentityStore: IdentityStoring {
             throw SyncServerError.identity(reason: "secIdentity", status: status)
         }
         return identity
+    }
+
+    // MARK: - Settled reads
+
+    /// How many times a missing half of the identity is read again. With the
+    /// growing wait below, the last read is 300 ms after the first miss; the
+    /// misses measured for #617 ended within 100 ms.
+    private static let rereadAttempts = 5
+
+    /// Reads one half of the identity again, with a growing wait, and returns
+    /// nil only when every read answers "not found".
+    private func readAgain<Item>(_ half: String, _ read: () throws -> Item?) rethrows -> Item? {
+        for attempt in 1 ... Self.rereadAttempts {
+            usleep(useconds_t(20000 * attempt))
+            if let item = try read() {
+                self.log.debug("identity.read.settled", ["half": half, "attempt": attempt])
+                return item
+            }
+        }
+        self.log.warning("identity.read.missing", ["half": half, "attempts": Self.rereadAttempts])
+        return nil
     }
 
     // MARK: - Test support
@@ -169,6 +207,9 @@ struct KeychainIdentityStore: IdentityStoring {
     // MARK: - Certificate helpers
 
     private func loadCertificateDER() throws -> Data? {
+        if self.simulateCertificateMiss() {
+            return nil
+        }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,

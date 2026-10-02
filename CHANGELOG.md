@@ -31,6 +31,8 @@ Podcast chapters now reach your phone with Phone Sync, for episodes you have dow
 
 A smart playlist made by a newer version of the app, with a rule this version does not know, no longer makes the app quit when you open its rules. The rule is shown as unsupported and the playlist stays as it was. A podcast search or a scrobble that could not build its web address now reports an error in place of a crash.
 
+Phone Sync now checks again before it decides that the Mac's sync identity is missing. Before, one slow answer from the Keychain could make the Mac create a new identity, and every paired phone then had to be paired again.
+
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
