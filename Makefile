@@ -93,7 +93,7 @@ doctor:
 		echo "⚠️  WARNING: Brewfile.lock.json is missing. Run 'brew bundle install' then commit the lock file."; \
 	fi
 	@$(MAKE) -s check-swiftlint-version check-swiftformat-version
-	@Scripts/check-ffmpeg-major.sh
+	@Scripts/check-ffmpeg-build.sh
 
 ## check-swiftlint-version: Fail unless the installed SwiftLint is the release pinned in .swiftlint-version
 check-swiftlint-version:

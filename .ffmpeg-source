@@ -1,10 +1,12 @@
 # The FFmpeg source release every build links (ADR-096).
-# Read by Scripts/build-ffmpeg-lgpl.sh. The major must agree with
-# .ffmpeg-major; `make doctor` checks that.
+# Read by Scripts/build-ffmpeg-lgpl.sh. This is the only pin: the exact
+# release and its checksum.
 #
-# To bump: change all three values, run `make ffmpeg-lgpl`, then run the full
-# suites (decoder APIs move between releases). The SHA-256 is of the tarball
-# at FFMPEG_URL; confirm it against a second source before you commit it.
+# To bump: change all three values, run `make ffmpeg-lgpl` and `make
+# bundle-fpcalc` (`make generate` too if a dylib file name changed), then run
+# the full suites (decoder APIs move between releases, most of all between
+# majors). The SHA-256 is of the tarball at FFMPEG_URL; confirm it against a
+# second source before you commit it.
 FFMPEG_VERSION=9.0.2
 FFMPEG_URL=https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
 FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e

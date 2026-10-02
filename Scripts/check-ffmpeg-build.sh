@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
-# Guards the FFmpeg the build links: its major version, and its licence.
+# Guards the FFmpeg the build links: that it is there, and that it is LGPL.
 #
 # Every build links the project's own LGPL source build of FFmpeg (ADR-096),
 # made by Scripts/build-ffmpeg-lgpl.sh from the release pinned in
 # `.ffmpeg-source`. This script, run by `make doctor` locally and in CI, fails
 # when:
-#   - the pinned release is not of the major in `.ffmpeg-major` (decoder APIs
-#     move between majors, so a major bump is a deliberate act);
 #   - the build is not there, or does not report "LGPL version 2.1 or later";
-#   - the fpcalc dylibs bundled under Resources/ come from a different major
-#     than the build (CLAUDE.md: re-run `make bundle-fpcalc` after a bump).
+#   - the fpcalc dylibs bundled under Resources/ come from different library
+#     majors than the build (re-run `make bundle-fpcalc` after a version bump).
 #
 # Everything is overridable via environment for the hermetic tests in
 # Scripts/tests/ (which also run on Linux, where there is no FFmpeg build):
-#   EXPECTED_FILE        path to the major pin           (default: repo/.ffmpeg-major)
 #   FFMPEG_SOURCE_FILE   path to the source pin          (default: repo/.ffmpeg-source)
 #   RESOURCES_DIR        bundled dylib directory         (default: repo/Resources)
 #   FFMPEG_LIB_DIR       the build's dylib directory     (default: repo/build/ffmpeg-lgpl/lib)
@@ -22,7 +19,6 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-EXPECTED_FILE="${EXPECTED_FILE:-$ROOT/.ffmpeg-major}"
 FFMPEG_SOURCE_FILE="${FFMPEG_SOURCE_FILE:-$ROOT/.ffmpeg-source}"
 RESOURCES_DIR="${RESOURCES_DIR:-$ROOT/Resources}"
 FFMPEG_LIB_DIR="${FFMPEG_LIB_DIR:-${FFMPEG_PREFIX:-$ROOT/build/ffmpeg-lgpl}/lib}"
@@ -35,35 +31,17 @@ fail() {
     exit 1
 }
 
-# ── the two pins agree ────────────────────────────────────────────────────────
-
-[[ -f "$EXPECTED_FILE" ]] || fail ".ffmpeg-major is missing." \
-    "Create it with the FFmpeg major the codebase supports, e.g.: echo 9 > .ffmpeg-major"
-read -r -a accepted_majors <<< "$(tr '\n' ' ' < "$EXPECTED_FILE")"
-[[ "${#accepted_majors[@]}" -ge 1 ]] || fail ".ffmpeg-major is empty." \
-    "Put the supported FFmpeg major in it, e.g.: echo 9 > .ffmpeg-major"
-primary="${accepted_majors[0]}"
-[[ "$primary" =~ ^[0-9]+$ ]] || fail ".ffmpeg-major must hold a bare major version, got '$primary'."
+# ── the pin ───────────────────────────────────────────────────────────────────
 
 [[ -f "$FFMPEG_SOURCE_FILE" ]] || fail ".ffmpeg-source is missing." \
     "It pins the FFmpeg release that Scripts/build-ffmpeg-lgpl.sh builds."
 # Read the one value; the file is not sourced, so a test fixture cannot run code.
 version="$(sed -nE 's/^FFMPEG_VERSION=(.*)$/\1/p' "$FFMPEG_SOURCE_FILE" | head -1)"
 [[ -n "$version" ]] || fail ".ffmpeg-source does not set FFMPEG_VERSION."
-actual="${version%%.*}"
-[[ "$actual" =~ ^[0-9]+$ ]] || fail "Could not parse a major from FFMPEG_VERSION=$version in .ffmpeg-source."
-
-if [[ "$actual" != "$primary" ]]; then
-    fail "FFmpeg major mismatch: .ffmpeg-source pins $version, .ffmpeg-major says $primary." \
-        "If the upgrade is intentional:" \
-        "  1. update .ffmpeg-major," \
-        "  2. run 'make ffmpeg-lgpl' and 'make bundle-fpcalc' ('make generate' too if dylib filenames changed)," \
-        "  3. run the full test suites before committing (decoder APIs move between majors)."
-fi
 
 # ── the build exists and is the LGPL build ───────────────────────────────────
 
-# ${VAR-default} (no colon) so tests can force "no build" with an empty override.
+# ${VAR+set} so tests can force "no build" with an empty override.
 if [[ -z "${FFMPEG_LICENCE_LINE+set}" ]]; then
     avutil="$(ls "$FFMPEG_LIB_DIR"/libavutil.*.dylib 2>/dev/null | head -1 || true)"
     if [[ -n "$avutil" ]]; then
@@ -83,7 +61,7 @@ if [[ "$FFMPEG_LICENCE_LINE" != *"LGPL version 2.1 or later"* ]]; then
         "Rebuild it with: make ffmpeg-lgpl"
 fi
 
-# ── the bundled fpcalc dylibs come from the same majors ──────────────────────
+# ── the bundled fpcalc dylibs come from the same library majors ──────────────
 # Skipped per-library when either side has nothing to compare.
 mismatches=0
 for lib in libavcodec libavformat libavutil libswresample; do
@@ -102,4 +80,4 @@ if [[ "$mismatches" -gt 0 ]]; then
         "Re-run 'make bundle-fpcalc' (and 'make generate' if dylib filenames changed)."
 fi
 
-echo "✓ FFmpeg $version (${FFMPEG_LICENCE_LINE#libavutil license: }) matches the pin (.ffmpeg-major); bundled dylib majors agree"
+echo "✓ FFmpeg $version is built (${FFMPEG_LICENCE_LINE#libavutil license: }); bundled dylib majors agree"
