@@ -213,6 +213,20 @@ any of these are absent.
 | **Architecture** | arm64 only | The project's FFmpeg and `fpcalc` builds are configured for arm64 only (`--arch=arm64` in `Scripts/build-ffmpeg-lgpl.sh`, `CMAKE_OSX_ARCHITECTURES=arm64` in `Scripts/build-fpcalc.sh`). TagLib, LAME, Opus and OpenSSL come from arm64 Homebrew (`/opt/homebrew`), and TagLib's keg path is hardcoded in `Modules/Metadata/Package.swift` and `project.yml`. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
 | **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, the two source builds given a second architecture, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
 
+### The smoketest workflow
+
+Every build and test job runs on the macOS 27 image, so nothing there shows that the app starts on macOS 15 or 26. The `smoketest` workflow (`.github/workflows/smoketest.yml`) does: it starts a built app on `macos-15` and `macos-26` runners and fails when the app does not stay up, when a crash report appears, or when the bundled `fpcalc` makes no fingerprint. `Scripts/smoke-launch.sh` holds the checks, and it also prints the macOS version each bundled library was built for.
+
+It is started by hand and gates nothing:
+
+```sh
+gh workflow run smoketest                    # the latest release
+gh workflow run smoketest -f tag=v2.19.0     # one published release
+gh workflow run smoketest -f ref=main        # build a branch, tag or SHA, then test it
+```
+
+A build from a ref is a Release build with the libraries embedded as the release does, but ad hoc signed and without the hardened runtime. The test proves that the app starts. It does not prove that every code path works on that macOS.
+
 ## Design docs
 
 Architecture decision records are documented in [`docs/design-spec/`](docs/design-spec/README.md).

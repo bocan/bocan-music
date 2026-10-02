@@ -1,0 +1,242 @@
+name: smoketest
+
+# Starts a built Bocan.app on macOS 15 and on macOS 26, the versions the app
+# says it runs on but that no other workflow uses (every build and test job
+# is on the xcode-27 image). It answers one question: does the app start
+# there (#627)? Scripts/smoke-launch.sh holds the checks.
+#
+# Started by hand, with one of:
+#   tag   a published release: its Bocan.dmg is downloaded and tested.
+#   ref   a branch, tag or SHA: it is built here (Release, ad hoc signed, with
+#         the libraries embedded as the release does) and tested.
+# With neither, the latest release is tested. With both, both are.
+#
+# It is not part of the release workflow and gates nothing. A pull request
+# that changes this workflow or its script runs it too (latest release, and a
+# build of the pull request), so that a change here is proven before it merges.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to test (for example v2.19.0). Empty, with an empty ref: the latest release."
+        required: false
+        default: ""
+      ref:
+        description: "Branch, tag or SHA to build and test."
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - .github/workflows/smoketest.yml
+      - Scripts/smoke-launch.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoketest-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    name: Decide what to test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sources: ${{ steps.plan.outputs.sources }}
+      tag: ${{ steps.plan.outputs.tag }}
+      ref: ${{ steps.plan.outputs.ref }}
+    steps:
+      - name: Decide
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_REF: ${{ inputs.ref }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          tag="$INPUT_TAG"
+          ref="$INPUT_REF"
+          if [[ "$EVENT" == "pull_request" ]]; then
+            ref="$PR_SHA"
+            sources='["release","build"]'
+          elif [[ -n "$tag" && -n "$ref" ]]; then
+            sources='["release","build"]'
+          elif [[ -n "$ref" ]]; then
+            sources='["build"]'
+          else
+            sources='["release"]'
+          fi
+          if [[ "$sources" == *release* && -z "$tag" ]]; then
+            tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+          if [[ "$sources" == *release* && ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$tag' is not a release tag (vMAJOR.MINOR.PATCH)."
+            exit 1
+          fi
+          {
+            echo "sources=$sources"
+            echo "tag=$tag"
+            echo "ref=$ref"
+          } >> "$GITHUB_OUTPUT"
+          echo "Testing: sources=$sources tag=$tag ref=$ref"
+
+  build:
+    name: Build the app from the ref
+    needs: plan
+    if: contains(needs.plan.outputs.sources, 'build')
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - name: Checkout the ref
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Select Xcode 27
+        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+
+      - name: Cache SPM packages
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            ~/.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Install Brewfile dependencies
+        run: |
+          brew update --quiet
+          brew bundle
+
+      # A ref with ADR-096 builds FFmpeg from source. An older ref has no such
+      # target and links Homebrew's FFmpeg, which its Brewfile installs.
+      - name: Cache the LGPL FFmpeg and Chromaprint builds
+        uses: actions/cache@v6
+        with:
+          path: |
+            build/ffmpeg-lgpl
+            build/chromaprint
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-lgpl-${{ hashFiles('.ffmpeg-source', '.chromaprint-source', 'Scripts/build-ffmpeg-lgpl.sh', 'Scripts/build-fpcalc.sh') }}
+
+      - name: Build FFmpeg from source, when the ref does that
+        run: |
+          if grep -q '^ffmpeg-lgpl:' Makefile; then
+            make ffmpeg-lgpl
+          else
+            echo "This ref links Homebrew's FFmpeg."
+          fi
+
+      # The FFmpeg entry is used only by a ref from before ADR-096.
+      - name: Set pkg-config path
+        run: |
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> "$GITHUB_ENV"
+
+      # Template placeholders are enough to start the app, so no repository
+      # secret is given to this workflow.
+      - name: Stub Secrets.xcconfig (xcodegen requires it)
+        run: |
+          if [[ ! -f Secrets.xcconfig ]]; then
+            cp Secrets.xcconfig.template Secrets.xcconfig
+          fi
+
+      - name: Bundle fpcalc into Resources/
+        run: make bundle-fpcalc
+
+      - name: Generate Xcode project
+        run: make generate
+
+      # Ad hoc signed, so no certificate is needed. The hardened runtime is
+      # off because its library validation refuses ad hoc signed libraries;
+      # the release turns it on with a real identity. No entitlements, as in
+      # the release, so the app is not sandboxed.
+      - name: Build (Release, ad hoc signed)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Bocan.xcodeproj \
+            -scheme Bocan \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build/smoketest \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            CODE_SIGN_ENTITLEMENTS= \
+            ENABLE_HARDENED_RUNTIME=NO \
+            | xcbeautify
+
+      - name: Embed the libraries, as the release does
+        run: bash Scripts/embed-deps.sh build/smoketest/Build/Products/Release/Bocan.app
+
+      # A tar file keeps the executable bits and the symbolic links, which a
+      # plain artifact upload does not.
+      - name: Pack the app
+        run: tar -C build/smoketest/Build/Products/Release -czf "$RUNNER_TEMP/Bocan.app.tgz" Bocan.app
+
+      - name: Upload the app
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoketest-app
+          path: ${{ runner.temp }}/Bocan.app.tgz
+          retention-days: 3
+          if-no-files-found: error
+
+  launch:
+    name: Start on ${{ matrix.os }} (${{ matrix.source }})
+    needs: [plan, build]
+    # `build` is skipped when only a release is tested.
+    if: >
+      always() &&
+      needs.plan.result == 'success' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+        source: ${{ fromJSON(needs.plan.outputs.sources) }}
+    steps:
+      # The script and the audio file come from the ref the workflow runs on,
+      # not from the release or the ref under test.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download the release
+        if: matrix.source == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/app"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern Bocan.dmg --dir "$RUNNER_TEMP"
+          hdiutil attach "$RUNNER_TEMP/Bocan.dmg" -nobrowse -readonly \
+            -mountpoint "$RUNNER_TEMP/dmg"
+          ditto "$RUNNER_TEMP/dmg/Bocan.app" "$RUNNER_TEMP/app/Bocan.app"
+          hdiutil detach "$RUNNER_TEMP/dmg"
+
+      - name: Download the built app
+        if: matrix.source == 'build'
+        uses: actions/download-artifact@v8
+        with:
+          name: smoketest-app
+          path: ${{ runner.temp }}
+
+      - name: Unpack the built app
+        if: matrix.source == 'build'
+        run: |
+          mkdir -p "$RUNNER_TEMP/app"
+          tar -C "$RUNNER_TEMP/app" -xzf "$RUNNER_TEMP/Bocan.app.tgz"
+
+      - name: Start the app
+        run: |
+          bash Scripts/smoke-launch.sh "$RUNNER_TEMP/app/Bocan.app" \
+            Modules/AudioEngine/Tests/AudioEngineTests/Fixtures/sample.mp3
