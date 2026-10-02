@@ -53,7 +53,15 @@ private let authFailEnvelope = """
 
 private let testServerURL = URL(string: "https://music.test.local")!
 
-private func makeService() async throws -> (SubsonicService, UUID, MonitorStubTransport) {
+/// What `makeService()` gives a test: the service, the ID of its one server
+/// and the stub transport behind that server's client.
+private struct ServiceFixture {
+    let service: SubsonicService
+    let id: UUID
+    let transport: MonitorStubTransport
+}
+
+private func makeService() async throws -> ServiceFixture {
     let db = try await Database(location: .inMemory)
     let repo = SubsonicServerRepository(database: db)
     let store = SubsonicServerStore(repository: repo)
@@ -77,7 +85,7 @@ private func makeService() async throws -> (SubsonicService, UUID, MonitorStubTr
     )
     let service = SubsonicService(store: store)
     await service.registerClientForTesting(client, serverID: id)
-    return (service, id, transport)
+    return ServiceFixture(service: service, id: id, transport: transport)
 }
 
 /// Awaits the first status update for `serverID` matching `predicate` on
@@ -123,7 +131,7 @@ private let isOnline: @Sendable (SubsonicConnectionStatus) -> Bool = {
 struct SubsonicConnectionMonitorTests {
     @Test("currentStatuses is empty initially")
     func startsEmpty() async throws {
-        let (service, _, _) = try await makeService()
+        let service = try await makeService().service
         let monitor = SubsonicConnectionMonitor(service: service)
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot.isEmpty)
@@ -131,7 +139,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("startMonitoring then a successful ping flips status to .online")
     func transitionsToOnline() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
 
@@ -164,7 +173,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("auth failure surfaces .authFailed and terminates the loop")
     func authFailureTerminatesLoop() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: authFailEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
 
@@ -195,7 +205,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("wakeAll restarts the loop, as the app's wake observer calls it (#274)")
     func wakeAllTriggersReping() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
 
@@ -252,7 +263,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("stopMonitoring removes the status entry")
     func stopMonitoringClearsStatus() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
 
@@ -269,7 +281,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("stopAll clears every status")
     func stopAllClearsEverything() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
         let updates = await monitor.updates
@@ -282,7 +295,8 @@ struct SubsonicConnectionMonitorTests {
 
     @Test("startMonitoring twice for the same server is a no-op")
     func doubleStartIsIdempotent() async throws {
-        let (service, id, transport) = try await makeService()
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
         let updates = await monitor.updates

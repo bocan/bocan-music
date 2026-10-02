@@ -7,13 +7,20 @@ import Testing
 // MARK: - CapturingScrobbleSink
 
 private actor CapturingScrobbleSink: ScrobbleSink {
-    private(set) var calls: [(trackID: Int64, playedAt: Date, duration: TimeInterval)] = []
+    /// One `recordPlay` call, as the sink received it.
+    struct RecordedPlay {
+        let trackID: Int64
+        let playedAt: Date
+        let duration: TimeInterval
+    }
+
+    private(set) var calls: [RecordedPlay] = []
     private(set) var nowPlayingCalls: [Int64] = []
     private(set) var subsonicCalls: [SubsonicPlayContext] = []
     private(set) var nowPlayingSubsonicCalls: [SubsonicPlayContext] = []
 
     func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async {
-        self.calls.append((trackID, playedAt, durationPlayed))
+        self.calls.append(RecordedPlay(trackID: trackID, playedAt: playedAt, duration: durationPlayed))
     }
 
     func nowPlaying(trackID: Int64) async {

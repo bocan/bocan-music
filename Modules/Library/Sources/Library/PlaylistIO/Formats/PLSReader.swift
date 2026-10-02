@@ -65,6 +65,19 @@ public enum PLSReader {
         }
 
         let baseDir = sourceURL?.deletingLastPathComponent()
+        let entries = Self.makeEntries(files: files, titles: titles, lengths: lengths, baseDir: baseDir)
+
+        let name = sourceURL?.deletingPathExtension().lastPathComponent ?? "Imported Playlist"
+        return PlaylistPayload(name: name, entries: entries)
+    }
+
+    /// Builds the entries in the order of their `File<n>` index.
+    private static func makeEntries(
+        files: [Int: String],
+        titles: [Int: String],
+        lengths: [Int: TimeInterval],
+        baseDir: URL?
+    ) -> [PlaylistPayload.Entry] {
         let sortedIndexes = files.keys.sorted()
         var entries: [PlaylistPayload.Entry] = []
         entries.reserveCapacity(sortedIndexes.count)
@@ -83,9 +96,7 @@ public enum PLSReader {
                 albumHint: nil
             ))
         }
-
-        let name = sourceURL?.deletingPathExtension().lastPathComponent ?? "Imported Playlist"
-        return PlaylistPayload(name: name, entries: entries)
+        return entries
     }
 
     private enum Kind { case file, title, length }

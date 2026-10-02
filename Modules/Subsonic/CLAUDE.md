@@ -8,7 +8,7 @@ Scope: the `Subsonic` module. For the build system, the module DAG, and commit c
 
 Talking to Subsonic-compatible servers. The public seam is the `SubsonicService` actor, which wraps the external **`SwiftSonic`** client.
 
-- `SubsonicService.swift` (+ `SubsonicService+CapabilityProbe.swift`) is the actor: browse, search, stream URLs, star/rate, and capability detection. `SwiftSonicReexport.swift` re-exports the external package's types so callers do not depend on it directly.
+- `SubsonicService.swift` (+ `SubsonicService+CapabilityProbe.swift`, `SubsonicService+Endpoints.swift` for the endpoint wrappers, and `SubsonicServiceTransport.swift` for the metrics relay and the trust-bypass transport) is the actor: browse, search, stream URLs, star/rate, and capability detection. `SwiftSonicReexport.swift` re-exports the external package's types so callers do not depend on it directly.
 - `SubsonicServerStore.swift` persists server configs and stores credentials in the **Keychain**. `Models/` holds `SubsonicServer`, `SubsonicError`, `SubsonicConnectionStatus`. `SubsonicConnectionMonitor.swift` tracks per-server reachability; `SubsonicAnnotations.swift` and `SubsonicCoverArtProvider.swift` handle star/rating writes and artwork.
 
 ## Things easy to get wrong

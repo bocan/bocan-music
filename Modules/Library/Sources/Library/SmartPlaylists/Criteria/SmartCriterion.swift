@@ -109,15 +109,6 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     private static func lenientReason(
         from container: KeyedDecodingContainer<RuleAssoc>
     ) -> String? {
-        struct LenientRule: Decodable {
-            let field: String?
-
-            enum CodingKeys: String, CodingKey { case field }
-            init(from decoder: Decoder) throws {
-                let c = try decoder.container(keyedBy: CodingKeys.self)
-                self.field = try? c.decode(String.self, forKey: .field)
-            }
-        }
         guard let lenient = try? container.decode(LenientRule.self, forKey: .rule),
               let field = lenient.field else { return nil }
         return "Unknown field \"\(field)\""
@@ -138,6 +129,18 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         default:
             return nil
         }
+    }
+}
+
+/// A rule read for its field name alone, used by `SmartCriterion.lenientReason`
+/// when the strict decode of a rule fails.
+private struct LenientRule: Decodable {
+    let field: String?
+
+    enum CodingKeys: String, CodingKey { case field }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.field = try? c.decode(String.self, forKey: .field)
     }
 }
 

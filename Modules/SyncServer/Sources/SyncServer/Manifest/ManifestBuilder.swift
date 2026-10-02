@@ -37,7 +37,7 @@ public struct ManifestBuilder: Sendable {
     private let smartService: SmartPlaylistService
     private let downloadStore: DownloadStore
     private let transcodeLedger: SyncTranscodeRepository
-    private let log = AppLogger.make(.sync)
+    let log = AppLogger.make(.sync)
 
     /// - Parameter downloadRoot: overrides the podcast Downloads directory (tests
     ///   only); production uses the default Application Support location.
@@ -88,9 +88,7 @@ public struct ManifestBuilder: Sendable {
         var manifestTracks = self.buildTracks(
             allTracks: allTracks,
             profileTrackIds: profileTrackIds,
-            roots: roots,
-            artistName: artistName,
-            albumTitle: albumTitle,
+            lookups: TrackLookups(roots: roots, artistName: artistName, albumTitle: albumTitle),
             preset: transcode.preset,
             ledger: ledgerRows
         )
@@ -237,186 +235,7 @@ public struct ManifestBuilder: Sendable {
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    // MARK: - Tracks
-
-    private func buildTracks(
-        allTracks: [Track],
-        profileTrackIds: Set<Int64>,
-        roots: [LibraryRoot],
-        artistName: [Int64: String],
-        albumTitle: [Int64: String],
-        preset: TranscodePreset?,
-        ledger: [Int64: SyncTranscode]
-    ) -> [ManifestTrack] {
-        let candidates = allTracks
-            .filter { !$0.disabled }
-            .filter { $0.id.map { profileTrackIds.contains($0) } ?? false }
-            .sorted { ($0.id ?? 0) < ($1.id ?? 0) }
-
-        var result: [ManifestTrack] = []
-        var skipped = 0
-        var awaiting = 0
-
-        for track in candidates {
-            guard let id = track.id else { continue }
-            guard let hash = track.contentHash else { skipped += 1
-                continue
-            }
-            guard let relPath = Self.relPath(for: track.fileURL, roots: roots) else { skipped += 1
-                continue
-            }
-            if let preset, TranscodeCoordinator.needsTranscode(track, preset: preset) {
-                // ADR-088 served-bytes rule: describe the artifact, and only
-                // once it is prepared (the same gate shape as a missing hash);
-                // the sync grows as the coordinator's pass progresses.
-                guard let row = ledger[id] else { awaiting += 1
-                    continue
-                }
-                result.append(self.makeArtifactTrack(
-                    track,
-                    id: id,
-                    relPath: relPath,
-                    row: row,
-                    preset: preset,
-                    artistName: artistName,
-                    albumTitle: albumTitle
-                ))
-                continue
-            }
-            result.append(self.makeTrack(
-                track,
-                id: id,
-                relPath: relPath,
-                size: track.fileSize,
-                sha256: hash,
-                format: track.fileFormat,
-                clip: nil,
-                artistName: artistName,
-                albumTitle: albumTitle
-            ))
-        }
-
-        if skipped > 0 {
-            self.log.debug("manifest.tracks.skipped", ["count": skipped])
-        }
-        if awaiting > 0 {
-            self.log.debug("manifest.tracks.awaiting_transcode", ["count": awaiting])
-        }
-        return result.sorted { $0.id < $1.id }
-    }
-
-    /// A manifest entry whose file-describing fields are the prepared
-    /// artifact's (ADR-088): ledger size and hash, the preset's format and
-    /// extension, lossy artifact properties, and `sourceFormat` for display.
-    private func makeArtifactTrack(
-        _ track: Track,
-        id: Int64,
-        relPath: String,
-        row: SyncTranscode,
-        preset: TranscodePreset,
-        artistName: [Int64: String],
-        albumTitle: [Int64: String]
-    ) -> ManifestTrack {
-        var artifact = self.makeTrack(
-            track,
-            id: id,
-            relPath: Self.swapExtension(relPath, to: preset.fileExtension),
-            size: row.size,
-            sha256: row.sha256,
-            format: preset.formatName,
-            clip: nil,
-            artistName: artistName,
-            albumTitle: albumTitle
-        )
-        artifact.sourceFormat = track.fileFormat
-        artifact.bitrate = row.bitrate ?? preset.targetKbps
-        artifact.sampleRate = Int(preset.outputSampleRate(forSourceRate: Int32(track.sampleRate ?? 44100)))
-        artifact.bitDepth = nil
-        artifact.channelCount = track.channelCount.map { min($0, 2) }
-        artifact.isLossless = false
-        return artifact
-    }
-
-    /// The artifact's relPath: the source path with the preset's extension,
-    /// so the bytes and the filename agree on the phone.
-    static func swapExtension(_ relPath: String, to ext: String) -> String {
-        (relPath as NSString).deletingPathExtension + "." + ext
-    }
-
-    private func makeTrack(
-        _ track: Track,
-        id: Int64,
-        relPath: String,
-        size: Int64,
-        sha256: String,
-        format: String,
-        clip: ManifestClip?,
-        artistName: [Int64: String],
-        albumTitle: [Int64: String]
-    ) -> ManifestTrack {
-        ManifestTrack(
-            id: id,
-            relPath: relPath,
-            size: size,
-            sha256: sha256,
-            format: format,
-            durationMs: Int((track.duration * 1000).rounded()),
-            title: track.title,
-            artist: track.artistID.flatMap { artistName[$0] },
-            artistId: track.artistID,
-            albumArtist: track.albumArtistID.flatMap { artistName[$0] },
-            albumArtistId: track.albumArtistID,
-            album: track.albumID.flatMap { albumTitle[$0] },
-            albumId: track.albumID,
-            trackNumber: track.trackNumber,
-            trackTotal: track.trackTotal,
-            discNumber: track.discNumber,
-            discTotal: track.discTotal,
-            year: track.year,
-            genre: track.genre,
-            composer: track.composer,
-            bpm: track.bpm,
-            rating: track.rating,
-            loved: track.loved,
-            sampleRate: track.sampleRate,
-            bitDepth: track.bitDepth,
-            bitrate: track.bitrate,
-            channelCount: track.channelCount,
-            isLossless: track.isLossless,
-            sourceFormat: nil,
-            replayGain: Self.replayGain(track),
-            artworkHash: track.coverArtHash,
-            lyricsHash: nil,
-            clip: clip
-        )
-    }
-
-    private static func replayGain(_ track: Track) -> ManifestReplayGain? {
-        guard let trackGain = track.replaygainTrackGain else { return nil }
-        return ManifestReplayGain(
-            trackGain: trackGain,
-            trackPeak: track.replaygainTrackPeak,
-            albumGain: track.replaygainAlbumGain,
-            albumPeak: track.replaygainAlbumPeak
-        )
-    }
-
-    /// Derives the sanitized relative path of a `file://` URL within a library
-    /// root, or `nil` if the track is under no known root or the path is unsafe.
-    static func relPath(for fileURL: String, roots: [LibraryRoot]) -> String? {
-        guard let url = URL(string: fileURL) else { return nil }
-        let path = url.path
-        for root in roots {
-            let prefix = root.path == "/" ? "/" : root.path + "/"
-            guard path.hasPrefix(prefix) else { continue }
-            let relative = String(path.dropFirst(prefix.count)).precomposedStringWithCanonicalMapping
-            if relative.isEmpty || relative.hasPrefix("/") || relative.contains("..") {
-                return nil
-            }
-            return relative
-        }
-        return nil
-    }
+    // MARK: - Lyrics
 
     private func lyricsHash(trackId: Int64) async throws -> String? {
         guard let document = try await self.lyricsService.lyrics(for: trackId) else { return nil }
@@ -533,22 +352,31 @@ public extension ManifestBuilder {
         return estimates
     }
 
-    /// (prepared, total, unservedBytes) for the settings preparing-progress
-    /// row under `preset`: total is the selection's transcodable-track count,
-    /// prepared the subset with a valid ledger row, and unservedBytes the
-    /// prepared-but-unserved artifact bytes the prepare window counts, so the
-    /// UI can tell a parked window from active conversion.
+    /// The figures behind the settings preparing-progress row.
+    struct TranscodeProgress: Sendable, Equatable {
+        /// The targets that have a valid ledger row.
+        public let prepared: Int
+        /// The selection's transcodable-track count.
+        public let total: Int
+        /// The prepared-but-unserved artifact bytes the prepare window counts.
+        public let unservedBytes: Int64
+    }
+
+    /// The progress under `preset`: total is the selection's transcodable-track
+    /// count, prepared the subset with a valid ledger row, and unservedBytes
+    /// the prepared-but-unserved artifact bytes the prepare window counts, so
+    /// the UI can tell a parked window from active conversion.
     func transcodeProgress(
         for profile: SyncProfile,
         preset: TranscodePreset
-    ) async throws -> (prepared: Int, total: Int, unservedBytes: Int64) {
+    ) async throws -> TranscodeProgress {
         let targets = try await self.estimateCandidates(profile: profile)
             .filter { TranscodeCoordinator.needsTranscode($0, preset: preset) }
         let targetIDs = Set(targets.compactMap(\.id))
         let rows = try await self.transcodeLedger.allValid(preset: preset.rawValue)
             .filter { targetIDs.contains($0.trackID) }
         let unserved = rows.filter { $0.servedAt == nil }.reduce(Int64(0)) { $0 + $1.size }
-        return (prepared: rows.count, total: targets.count, unservedBytes: unserved)
+        return TranscodeProgress(prepared: rows.count, total: targets.count, unservedBytes: unserved)
     }
 
     /// The estimate's track selection: enabled, hashed, and in the profile.

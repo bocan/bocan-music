@@ -135,12 +135,10 @@ struct ScrobbleServiceTests {
         let service = self.makeService(providers: [p1, p2], repo: repo)
         await service.nowPlaying(
             trackID: 1,
-            artist: "A",
+            track: TrackIdentity(artist: "A", title: "T", mbid: nil),
             albumArtist: nil,
             album: nil,
-            title: "T",
-            duration: 240,
-            mbid: nil
+            duration: 240
         )
         #expect(await p1.nowPlayingCalls == 1)
         #expect(await p2.nowPlayingCalls == 0)

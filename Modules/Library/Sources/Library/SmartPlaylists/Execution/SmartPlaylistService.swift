@@ -240,43 +240,10 @@ public actor SmartPlaylistService {
             let task = Task {
                 do {
                     let sp = try await self.resolve(id: id)
-                    let sql: String
-                    let args: StatementArguments
-                    let regions: [any DatabaseRegionConvertible]
-                    if sp.limitSort.liveUpdate {
-                        let compiled = try CriteriaCompiler.compile(
-                            criteria: sp.criteria,
-                            limitSort: sp.limitSort,
-                            seed: Self.querySeed(for: sp)
-                        )
-                        sql = compiled.selectSQL
-                        args = compiled.arguments
-                        let regionRequest = SQLRequest<Row>(
-                            sql: compiled.observationRegionSQL,
-                            arguments: compiled.arguments
-                        )
-                        regions = [regionRequest]
-                    } else {
-                        // Snapshot mode: observe playlist_tracks so the UI
-                        // refreshes when snapshot(id:) writes new rows.
-                        sql = """
-                        SELECT tracks.* FROM tracks
-                        INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
-                        WHERE playlist_tracks.playlist_id = ?
-                        ORDER BY playlist_tracks.position
-                        """
-                        args = [id]
-                        let regionRequest = SQLRequest<Row>(
-                            sql: """
-                            SELECT tracks.id, playlist_tracks.position FROM tracks
-                            INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
-                            WHERE playlist_tracks.playlist_id = ?
-                            ORDER BY playlist_tracks.position
-                            """,
-                            arguments: [id]
-                        )
-                        regions = [regionRequest]
-                    }
+                    let query = try Self.observationQuery(for: sp, id: id)
+                    let sql = query.sql
+                    let args = query.args
+                    let regions = query.regions
                     let stream = await self.database.observe(regions: regions) { db in
                         try Track.fetchAll(db, sql: sql, arguments: args)
                     }
@@ -302,17 +269,12 @@ public actor SmartPlaylistService {
                             continue
                         }
 
-                        flushTask = Task {
-                            do {
-                                try await Task.sleep(nanoseconds: debounceNs)
-                                guard !Task.isCancelled else { return }
-                                if let latest = await pending.takeIfMatchingGeneration(currentGeneration) {
-                                    continuation.yield(latest)
-                                }
-                            } catch {
-                                // Cancellation is expected when new values arrive.
-                            }
-                        }
+                        flushTask = self.makeFlushTask(
+                            debounceNs: debounceNs,
+                            generation: currentGeneration,
+                            pending: pending,
+                            continuation: continuation
+                        )
                     }
                     flushTask?.cancel()
                     if let latest = await pending.takeLatest() {
@@ -324,6 +286,27 @@ public actor SmartPlaylistService {
                 }
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// Starts the task that yields the pending tracks after the debounce
+    /// interval, unless a newer value replaced them first.
+    private func makeFlushTask(
+        debounceNs: UInt64,
+        generation currentGeneration: UInt64,
+        pending: PendingTracks,
+        continuation: AsyncThrowingStream<[Track], Error>.Continuation
+    ) -> Task<Void, Never> {
+        Task {
+            do {
+                try await Task.sleep(nanoseconds: debounceNs)
+                guard !Task.isCancelled else { return }
+                if let latest = await pending.takeIfMatchingGeneration(currentGeneration) {
+                    continuation.yield(latest)
+                }
+            } catch {
+                // Cancellation is expected when new values arrive.
+            }
         }
     }
 
@@ -391,6 +374,56 @@ public actor SmartPlaylistService {
 
     private static func now() -> Int64 {
         Int64(Date().timeIntervalSince1970)
+    }
+
+    /// The query `observe` runs and the database regions it watches.
+    private struct ObservationQuery {
+        let sql: String
+        let args: StatementArguments
+        let regions: [any DatabaseRegionConvertible]
+    }
+
+    /// Picks the live query of a live-updating smart playlist, or the stored
+    /// snapshot rows of one that is not.
+    private static func observationQuery(for sp: SmartPlaylist, id: Int64) throws -> ObservationQuery {
+        let sql: String
+        let args: StatementArguments
+        let regions: [any DatabaseRegionConvertible]
+        if sp.limitSort.liveUpdate {
+            let compiled = try CriteriaCompiler.compile(
+                criteria: sp.criteria,
+                limitSort: sp.limitSort,
+                seed: Self.querySeed(for: sp)
+            )
+            sql = compiled.selectSQL
+            args = compiled.arguments
+            let regionRequest = SQLRequest<Row>(
+                sql: compiled.observationRegionSQL,
+                arguments: compiled.arguments
+            )
+            regions = [regionRequest]
+        } else {
+            // Snapshot mode: observe playlist_tracks so the UI
+            // refreshes when snapshot(id:) writes new rows.
+            sql = """
+            SELECT tracks.* FROM tracks
+            INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+            WHERE playlist_tracks.playlist_id = ?
+            ORDER BY playlist_tracks.position
+            """
+            args = [id]
+            let regionRequest = SQLRequest<Row>(
+                sql: """
+                SELECT tracks.id, playlist_tracks.position FROM tracks
+                INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+                WHERE playlist_tracks.playlist_id = ?
+                ORDER BY playlist_tracks.position
+                """,
+                arguments: [id]
+            )
+            regions = [regionRequest]
+        }
+        return ObservationQuery(sql: sql, args: args, regions: regions)
     }
 
     private static func querySeed(for smartPlaylist: SmartPlaylist) -> Int64 {

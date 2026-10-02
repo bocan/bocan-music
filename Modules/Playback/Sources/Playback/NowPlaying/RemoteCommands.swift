@@ -45,6 +45,14 @@ public final class RemoteCommands {
 
         let center = MPRemoteCommandCenter.shared()
 
+        self.registerTransportCommands(center)
+        self.registerPositionAndSkipCommands(center)
+
+        self.log.debug("remotecommands.registered")
+    }
+
+    /// Binds play, pause, toggle, next and previous.
+    private func registerTransportCommands(_ center: MPRemoteCommandCenter) {
         center.playCommand.isEnabled = true
         center.playCommand.addTarget { [weak self] _ in
             guard let self else { return .commandFailed }
@@ -79,7 +87,11 @@ public final class RemoteCommands {
             Task { await self.onPreviousTrack?() }
             return .success
         }
+    }
 
+    /// Binds the scrubber and the skip-interval commands, and disables the
+    /// commands the app does not implement.
+    private func registerPositionAndSkipCommands(_ center: MPRemoteCommandCenter) {
         center.changePlaybackPositionCommand.isEnabled = true
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let self,
@@ -112,8 +124,6 @@ public final class RemoteCommands {
             return .success
         }
         center.skipForwardCommand.isEnabled = false
-
-        self.log.debug("remotecommands.registered")
     }
 
     /// Configures remote commands for podcast playback: enables skip-interval

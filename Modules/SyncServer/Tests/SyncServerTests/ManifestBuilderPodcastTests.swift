@@ -11,15 +11,19 @@ struct ManifestBuilderPodcastTests {
         URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sync-podcast-\(UUID().uuidString)")
     }
 
-    @Test("downloaded episodes and their show appear in the manifest")
-    func downloadedEpisodes() async throws {
-        let database = try await Database(location: .inMemory)
+    /// The show and episode `seedFullShow` inserted, and the episode's file.
+    private struct SeededEpisode {
+        let podcastId: Int64
+        let guid: String
+        let fileURL: URL
+    }
+
+    /// Inserts a fully described show plus one downloaded, part-played
+    /// episode whose stored hash is `episodeHash`, and writes its file.
+    private func seedFullShow(database: Database, root tempRoot: URL, episodeHash: String) async throws -> SeededEpisode {
         let podcasts = PodcastRepository(database: database)
         let episodes = EpisodeRepository(database: database)
         let states = EpisodeStateRepository(database: database)
-
-        let tempRoot = self.makeTempRoot()
-        defer { try? FileManager.default.removeItem(at: tempRoot) }
 
         let podcastId = try await podcasts.insert(Podcast(
             feedURL: "https://example.test/feed",
@@ -49,11 +53,24 @@ struct ManifestBuilderPodcastTests {
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("podcast-audio".utf8).write(to: fileURL)
 
-        let episodeHash = String(repeating: "bb01", count: 16)
         try await states.setDownloadState(
             podcastID: podcastId, guid: guid, state: .downloaded, path: fileURL.path, bytes: 55_000_000, hash: episodeHash
         )
         try await states.savePosition(podcastID: podcastId, guid: guid, position: 1200, now: 0)
+        return SeededEpisode(podcastId: podcastId, guid: guid, fileURL: fileURL)
+    }
+
+    @Test("downloaded episodes and their show appear in the manifest")
+    func downloadedEpisodes() async throws {
+        let database = try await Database(location: .inMemory)
+        let tempRoot = self.makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let episodeHash = String(repeating: "bb01", count: 16)
+        let seeded = try await self.seedFullShow(database: database, root: tempRoot, episodeHash: episodeHash)
+        let podcastId = seeded.podcastId
+        let guid = seeded.guid
+        let fileURL = seeded.fileURL
 
         let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
         let manifest = try await builder.build(

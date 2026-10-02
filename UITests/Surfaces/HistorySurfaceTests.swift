@@ -59,6 +59,13 @@ final class HistorySurfaceTests: XCTestCase {
         )
         app.typeKey(.escape, modifierFlags: [])
 
+        self.assertSearchContracts(app, inv, row: row)
+        self.assertSourceFilter(app, inv, row: row)
+    }
+
+    /// The search contracts of ADR-094 slice 2, with the recorded play's
+    /// `row` on screen in History.
+    private func assertSearchContracts(_ app: XCUIApplication, _ inv: MenuInvoker, row: XCUIElement) {
         // Search on History filters the plays by song, and is its own.
         let field = app.searchFields.firstMatch
         self.type("zzzz", into: field, app: app)
@@ -84,7 +91,11 @@ final class HistorySurfaceTests: XCTestCase {
         app.typeKey("[", modifierFlags: .command)
         inv.waitFor("back on Songs, still filtered") { inv.visibleFixtureTitleCount() == 1 }
         XCTAssertEqual(self.text(of: field), "Tone Two", "the Songs filter came back with the page")
+    }
 
+    /// The Source picker of ADR-094 slice 3, run from the filtered Songs page
+    /// that `assertSearchContracts` ends on.
+    private func assertSourceFilter(_ app: XCUIApplication, _ inv: MenuInvoker, row: XCUIElement) {
         // The Source filter (slice 3). The fixture has no Last.fm import, so
         // Last.fm alone is empty and All brings the play back.
         self.sidebarRow(app, "sidebar.history").click()

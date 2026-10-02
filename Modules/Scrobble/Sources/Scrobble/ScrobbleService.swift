@@ -109,22 +109,20 @@ public actor ScrobbleService: ScrobbleSink {
     /// Best-effort "now playing" notification.
     public func nowPlaying(
         trackID: Int64,
-        artist: String,
+        track: TrackIdentity,
         albumArtist: String?,
         album: String?,
-        title: String,
-        duration: TimeInterval,
-        mbid: String?
+        duration: TimeInterval
     ) async {
         let event = PlayEvent(
             queueID: -1,
             trackID: trackID,
-            artist: artist,
+            artist: track.artist,
             albumArtist: albumArtist,
             album: album,
-            title: title,
+            title: track.title,
             duration: duration,
-            mbid: mbid,
+            mbid: track.mbid,
             playedAt: Date()
         )
         await self.dispatchNowPlaying(event)
@@ -184,15 +182,9 @@ public actor ScrobbleService: ScrobbleSink {
         }
         do {
             let queueID = try await self.repository.enqueueSubsonic(
-                serverID: context.serverID,
-                songID: context.songID,
+                context: context,
                 playedAt: playedAt,
                 durationPlayed: durationPlayed,
-                title: context.title,
-                artist: context.artist,
-                album: context.album,
-                albumArtist: context.albumArtist,
-                duration: context.duration,
                 providerIDs: activeProviders
             )
             self.log.info("scrobble.service.enqueued.subsonic", [

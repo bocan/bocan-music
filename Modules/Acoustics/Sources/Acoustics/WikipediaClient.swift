@@ -87,11 +87,11 @@ public struct WikipediaSummary: Decodable, Sendable, Equatable {
     public let thumbnail: Thumbnail?
 
     public struct ContentURLs: Decodable, Sendable, Equatable {
-        public let desktop: Page?
+        public let desktop: DesktopPage?
+    }
 
-        public struct Page: Decodable, Sendable, Equatable {
-            public let page: String
-        }
+    public struct DesktopPage: Decodable, Sendable, Equatable {
+        public let page: String
     }
 
     public struct Thumbnail: Decodable, Sendable, Equatable {
@@ -118,9 +118,9 @@ struct WikidataEntityResponse: Decodable {
 
     struct Entity: Decodable {
         let sitelinks: [String: Sitelink]?
+    }
 
-        struct Sitelink: Decodable {
-            let title: String
-        }
+    struct Sitelink: Decodable {
+        let title: String
     }
 }

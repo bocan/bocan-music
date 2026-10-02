@@ -165,6 +165,23 @@ private struct QueuePayloadV1: Codable {
     var shuffleState: ShuffleState
 }
 
+// MARK: - RestoredQueue
+
+/// What `QueuePersistence.restore()` read back from the settings table.
+public struct RestoredQueue: Sendable {
+    /// The queue's items, in order.
+    public let items: [QueueItem]
+    /// The index of the item that was current, if one was.
+    public let currentIndex: Int?
+    /// The repeat mode in effect when the queue was saved.
+    public let repeatMode: RepeatMode
+    /// The shuffle state in effect when the queue was saved.
+    public let shuffleState: ShuffleState
+    /// A message for the user when the saved queue was discarded because a
+    /// newer build wrote it; `nil` otherwise.
+    public let schemaWarning: String?
+}
+
 // MARK: - QueuePersistence
 
 /// Saves and restores the playback queue from the `settings` table.
@@ -239,42 +256,22 @@ public actor QueuePersistence {
     /// queue starts empty; callers should surface the warning to the user.
     ///
     /// Transparently migrates a legacy v1 blob to v2 on first read.
-    public func restore() async -> (
-        items: [QueueItem],
-        currentIndex: Int?,
-        repeatMode: RepeatMode,
-        shuffleState: ShuffleState,
-        schemaWarning: String?
-    )? {
+    public func restore() async -> RestoredQueue? {
         do {
             if let payload: QueuePayloadV2 = try await repo.get(QueuePayloadV2.self, for: Self.settingsKeyV2) {
                 // Guard against future-version blobs written by a newer build.
                 if payload.version > Self.currentSchemaVersion {
-                    self.log.warning("queue.restore.future_schema", [
-                        "on_disk": payload.version,
-                        "build": Self.currentSchemaVersion,
-                    ])
-                    // Delete the incompatible blob so we don't hit this on every launch.
-                    do {
-                        try await self.repo.remove(key: Self.settingsKeyV2)
-                    } catch {
-                        // It stays on disk, so the warning above repeats on
-                        // every launch with nothing explaining why (#494).
-                        self.log.warning("queue.restore.futureBlobRemoveFailed", [
-                            "error": String(reflecting: error),
-                        ])
-                    }
-                    return (
-                        items: [],
-                        currentIndex: nil,
-                        repeatMode: .off,
-                        shuffleState: .off,
-                        schemaWarning: "Saved queue is from a newer version of Bòcan — starting fresh."
-                    )
+                    return await self.discardFutureSchemaBlob(onDiskVersion: payload.version)
                 }
                 let items = payload.items.map { $0.toQueueItem() }
                 self.log.debug("queue.restore", ["count": items.count, "schema": payload.version])
-                return (items, payload.currentIndex, payload.repeatMode, payload.shuffleState, nil)
+                return RestoredQueue(
+                    items: items,
+                    currentIndex: payload.currentIndex,
+                    repeatMode: payload.repeatMode,
+                    shuffleState: payload.shuffleState,
+                    schemaWarning: nil
+                )
             }
             if let legacy: QueuePayloadV1 = try await repo.get(QueuePayloadV1.self, for: Self.settingsKeyV1) {
                 let items = legacy.items.map { $0.toQueueItem() }
@@ -294,13 +291,45 @@ public actor QueuePersistence {
                         "error": String(reflecting: error),
                     ])
                 }
-                return (items, legacy.currentIndex, legacy.repeatMode, legacy.shuffleState, nil)
+                return RestoredQueue(
+                    items: items,
+                    currentIndex: legacy.currentIndex,
+                    repeatMode: legacy.repeatMode,
+                    shuffleState: legacy.shuffleState,
+                    schemaWarning: nil
+                )
             }
             return nil
         } catch {
             self.log.error("queue.restore.failed", ["error": String(reflecting: error)])
             return nil
         }
+    }
+
+    /// Logs and deletes a blob written by a newer build, and returns the
+    /// empty queue with the warning the user sees.
+    private func discardFutureSchemaBlob(onDiskVersion: Int) async -> RestoredQueue {
+        self.log.warning("queue.restore.future_schema", [
+            "on_disk": onDiskVersion,
+            "build": Self.currentSchemaVersion,
+        ])
+        // Delete the incompatible blob so we don't hit this on every launch.
+        do {
+            try await self.repo.remove(key: Self.settingsKeyV2)
+        } catch {
+            // It stays on disk, so the warning above repeats on
+            // every launch with nothing explaining why (#494).
+            self.log.warning("queue.restore.futureBlobRemoveFailed", [
+                "error": String(reflecting: error),
+            ])
+        }
+        return RestoredQueue(
+            items: [],
+            currentIndex: nil,
+            repeatMode: .off,
+            shuffleState: .off,
+            schemaWarning: "Saved queue is from a newer version of Bòcan — starting fresh."
+        )
     }
 
     // MARK: - Private

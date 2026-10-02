@@ -132,6 +132,15 @@ public extension Field {
         case "duration":
             self = .duration
 
+        default:
+            self = Self(dateFlagOrMembershipRawValue: rawValue)
+        }
+    }
+
+    /// The second half of `init(rawValue:)`: the date, flag, format and
+    /// membership fields, then `.unknown`.
+    private init(dateFlagOrMembershipRawValue rawValue: String) {
+        switch rawValue {
         case "addedAt":
             self = .addedAt
 

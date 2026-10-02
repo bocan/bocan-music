@@ -31,13 +31,36 @@ struct ManifestParityTests {
         _ = try await albums.insert(Album(id: 55, title: "Loveless", albumArtistID: 7))
         _ = try await albums.insert(Album(id: 56, title: "Souvlaki", albumArtistID: 8))
 
-        let sha101 = String(repeating: "aa01", count: 16)
-        let sha102 = String(repeating: "aa02", count: 16)
-        let sha103 = String(repeating: "aa03", count: 16)
+        _ = try await tracks.insert(Self.onlyShallow)
+        _ = try await tracks.insert(Self.loomer)
+        _ = try await tracks.insert(Self.souvlakiSpaceStation)
+        _ = try await tracks.insert(Self.untagged)
 
-        let mp3URL = URL(fileURLWithPath: "/Music/Slowdive/Souvlaki/04 Souvlaki Space Station.mp3").absoluteString
+        let builder = ManifestBuilder(database: database)
+        let built = try await builder.build(
+            profile: .everything(includePodcasts: false),
+            serverId: "srv",
+            serverName: "Mac",
+            generation: 1,
+            generatedAt: Date(timeIntervalSince1970: 0)
+        )
 
-        _ = try await tracks.insert(Track(
+        // The golden keeps a clip track (id 104) because the wire contract
+        // still allows `clip`; the Mac stopped emitting clips with M044 (#406),
+        // so parity covers every non-clip golden track.
+        let golden = try ManifestDTOTests.loadGolden()
+        let goldenWholeFile = golden.tracks.filter { $0.clip == nil }
+        #expect(built.tracks.count == goldenWholeFile.count)
+        for goldenTrack in goldenWholeFile {
+            let builtTrack = try #require(built.tracks.first { $0.id == goldenTrack.id })
+            #expect(self.normalized(builtTrack) == self.normalized(goldenTrack))
+        }
+    }
+
+    // MARK: - Fixture tracks (the rows that mirror `manifest-small.json`)
+
+    private static var onlyShallow: Track {
+        Track(
             id: 101,
             fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/01 Only Shallow.flac").absoluteString,
             fileSize: 31_337_000,
@@ -66,11 +89,14 @@ struct ManifestParityTests {
             replaygainAlbumPeak: 0.99,
             rating: 80,
             loved: true,
-            contentHash: sha101,
+            contentHash: String(repeating: "aa01", count: 16),
             addedAt: 0,
             updatedAt: 0
-        ))
-        _ = try await tracks.insert(Track(
+        )
+    }
+
+    private static var loomer: Track {
+        Track(
             id: 102,
             fileURL: URL(fileURLWithPath: "/Music/My Bloody Valentine/Loveless/02 Loomer.flac").absoluteString,
             fileSize: 17_000_000,
@@ -86,13 +112,16 @@ struct ManifestParityTests {
             albumArtistID: 7,
             albumID: 55,
             trackNumber: 2,
-            contentHash: sha102,
+            contentHash: String(repeating: "aa02", count: 16),
             addedAt: 0,
             updatedAt: 0
-        ))
-        _ = try await tracks.insert(Track(
+        )
+    }
+
+    private static var souvlakiSpaceStation: Track {
+        Track(
             id: 103,
-            fileURL: mp3URL,
+            fileURL: URL(fileURLWithPath: "/Music/Slowdive/Souvlaki/04 Souvlaki Space Station.mp3").absoluteString,
             fileSize: 9_200_000,
             fileFormat: "mp3",
             duration: 356,
@@ -113,13 +142,16 @@ struct ManifestParityTests {
             replaygainTrackGain: -6.2,
             replaygainTrackPeak: 0.91,
             rating: 60,
-            contentHash: sha103,
+            contentHash: String(repeating: "aa03", count: 16),
             addedAt: 0,
             updatedAt: 0
-        ))
-        // An untagged file: only the id/file core, per the contract's
-        // field-optionality rules. Every metadata key must end up omitted.
-        _ = try await tracks.insert(Track(
+        )
+    }
+
+    /// An untagged file: only the id/file core, per the contract's
+    /// field-optionality rules. Every metadata key must end up omitted.
+    private static var untagged: Track {
+        Track(
             id: 105,
             fileURL: URL(fileURLWithPath: "/Music/Unsorted/rip-004.flac").absoluteString,
             fileSize: 24_000_000,
@@ -128,26 +160,6 @@ struct ManifestParityTests {
             contentHash: String(repeating: "aa05", count: 16),
             addedAt: 0,
             updatedAt: 0
-        ))
-
-        let builder = ManifestBuilder(database: database)
-        let built = try await builder.build(
-            profile: .everything(includePodcasts: false),
-            serverId: "srv",
-            serverName: "Mac",
-            generation: 1,
-            generatedAt: Date(timeIntervalSince1970: 0)
         )
-
-        // The golden keeps a clip track (id 104) because the wire contract
-        // still allows `clip`; the Mac stopped emitting clips with M044 (#406),
-        // so parity covers every non-clip golden track.
-        let golden = try ManifestDTOTests.loadGolden()
-        let goldenWholeFile = golden.tracks.filter { $0.clip == nil }
-        #expect(built.tracks.count == goldenWholeFile.count)
-        for goldenTrack in goldenWholeFile {
-            let builtTrack = try #require(built.tracks.first { $0.id == goldenTrack.id })
-            #expect(self.normalized(builtTrack) == self.normalized(goldenTrack))
-        }
     }
 }

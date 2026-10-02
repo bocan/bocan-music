@@ -200,6 +200,17 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         var out = track
         let now = Int64(Date().timeIntervalSince1970)
 
+        self.applyTitleAndNumbers(to: &out)
+        self.applyYearAndKeyFields(to: &out)
+        self.applyMusicBrainzIDs(to: &out)
+        self.applyUserStateAndGain(to: &out)
+
+        out.userEdited = true
+        out.updatedAt = now
+        return out
+    }
+
+    private func applyTitleAndNumbers(to out: inout Track) {
         if let title = self.title {
             out.title = title
         }
@@ -221,6 +232,9 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let discTotal = self.discTotal {
             out.discTotal = discTotal
         }
+    }
+
+    private func applyYearAndKeyFields(to out: inout Track) {
         if let year = self.year {
             out.year = year
             out.yearText = year.map { String($0) }
@@ -234,6 +248,9 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let isrc = self.isrc {
             out.isrc = isrc
         }
+    }
+
+    private func applyMusicBrainzIDs(to out: inout Track) {
         if let musicbrainzTrackID = self.musicbrainzTrackID {
             out.musicbrainzTrackID = musicbrainzTrackID
         }
@@ -252,6 +269,9 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let musicbrainzAlbumArtistID = self.musicbrainzAlbumArtistID {
             out.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         }
+    }
+
+    private func applyUserStateAndGain(to out: inout Track) {
         if let rating = self.rating {
             out.rating = rating ?? 0
         }
@@ -273,9 +293,5 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let replaygainAlbumPeak = self.replaygainAlbumPeak {
             out.replaygainAlbumPeak = replaygainAlbumPeak
         }
-
-        out.userEdited = true
-        out.updatedAt = now
-        return out
     }
 }

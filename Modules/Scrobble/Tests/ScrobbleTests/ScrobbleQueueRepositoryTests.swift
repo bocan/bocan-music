@@ -1,5 +1,6 @@
 import Foundation
 import Persistence
+import Playback
 import Testing
 @testable import Scrobble
 
@@ -39,15 +40,17 @@ struct ScrobbleQueueRepositoryTests {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let server = UUID()
         let qid = try #require(try await repo.enqueueSubsonic(
-            serverID: server,
-            songID: "song-9",
+            context: SubsonicPlayContext(
+                serverID: server,
+                songID: "song-9",
+                title: "Blue in Green",
+                artist: "Miles Davis",
+                albumArtist: "Miles Davis",
+                album: "Kind of Blue",
+                duration: 337
+            ),
             playedAt: now,
             durationPlayed: 180,
-            title: "Blue in Green",
-            artist: "Miles Davis",
-            album: "Kind of Blue",
-            albumArtist: "Miles Davis",
-            duration: 337,
             providerIDs: ["lastfm"]
         ))
         #expect(qid > 0)
@@ -241,15 +244,17 @@ struct ScrobbleQueueRepositoryTests {
         let server = UUID()
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let qid = try await repo.enqueueSubsonic(
-            serverID: server,
-            songID: "song-42",
+            context: SubsonicPlayContext(
+                serverID: server,
+                songID: "song-42",
+                title: "Faded",
+                artist: "Alan Walker",
+                albumArtist: nil,
+                album: "Different World",
+                duration: 212
+            ),
             playedAt: now,
             durationPlayed: 200,
-            title: "Faded",
-            artist: "Alan Walker",
-            album: "Different World",
-            albumArtist: nil,
-            duration: 212,
             providerIDs: ["subsonic", "listenbrainz"]
         )
         #expect(qid != nil)
@@ -282,15 +287,17 @@ struct ScrobbleQueueRepositoryTests {
         )
         // A Subsonic-sourced scrobble (track_id IS NULL; metadata in payload_*).
         _ = try await repo.enqueueSubsonic(
-            serverID: UUID(),
-            songID: "song-99",
+            context: SubsonicPlayContext(
+                serverID: UUID(),
+                songID: "song-99",
+                title: "Streamed Song",
+                artist: "Streamed Artist",
+                albumArtist: nil,
+                album: "Streamed Album",
+                duration: 212
+            ),
             playedAt: now.addingTimeInterval(60),
             durationPlayed: 200,
-            title: "Streamed Song",
-            artist: "Streamed Artist",
-            album: "Streamed Album",
-            albumArtist: nil,
-            duration: 212,
             providerIDs: ["subsonic"]
         )
 
@@ -344,27 +351,15 @@ struct ScrobbleQueueRepositoryTests {
         let server = UUID()
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let first = try await repo.enqueueSubsonic(
-            serverID: server,
-            songID: "s",
+            context: SubsonicPlayContext(serverID: server, songID: "s", title: "T", artist: "A", duration: 200),
             playedAt: now,
             durationPlayed: 100,
-            title: "T",
-            artist: "A",
-            album: nil,
-            albumArtist: nil,
-            duration: 200,
             providerIDs: ["subsonic"]
         )
         let second = try await repo.enqueueSubsonic(
-            serverID: server,
-            songID: "s",
+            context: SubsonicPlayContext(serverID: server, songID: "s", title: "T", artist: "A", duration: 200),
             playedAt: now,
             durationPlayed: 100,
-            title: "T",
-            artist: "A",
-            album: nil,
-            albumArtist: nil,
-            duration: 200,
             providerIDs: ["subsonic"]
         )
         #expect(first == second)

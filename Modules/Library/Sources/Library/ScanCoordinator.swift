@@ -12,17 +12,19 @@ import Persistence
 actor ScanCoordinator {
     // MARK: - Dependencies
 
-    private let database: Database
-    private let trackRepo: TrackRepository
-    private let artistRepo: ArtistRepository
-    private let albumRepo: AlbumRepository
-    private let lyricsRepo: LyricsRepository
-    private let coverArtCache: CoverArtCache
+    // `ScanCoordinator+Import.swift` and `ScanCoordinator+CueMarkers.swift`
+    // use some of these, so those are internal rather than private.
+    let database: Database
+    let trackRepo: TrackRepository
+    let artistRepo: ArtistRepository
+    let albumRepo: AlbumRepository
+    let lyricsRepo: LyricsRepository
+    let coverArtCache: CoverArtCache
     private let libraryRootRepo: LibraryRootRepository
     private let changeDetector: ChangeDetector
     private let tagReader: TagReader
     private let settingsRepo: SettingsRepository
-    private let log = AppLogger.make(.library)
+    let log = AppLogger.make(.library)
 
     // MARK: - Init
 
@@ -37,12 +39,6 @@ actor ScanCoordinator {
         self.changeDetector = ChangeDetector()
         self.tagReader = TagReader()
         self.settingsRepo = SettingsRepository(database: database)
-    }
-
-    // MARK: - Internal types
-
-    enum ImportResult {
-        case inserted(Int64), updated(Int64), skipped, conflict(Int64), error
     }
 
     // MARK: - Single file rescan
@@ -94,11 +90,58 @@ actor ScanCoordinator {
         yield emit: @escaping @Sendable (ScanProgress) -> Void
     ) async {
         let start = ContinuousClock.now
-        var inserted = 0, updated = 0, removed = 0, errors = 0, skipped = 0
+        var counts = ScanCounts()
 
         emit(.started(rootCount: roots.count))
         self.log.debug("scan.start", ["roots": roots.count, "mode": "\(mode)"])
 
+        guard await self.seedChangeDetector(roots: roots, start: start, emit: emit) else { return }
+
+        let supported = TagReader.supportedExtensions
+        let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
+
+        let iCloudDownload = await self.readICloudDownloadSetting()
+        let settings = WalkSettings(supported: supported, concurrency: concurrency, iCloudDownload: iCloudDownload)
+
+        let results = await self.walkAndImport(roots: roots, mode: mode, settings: settings, emit: emit)
+
+        self.log.debug("scan.walk.end", ["results": results.count])
+        guard !Task.isCancelled else { return }
+
+        for result in results {
+            counts.add(result)
+        }
+
+        counts.removed = await self.disableRemovedTracks(emit: emit)
+        await self.pruneOrphanAlbums()
+        await self.attachCueMarkers(roots: roots)
+
+        let elapsed = ContinuousClock.now - start
+        self.log.debug("scan.end", [
+            "inserted": counts.inserted, "updated": counts.updated, "removed": counts.removed,
+            "skipped": counts.skipped, "errors": counts.errors,
+        ])
+        emit(.finished(ScanProgress.Summary(
+            inserted: counts.inserted,
+            updated: counts.updated,
+            removed: counts.removed,
+            skipped: counts.skipped,
+            errors: counts.errors,
+            duration: elapsed
+        )))
+    }
+
+    // MARK: - Scan phases
+
+    /// Seeds the change detector with the enabled tracks under `roots`.
+    ///
+    /// - Returns: `false` when the library could not be read; the error and
+    ///   the finished events are already emitted and the scan must stop.
+    private func seedChangeDetector(
+        roots: [(url: URL, rootID: Int64)],
+        start: ContinuousClock.Instant,
+        emit: @Sendable (ScanProgress) -> Void
+    ) async -> Bool {
         // Seed the change detector from the current DB state — but only with
         // tracks that belong to the roots we are about to scan.  Seeding with
         // the entire library would mark every out-of-scope track as "removed"
@@ -125,7 +168,7 @@ actor ScanCoordinator {
                 errors: 1,
                 duration: ContinuousClock.now - start
             )))
-            return
+            return false
         }
         // Normalize roots to filesystem paths with symlinks resolved (e.g.
         // `/var` → `/private/var`).  Without this, a root URL of
@@ -143,12 +186,13 @@ actor ScanCoordinator {
             return rootPaths.contains { trackPath.hasPrefix($0) }
         }
         await self.changeDetector.seed(scopedEnabledTracks.map {
-            (url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
+            ChangeDetector.KnownFile(url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
         })
+        return true
+    }
 
-        let supported = TagReader.supportedExtensions
-        let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
-
+    /// Reads the opt-in iCloud download setting; a failed read counts as off.
+    private func readICloudDownloadSetting() async -> Bool {
         // ADR-004 audit H7: opt-in iCloud download for placeholder files.
         // A failed read is indistinguishable from the setting being off, so
         // iCloud placeholders are skipped with no reason given (#492).
@@ -161,13 +205,26 @@ actor ScanCoordinator {
                 "error": String(reflecting: error),
             ])
         }
+        return iCloudDownload
+    }
 
+    /// Walks every root and imports each file found, at most
+    /// `settings.concurrency` at a time.
+    private func walkAndImport(
+        roots: [(url: URL, rootID: Int64)],
+        mode: ScanMode,
+        settings: WalkSettings,
+        emit: @escaping @Sendable (ScanProgress) -> Void
+    ) async -> [ImportResult] {
+        let supported = settings.supported
+        let concurrency = settings.concurrency
+        let iCloudDownload = settings.iCloudDownload
         // Feed the FileWalker stream directly into a bounded TaskGroup so
         // importing overlaps the walk and peak memory stays O(concurrency)
         // rather than O(library size). Previously every discovered (URL,
         // rootID) pair was buffered into an array before a single import
         // started (~10k pairs at once on a large library). See #267.
-        let results: [ImportResult] = await withTaskGroup(
+        return await withTaskGroup(
             of: (url: URL, result: ImportResult).self,
             returning: [ImportResult].self
         ) { group in
@@ -218,96 +275,48 @@ actor ScanCoordinator {
             }
             return collected
         }
+    }
 
-        self.log.debug("scan.walk.end", ["results": results.count])
-        guard !Task.isCancelled else { return }
-
-        for result in results {
-            switch result {
-            case .inserted:
-                inserted += 1
-
-            case .updated:
-                updated += 1
-
-            case .skipped:
-                skipped += 1
-
-            case .conflict:
-                skipped += 1
-
-            case .error:
-                errors += 1
-            }
-        }
-
-        // Mark removed tracks
-        if !Task.isCancelled {
-            let removedURLs = await changeDetector.removedURLs()
-            for urlString in removedURLs {
-                do {
-                    guard let track = try await trackRepo.fetchOne(fileURL: urlString),
-                          let id = track.id else { continue }
-                    var disabled = track
-                    disabled.disabled = true
-                    try await self.trackRepo.update(disabled)
-                    emit(.removed(trackID: id))
-                    removed += 1
-                } catch {
-                    // The summary otherwise counts a removal that did not
-                    // happen, or misses one that should have (#492).
-                    self.log.warning("scan.removal.failed", [
-                        "url": urlString,
-                        "error": String(reflecting: error),
-                    ])
-                }
-            }
-        }
-
-        // Drop album rows no longer referenced by any track — e.g. compilation
-        // albums that regrouped from many split rows into one (#362), so stale
-        // empty albums do not linger after the fix lands. Best-effort.
-        if !Task.isCancelled {
+    /// Mark removed tracks
+    ///
+    /// - Returns: The number of tracks disabled.
+    private func disableRemovedTracks(emit: @Sendable (ScanProgress) -> Void) async -> Int {
+        var removed = 0
+        guard !Task.isCancelled else { return removed }
+        let removedURLs = await changeDetector.removedURLs()
+        for urlString in removedURLs {
             do {
-                _ = try await self.albumRepo.pruneOrphans()
+                guard let track = try await trackRepo.fetchOne(fileURL: urlString),
+                      let id = track.id else { continue }
+                var disabled = track
+                disabled.disabled = true
+                try await self.trackRepo.update(disabled)
+                emit(.removed(trackID: id))
+                removed += 1
             } catch {
-                // Empty album rows linger in the grid; best effort, but the
-                // reason belongs in the log (#492).
-                self.log.warning("scan.pruneOrphans.failed", ["error": String(reflecting: error)])
+                // The summary otherwise counts a removal that did not
+                // happen, or misses one that should have (#492).
+                self.log.warning("scan.removal.failed", [
+                    "url": urlString,
+                    "error": String(reflecting: error),
+                ])
             }
         }
+        return removed
+    }
 
-        // ADR-087: attach sidecar CUE sheets as in-track markers once the
-        // audio is indexed. Cue files are not walker entries (the walker is
-        // audio-only); this is a cheap per-folder pass, and a folder with no
-        // cues costs one directory listing.
-        if !Task.isCancelled {
-            let markerService = CueMarkerService(
-                trackRepo: self.trackRepo,
-                markerRepo: TrackMarkerRepository(database: self.database)
-            )
-            var cueFolders: Set<URL> = []
-            for root in roots {
-                cueFolders.formUnion(Self.cueFolders(under: root.url))
-            }
-            for folder in cueFolders where !Task.isCancelled {
-                await markerService.attachMarkers(inFolder: folder)
-            }
+    /// Drop album rows no longer referenced by any track, e.g. compilation
+    /// albums that regrouped from many split rows into one (#362), so stale
+    /// empty albums do not linger after the fix lands. Best-effort.
+    private func pruneOrphanAlbums() async {
+        guard !Task.isCancelled else { return }
+        do {
+            _ = try await self.albumRepo.pruneOrphans()
+        } catch {
+            // Empty album rows linger in the grid; best effort, but the
+            // reason belongs in the log (#492).
+            self.log.warning("scan.pruneOrphans.failed", ["error": String(reflecting: error)])
         }
-
-        let elapsed = ContinuousClock.now - start
-        self.log.debug("scan.end", [
-            "inserted": inserted, "updated": updated, "removed": removed,
-            "skipped": skipped, "errors": errors,
-        ])
-        emit(.finished(ScanProgress.Summary(
-            inserted: inserted,
-            updated: updated,
-            removed: removed,
-            skipped: skipped,
-            errors: errors,
-            duration: elapsed
-        )))
     }
 
     // MARK: - Private
@@ -326,6 +335,7 @@ actor ScanCoordinator {
         let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
         let size = Int64(values?.fileSize ?? 0)
         let mtime = Int64(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)
+        let file = ScannedFile(url: url, size: size, mtime: mtime)
 
         // The check must run in every mode: it is also what marks the file
         // *visited*, and the removal pass disables every seeded URL that
@@ -360,73 +370,89 @@ actor ScanCoordinator {
             emit(.error(url: url, error: error))
             return .error
         }
-        if let ex = existingTrack, let exID = ex.id, ex.userEdited {
-            let resolution = ConflictResolver.resolve(existingTrackID: exID, userEdited: true)
-            if case let .conflict(trackID) = resolution {
-                // The user has manually edited this track's tags so we don't
-                // overwrite them — but we must still clear the disabled flag and
-                // refresh file-level fields so the track becomes visible again.
-                // Also set needs_conflict_review so the Tag Editor shows a banner.
-                var updated = ex
-                // Always sync fileMtime/fileSize so subsequent scans see a
-                // matching mtime and don't re-process this file on every
-                // startup. Without this, the conflict branch fires on every
-                // launch for any track whose mtime changed before the
-                // EditTransaction stamp was introduced.
-                updated.fileSize = size
-                updated.fileMtime = mtime
-                // A changed file invalidates its transcode verdict (ADR-075)
-                // even when the user's edited tags are being preserved.
-                if mtime != ex.fileMtime {
-                    updated.clearProvenance()
-                }
-                if ex.disabled {
-                    updated.disabled = false
-                }
-                // Only raise the review flag when disk tags actually differ from
-                // the DB values. A mtime-only change (e.g. app rewrote the file
-                // but the tags are identical) is not a user-visible conflict.
-                if Self.tagsDiffer(dbTrack: ex, diskTags: tags) {
-                    updated.needsConflictReview = true
-                }
-                // Only write the row when something actually changed. An
-                // unconditional update here re-fires ValueObservation streams
-                // (and the UI reloads behind them) on every FSEvents pass,
-                // even when the pass was a metadata-only no-op.
-                if updated != ex {
-                    do {
-                        try await self.trackRepo.update(updated)
-                    } catch {
-                        // The conflict banner and the refreshed file facts are
-                        // both dropped, and the scan reports a conflict as
-                        // though the row had been written (#492).
-                        self.log.warning("scan.conflict.updateFailed", [
-                            "track": trackID,
-                            "error": String(reflecting: error),
-                        ])
-                    }
-                }
-                emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
-                return .conflict(trackID)
-            }
+        if let ex = existingTrack, let exID = ex.id, ex.userEdited,
+           let conflict = await self.resolveUserEditConflict(ex, exID: exID, tags: tags, file: file, emit: emit) {
+            return conflict
         }
 
-        // Create importer and import
-        let importer = TrackImporter(
-            artistRepo: artistRepo,
-            albumRepo: albumRepo,
-            trackRepo: trackRepo,
-            lyricsRepo: lyricsRepo,
-            coverArtCache: coverArtCache
-        )
+        return await self.importAndReport(file: file, tags: tags, existingTrack: existingTrack, emit: emit)
+    }
 
-        // Minting a security-scoped bookmark is an expensive per-file syscall.
-        // A known track (same file_url) already carries a valid bookmark for
-        // the same file, so reuse it and only mint a fresh one for genuinely
-        // new files (or a track that somehow lost its bookmark). A moved file
-        // arrives under a new path with no existing row, so it still gets a
-        // fresh bookmark. Stale-bookmark refresh stays on the edit path
-        // (MetadataEditService). See #278.
+    /// Handles a file whose track row carries user-edited tags.
+    ///
+    /// - Returns: `.conflict` when the resolver keeps the user's tags, or
+    ///   `nil` when the import must continue.
+    private func resolveUserEditConflict(
+        _ ex: Track,
+        exID: Int64,
+        tags: TrackTags,
+        file: ScannedFile,
+        emit: @Sendable (ScanProgress) -> Void
+    ) async -> ImportResult? {
+        let url = file.url
+        let size = file.size
+        let mtime = file.mtime
+        let resolution = ConflictResolver.resolve(existingTrackID: exID, userEdited: true)
+        if case let .conflict(trackID) = resolution {
+            // The user has manually edited this track's tags so we don't
+            // overwrite them, but we must still clear the disabled flag and
+            // refresh file-level fields so the track becomes visible again.
+            // Also set needs_conflict_review so the Tag Editor shows a banner.
+            var updated = ex
+            // Always sync fileMtime/fileSize so subsequent scans see a
+            // matching mtime and don't re-process this file on every
+            // startup. Without this, the conflict branch fires on every
+            // launch for any track whose mtime changed before the
+            // EditTransaction stamp was introduced.
+            updated.fileSize = size
+            updated.fileMtime = mtime
+            // A changed file invalidates its transcode verdict (ADR-075)
+            // even when the user's edited tags are being preserved.
+            if mtime != ex.fileMtime {
+                updated.clearProvenance()
+            }
+            if ex.disabled {
+                updated.disabled = false
+            }
+            // Only raise the review flag when disk tags actually differ from
+            // the DB values. A mtime-only change (e.g. app rewrote the file
+            // but the tags are identical) is not a user-visible conflict.
+            if Self.tagsDiffer(dbTrack: ex, diskTags: tags) {
+                updated.needsConflictReview = true
+            }
+            // Only write the row when something actually changed. An
+            // unconditional update here re-fires ValueObservation streams
+            // (and the UI reloads behind them) on every FSEvents pass,
+            // even when the pass was a metadata-only no-op.
+            if updated != ex {
+                do {
+                    try await self.trackRepo.update(updated)
+                } catch {
+                    // The conflict banner and the refreshed file facts are
+                    // both dropped, and the scan reports a conflict as
+                    // though the row had been written (#492).
+                    self.log.warning("scan.conflict.updateFailed", [
+                        "track": trackID,
+                        "error": String(reflecting: error),
+                    ])
+                }
+            }
+            emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
+            return .conflict(trackID)
+        }
+        return nil
+    }
+
+    /// Minting a security-scoped bookmark is an expensive per-file syscall.
+    /// A known track (same file_url) already carries a valid bookmark for
+    /// the same file, so reuse it and only mint a fresh one for genuinely
+    /// new files (or a track that somehow lost its bookmark). A moved file
+    /// arrives under a new path with no existing row, so it still gets a
+    /// fresh bookmark. Stale-bookmark refresh stays on the edit path
+    /// (MetadataEditService). See #278.
+    ///
+    /// Internal for `importAndReport` in `ScanCoordinator+Import.swift`.
+    func bookmark(for url: URL, existingTrack: Track?) -> Data? {
         var bookmark = existingTrack?.fileBookmark
         if bookmark == nil {
             do {
@@ -444,27 +470,7 @@ actor ScanCoordinator {
                 ])
             }
         }
-
-        do {
-            let id = try await importer.importTrack(
-                url: url,
-                bookmark: bookmark,
-                tags: tags,
-                fileMtime: mtime,
-                fileSize: size
-            )
-            if existingTrack == nil {
-                emit(.processed(url: url, outcome: .inserted(trackID: id)))
-                return .inserted(id)
-            } else {
-                emit(.processed(url: url, outcome: .updated(trackID: id)))
-                return .updated(id)
-            }
-        } catch {
-            self.log.error("scan.import_failed", ["url": url.path, "error": "\(error)"])
-            emit(.error(url: url, error: error))
-            return .error
-        }
+        return bookmark
     }
 
     /// Resolves any filesystem symlinks in `path` via `realpath(3)` and returns
@@ -476,41 +482,6 @@ actor ScanCoordinator {
     /// latter only normalizes when the target itself exists, which is an
     /// unreliable assumption when comparing roots against tracks whose files
     /// may have just been removed.
-    /// Returns `true` when any user-visible tag field differs between the
-    /// stored `Track` and the freshly-read `TrackTags`. Used in the conflict
-    /// branch so we only raise `needsConflictReview` when something actually
-    /// changed — not just the file's modification timestamp.
-    private static func tagsDiffer(dbTrack: Track, diskTags: TrackTags) -> Bool {
-        func ne<T: Equatable>(_ lhs: T?, _ rhs: T?) -> Bool {
-            lhs != rhs
-        }
-        return ne(dbTrack.title, diskTags.title) ||
-            ne(dbTrack.genre, diskTags.genre) ||
-            ne(dbTrack.composer, diskTags.composer) ||
-            ne(dbTrack.isrc, diskTags.isrc) ||
-            ne(dbTrack.key, diskTags.key) ||
-            ne(dbTrack.year, diskTags.year) ||
-            ne(dbTrack.trackNumber, diskTags.trackNumber) ||
-            ne(dbTrack.trackTotal, diskTags.trackTotal) ||
-            ne(dbTrack.discNumber, diskTags.discNumber) ||
-            ne(dbTrack.discTotal, diskTags.discTotal)
-    }
-
-    /// The distinct folders under `root` that contain `.cue` files, hidden
-    /// paths skipped (ADR-087's per-folder marker pass).
-    static func cueFolders(under root: URL) -> Set<URL> {
-        guard let enumerator = FileManager.default.enumerator(
-            at: root,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        ) else { return [] }
-        var folders: Set<URL> = []
-        for case let url as URL in enumerator where url.pathExtension.lowercased() == "cue" {
-            folders.insert(url.deletingLastPathComponent())
-        }
-        return folders
-    }
-
     private static func canonicalPath(_ path: String) -> String? {
         var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
         let resolved = buffer.withUnsafeMutableBufferPointer { ptr -> UnsafeMutablePointer<CChar>? in
@@ -525,12 +496,4 @@ actor ScanCoordinator {
         let length = buffer.firstIndex(of: 0) ?? buffer.count
         return String(bytes: buffer[..<length], encoding: .utf8)
     }
-}
-
-/// Controls how the scanner treats the existing DB state.
-public enum ScanMode: Sendable {
-    /// Only re-import files whose `mtime` or `size` has changed.
-    case quick
-    /// Re-read every file regardless of stored state.
-    case full
 }

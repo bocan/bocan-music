@@ -22,10 +22,7 @@ public enum M3UReader {
         let baseDir = sourceURL?.deletingLastPathComponent()
 
         var entries: [PlaylistPayload.Entry] = []
-        var pendingDuration: TimeInterval?
-        var pendingTitle: String?
-        var pendingArtist: String?
-        var pendingAlbum: String?
+        var pending = EntryHints()
 
         let lines = Self.splitLines(text)
 
@@ -35,58 +32,61 @@ public enum M3UReader {
             guard !line.isEmpty else { continue }
 
             if line.hasPrefix("#") {
-                if line.hasPrefix("#EXTINF:") {
-                    let payload = String(line.dropFirst("#EXTINF:".count))
-                    let parts = payload.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
-                    if let durStr = parts.first {
-                        let cleaned = String(durStr).trimmingCharacters(in: .whitespaces)
-                        if let dur = TimeInterval(cleaned), dur > 0 {
-                            pendingDuration = dur
-                        }
-                    }
-                    if parts.count > 1 {
-                        let display = String(parts[1])
-                        // Convention: "Artist - Title". Parse leniently.
-                        if let dash = display.range(of: " - ") {
-                            pendingArtist = String(display[..<dash.lowerBound])
-                                .trimmingCharacters(in: .whitespaces)
-                            pendingTitle = String(display[dash.upperBound...])
-                                .trimmingCharacters(in: .whitespaces)
-                        } else {
-                            pendingTitle = display.trimmingCharacters(in: .whitespaces)
-                        }
-                    }
-                } else if line.hasPrefix("#EXTART:") {
-                    pendingArtist = String(line.dropFirst("#EXTART:".count))
-                        .trimmingCharacters(in: .whitespaces)
-                } else if line.hasPrefix("#EXTALB:") {
-                    pendingAlbum = String(line.dropFirst("#EXTALB:".count))
-                        .trimmingCharacters(in: .whitespaces)
-                }
-                // Other directives (e.g. #PLAYLIST, #EXTGENRE, #EXTM3U) are ignored.
+                Self.applyDirective(line, to: &pending)
                 continue
             }
 
             // Treat as a path or URL.
-            let entry = Self.makeEntry(
-                rawPath: line,
-                duration: pendingDuration,
-                title: pendingTitle,
-                artist: pendingArtist,
-                album: pendingAlbum,
-                baseDir: baseDir
-            )
+            let entry = Self.makeEntry(rawPath: line, hints: pending, baseDir: baseDir)
             entries.append(entry)
-            pendingDuration = nil
-            pendingTitle = nil
-            pendingArtist = nil
-            pendingAlbum = nil
+            pending = EntryHints()
         }
 
         return PlaylistPayload(name: playlistName, entries: entries)
     }
 
     // MARK: - Helpers
+
+    /// The values the extended directives set for the next path or URL line.
+    struct EntryHints {
+        var duration: TimeInterval?
+        var title: String?
+        var artist: String?
+        var album: String?
+    }
+
+    /// Reads one `#` line into the pending hints of the next entry.
+    private static func applyDirective(_ line: String, to pending: inout EntryHints) {
+        if line.hasPrefix("#EXTINF:") {
+            let payload = String(line.dropFirst("#EXTINF:".count))
+            let parts = payload.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
+            if let durStr = parts.first {
+                let cleaned = String(durStr).trimmingCharacters(in: .whitespaces)
+                if let dur = TimeInterval(cleaned), dur > 0 {
+                    pending.duration = dur
+                }
+            }
+            if parts.count > 1 {
+                let display = String(parts[1])
+                // Convention: "Artist - Title". Parse leniently.
+                if let dash = display.range(of: " - ") {
+                    pending.artist = String(display[..<dash.lowerBound])
+                        .trimmingCharacters(in: .whitespaces)
+                    pending.title = String(display[dash.upperBound...])
+                        .trimmingCharacters(in: .whitespaces)
+                } else {
+                    pending.title = display.trimmingCharacters(in: .whitespaces)
+                }
+            }
+        } else if line.hasPrefix("#EXTART:") {
+            pending.artist = String(line.dropFirst("#EXTART:".count))
+                .trimmingCharacters(in: .whitespaces)
+        } else if line.hasPrefix("#EXTALB:") {
+            pending.album = String(line.dropFirst("#EXTALB:".count))
+                .trimmingCharacters(in: .whitespaces)
+        }
+        // Other directives (e.g. #PLAYLIST, #EXTGENRE, #EXTM3U) are ignored.
+    }
 
     static func splitLines(_ text: String) -> [String] {
         var out: [String] = []
@@ -129,20 +129,17 @@ public enum M3UReader {
 
     static func makeEntry(
         rawPath: String,
-        duration: TimeInterval?,
-        title: String?,
-        artist: String?,
-        album: String?,
+        hints: EntryHints,
         baseDir: URL?
     ) -> PlaylistPayload.Entry {
         let absoluteURL = Self.resolveURL(rawPath: rawPath, baseDir: baseDir)
         return PlaylistPayload.Entry(
             path: rawPath,
             absoluteURL: absoluteURL,
-            durationHint: duration,
-            titleHint: title,
-            artistHint: artist,
-            albumHint: album
+            durationHint: hints.duration,
+            titleHint: hints.title,
+            artistHint: hints.artist,
+            albumHint: hints.album
         )
     }
 

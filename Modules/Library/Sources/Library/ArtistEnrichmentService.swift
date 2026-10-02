@@ -124,9 +124,7 @@ public actor ArtistEnrichmentService {
                             self.log.info("artist.enrich.pass.paused", ["stamped": stamped, "reason": "rate limit or network"])
                             return stamped
                         }
-                        let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
-                        self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
-                        try await Task.sleep(for: wait)
+                        try await self.pauseBeforeRetry(attempt: consecutiveBackoffs)
                         cursor = id - 1
                         break batchLoop
                     }
@@ -141,6 +139,13 @@ public actor ArtistEnrichmentService {
         }
         self.log.info("artist.enrich.pass.end", ["stamped": stamped])
         return stamped
+    }
+
+    /// Sleeps for the growing pause that goes before retry number `attempt`.
+    private func pauseBeforeRetry(attempt consecutiveBackoffs: Int) async throws {
+        let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
+        self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
+        try await Task.sleep(for: wait)
     }
 
     /// Enriches one artist on demand (Deep Dive, #413). Returns the refreshed row.

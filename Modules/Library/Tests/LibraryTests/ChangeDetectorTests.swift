@@ -16,7 +16,7 @@ struct ChangeDetectorTests {
     func detectsUnchanged() async {
         let detector = ChangeDetector()
         let url = URL(fileURLWithPath: "/tmp/same.mp3")
-        await detector.seed([(url: url.absoluteString, mtime: 1000, size: 500)])
+        await detector.seed([.init(url: url.absoluteString, mtime: 1000, size: 500)])
         let status = await detector.check(url: url, mtime: 1000, size: 500)
         #expect(status == .unchanged)
     }
@@ -25,7 +25,7 @@ struct ChangeDetectorTests {
     func detectsMtimeChange() async {
         let detector = ChangeDetector()
         let url = URL(fileURLWithPath: "/tmp/changed.mp3")
-        await detector.seed([(url: url.absoluteString, mtime: 1000, size: 500)])
+        await detector.seed([.init(url: url.absoluteString, mtime: 1000, size: 500)])
         let status = await detector.check(url: url, mtime: 2000, size: 500)
         #expect(status == .modified)
     }
@@ -34,7 +34,7 @@ struct ChangeDetectorTests {
     func detectsSizeChange() async {
         let detector = ChangeDetector()
         let url = URL(fileURLWithPath: "/tmp/resized.mp3")
-        await detector.seed([(url: url.absoluteString, mtime: 1000, size: 500)])
+        await detector.seed([.init(url: url.absoluteString, mtime: 1000, size: 500)])
         let status = await detector.check(url: url, mtime: 1000, size: 9999)
         #expect(status == .modified)
     }
@@ -45,8 +45,8 @@ struct ChangeDetectorTests {
         let alive = URL(fileURLWithPath: "/tmp/alive.mp3")
         let gone = URL(fileURLWithPath: "/tmp/gone.mp3")
         await detector.seed([
-            (url: alive.absoluteString, mtime: 1, size: 1),
-            (url: gone.absoluteString, mtime: 1, size: 1),
+            .init(url: alive.absoluteString, mtime: 1, size: 1),
+            .init(url: gone.absoluteString, mtime: 1, size: 1),
         ])
         // Only visit alive
         _ = await detector.check(url: alive, mtime: 1, size: 1)
@@ -59,10 +59,10 @@ struct ChangeDetectorTests {
     func seedResetsState() async {
         let detector = ChangeDetector()
         let url = URL(fileURLWithPath: "/tmp/track.mp3")
-        await detector.seed([(url: url.absoluteString, mtime: 1, size: 1)])
+        await detector.seed([.init(url: url.absoluteString, mtime: 1, size: 1)])
         _ = await detector.check(url: url, mtime: 1, size: 1)
         // Re-seed: same URL should now reappear as unvisited
-        await detector.seed([(url: url.absoluteString, mtime: 1, size: 1)])
+        await detector.seed([.init(url: url.absoluteString, mtime: 1, size: 1)])
         let removed = await detector.removedURLs()
         #expect(removed.count == 1)
     }

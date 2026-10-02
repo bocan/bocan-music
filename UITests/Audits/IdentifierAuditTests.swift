@@ -294,57 +294,73 @@ final class IdentifierAuditTests: XCTestCase {
 
         var violations: Set<Violation> = []
 
-        // Opens a window via `open`, waits for the window count to grow
-        // (titles are unreliable: the About panel's AX title is not its
-        // scene title), audits every open window, then closes the new one.
-        func openAuditClose(surface: String, open: () -> Void) throws {
-            let before = app.windows.count
-            open()
-            let deadline = Date().addingTimeInterval(10)
-            while app.windows.count <= before, Date() < deadline {
-                RunLoop.current.run(until: Date().addingTimeInterval(0.25))
-            }
-            guard app.windows.count > before else {
-                XCTFail("\(surface) window did not open")
-                return
-            }
-            Thread.sleep(forTimeInterval: 0.5)
-            for index in 0 ..< app.windows.count {
-                let window = app.windows.element(boundBy: index)
-                guard window.exists else { continue }
-                try violations.formUnion(self.audit(window: window, surface: surface))
-            }
-            app.typeKey("w", modifierFlags: .command)
-            Thread.sleep(forTimeInterval: 0.3)
-        }
-
         let menuBar = app.menuBars.firstMatch
 
-        try openAuditClose(surface: "logConsole") {
+        try self.openAuditClose(app, surface: "logConsole", into: &violations) {
             app.typeKey("l", modifierFlags: [.command, .shift])
         }
-        try openAuditClose(surface: "dsp") {
+        try self.openAuditClose(app, surface: "dsp", into: &violations) {
             app.typeKey("e", modifierFlags: [.command, .option])
         }
-        try openAuditClose(surface: "librarySummary") {
+        try self.openAuditClose(app, surface: "librarySummary", into: &violations) {
             menuBar.menuBarItems["Tools"].click()
             menuBar.menuItems["Library Summary\u{2026}"].click()
         }
-        try openAuditClose(surface: "about") {
+        try self.openAuditClose(app, surface: "about", into: &violations) {
             menuBar.menuBarItems["Bòcan Music"].click()
             menuBar.menuBarItems["Bòcan Music"].menuItems["About Bòcan"].click()
         }
-        try openAuditClose(surface: "notices") {
+        try self.openAuditClose(app, surface: "notices", into: &violations) {
             menuBar.menuBarItems["Help"].click()
             menuBar.menuItems["Notices \u{26} Licences\u{2026}"].click()
         }
-        try openAuditClose(surface: "help") {
+        try self.openAuditClose(app, surface: "help", into: &violations) {
             menuBar.menuBarItems["Help"].click()
             menuBar.menuItems["Bòcan Music Help"].click()
         }
 
-        // Mini player: the toolbar toggle swaps the main window out, so
-        // audit each of the four layouts, then dismiss to restore.
+        try self.auditMiniPlayerLayouts(app, into: &violations)
+
+        let deduplicated = Self.dedupeAcrossSurfaces(violations)
+        XCTAssertTrue(
+            deduplicated.isEmpty,
+            "Unidentified interactive controls:\n"
+                + deduplicated.map(\.description).sorted().joined(separator: "\n")
+        )
+    }
+
+    /// Opens a window via `open`, waits for the window count to grow
+    /// (titles are unreliable: the About panel's AX title is not its
+    /// scene title), audits every open window, then closes the new one.
+    private func openAuditClose(
+        _ app: XCUIApplication,
+        surface: String,
+        into violations: inout Set<Violation>,
+        open: () -> Void
+    ) throws {
+        let before = app.windows.count
+        open()
+        let deadline = Date().addingTimeInterval(10)
+        while app.windows.count <= before, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        guard app.windows.count > before else {
+            XCTFail("\(surface) window did not open")
+            return
+        }
+        Thread.sleep(forTimeInterval: 0.5)
+        for index in 0 ..< app.windows.count {
+            let window = app.windows.element(boundBy: index)
+            guard window.exists else { continue }
+            try violations.formUnion(self.audit(window: window, surface: surface))
+        }
+        app.typeKey("w", modifierFlags: .command)
+        Thread.sleep(forTimeInterval: 0.3)
+    }
+
+    /// Mini player: the toolbar toggle swaps the main window out, so
+    /// audit each of the four layouts, then dismiss to restore.
+    private func auditMiniPlayerLayouts(_ app: XCUIApplication, into violations: inout Set<Violation>) throws {
         app.buttons["toolbar.miniPlayer"].firstMatch.click()
         let mini = app.windows["Mini Player"]
         XCTAssertTrue(mini.waitForExistence(timeout: 10), "Mini player did not open")
@@ -360,13 +376,6 @@ final class IdentifierAuditTests: XCTestCase {
         }
         mini.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).hover()
         mini.buttons["miniPlayer.dismiss"].firstMatch.click()
-
-        let deduplicated = Self.dedupeAcrossSurfaces(violations)
-        XCTAssertTrue(
-            deduplicated.isEmpty,
-            "Unidentified interactive controls:\n"
-                + deduplicated.map(\.description).sorted().joined(separator: "\n")
-        )
     }
 
     /// Keeps one violation per (type, label), preferring the earliest

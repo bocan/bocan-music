@@ -51,6 +51,13 @@ public struct FeedParser: Sendable {
             throw PodcastsError.notAFeed(url: sourceURL)
         }
 
+        Self.applyNamespaceSupplement(from: data, to: &parsed)
+        return parsed
+    }
+
+    /// Fills the values the `podcast:` namespace supplement reads from the
+    /// original feed bytes into `parsed`, only where the parse left them empty.
+    private static func applyNamespaceSupplement(from data: Data, to parsed: inout ParsedFeed) {
         // --- podcast: namespace supplement: fill podcast:funding, podcast:chapters,
         //     podcast:person and podcast:podroll. Non-fatal, and the single source of
         //     these values. FeedKit 10.8 and later model these tags too; moving
@@ -87,7 +94,6 @@ public struct FeedParser: Sendable {
                 return updated
             }
         }
-        return parsed
     }
 
     /// The retries for a feed FeedKit refused. Returns nil when none of them

@@ -76,6 +76,31 @@ public struct TagReader: Sendable {
             r128AlbumGainRaw: raw.r128AlbumGain
         )
 
+        var tags = Self.textTags(from: raw)
+        tags.replayGain = rg
+        tags.coverArt = extracted
+        tags.extendedTags = Self.extendedTags(from: raw)
+
+        // Release type needs the full multi-valued list, so it is derived
+        // after extendedTags: prefer a known MusicBrainz type anywhere in the
+        // list over a junk first value (see TrackTags.primaryReleaseType).
+        let releaseTypeValues = tags.extendedTags["RELEASETYPE"] ?? tags.extendedTags["MUSICBRAINZ_ALBUMTYPE"]
+            ?? raw.releaseType.map { [String($0)] } ?? []
+        tags.releaseType = TrackTags.primaryReleaseType(from: releaseTypeValues)
+        tags.duration = raw.duration
+        tags.sampleRate = raw.sampleRate > 0 ? Int(raw.sampleRate) : nil
+        tags.bitrate = raw.bitrate > 0 ? Int(raw.bitrate) : nil
+        tags.channels = raw.channels > 0 ? Int(raw.channels) : nil
+        tags.bitDepth = raw.bitDepth > 0 ? Int(raw.bitDepth) : nil
+        if let codec = raw.mp4Codec, Self.dolbyMP4Codecs.contains(codec) {
+            self.applyDolbyLayout(to: &tags, url: url, codec: codec)
+        }
+        return tags
+    }
+
+    /// The text, number and identifier fields of `raw`: everything `read(from:)`
+    /// copies across before ReplayGain, cover art and the extended tags.
+    private static func textTags(from raw: BOCTags) -> TrackTags {
         // Break the large init into groups to help the type-checker.
         var tags = TrackTags(
             title: raw.title.map { String($0) },
@@ -107,33 +132,19 @@ public struct TagReader: Sendable {
         tags.musicbrainzAlbumArtistID = raw.musicbrainzAlbumArtistID.map { String($0) }
         tags.musicbrainzReleaseID = raw.musicbrainzReleaseID.map { String($0) }
         tags.musicbrainzReleaseGroupID = raw.musicbrainzReleaseGroupID.map { String($0) }
-        tags.replayGain = rg
-        tags.coverArt = extracted
-        // Lift the TagLib PropertyMap (NSDictionary<NSString,NSArray<NSString>>)
-        // into a Swift [String: [String]]. Bridging is shallow but copies the
-        // strings, so the result is fully Sendable.
+        return tags
+    }
+
+    /// Lift the TagLib PropertyMap (NSDictionary<NSString,NSArray<NSString>>)
+    /// into a Swift [String: [String]]. Bridging is shallow but copies the
+    /// strings, so the result is fully Sendable.
+    private static func extendedTags(from raw: BOCTags) -> [String: [String]] {
         var ext: [String: [String]] = [:]
         ext.reserveCapacity(raw.extendedTags.count)
         for (key, values) in raw.extendedTags {
             ext[String(key)] = values.map { String($0) }
         }
-        tags.extendedTags = ext
-
-        // Release type needs the full multi-valued list, so it is derived
-        // after extendedTags: prefer a known MusicBrainz type anywhere in the
-        // list over a junk first value (see TrackTags.primaryReleaseType).
-        let releaseTypeValues = tags.extendedTags["RELEASETYPE"] ?? tags.extendedTags["MUSICBRAINZ_ALBUMTYPE"]
-            ?? raw.releaseType.map { [String($0)] } ?? []
-        tags.releaseType = TrackTags.primaryReleaseType(from: releaseTypeValues)
-        tags.duration = raw.duration
-        tags.sampleRate = raw.sampleRate > 0 ? Int(raw.sampleRate) : nil
-        tags.bitrate = raw.bitrate > 0 ? Int(raw.bitrate) : nil
-        tags.channels = raw.channels > 0 ? Int(raw.channels) : nil
-        tags.bitDepth = raw.bitDepth > 0 ? Int(raw.bitDepth) : nil
-        if let codec = raw.mp4Codec, Self.dolbyMP4Codecs.contains(codec) {
-            self.applyDolbyLayout(to: &tags, url: url, codec: codec)
-        }
-        return tags
+        return ext
     }
 
     /// Channels and sample rate for Dolby audio in MP4 from AVFoundation,

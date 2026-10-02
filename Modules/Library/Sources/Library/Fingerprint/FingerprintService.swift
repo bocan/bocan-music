@@ -166,18 +166,7 @@ public actor FingerprintService {
 
             // Try to enrich with full MusicBrainz data for confident matches.
             if result.score >= 0.5 {
-                let mbRecording: MBRecording?
-                do {
-                    mbRecording = try await self.mbClient.fetchRecording(mbid: recording.id)
-                } catch {
-                    // The candidate still appears, with the AcoustID data
-                    // alone; the missing detail has a reason now (#492).
-                    self.log.debug("identify.enrich.failed", [
-                        "mbid": recording.id,
-                        "error": String(reflecting: error),
-                    ])
-                    mbRecording = nil
-                }
+                let mbRecording = await self.fetchRecordingOrNil(mbid: recording.id)
                 if let mbRecording {
                     let ranked = Self.rankReleases(mbRecording.releases ?? [])
                     let best = ranked.first
@@ -216,6 +205,24 @@ public actor FingerprintService {
         }
 
         return candidates
+    }
+
+    /// The full MusicBrainz recording, or `nil` with a log line when the
+    /// lookup fails.
+    private func fetchRecordingOrNil(mbid: String) async -> MBRecording? {
+        let mbRecording: MBRecording?
+        do {
+            mbRecording = try await self.mbClient.fetchRecording(mbid: mbid)
+        } catch {
+            // The candidate still appears, with the AcoustID data
+            // alone; the missing detail has a reason now (#492).
+            self.log.debug("identify.enrich.failed", [
+                "mbid": mbid,
+                "error": String(reflecting: error),
+            ])
+            mbRecording = nil
+        }
+        return mbRecording
     }
 
     /// Orders a recording's releases so the most likely-intended one comes first:

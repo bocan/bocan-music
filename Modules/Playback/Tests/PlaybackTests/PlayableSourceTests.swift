@@ -278,57 +278,8 @@ struct QueuePersistenceMigrationTests {
         let db = try await Database(location: .inMemory)
         let repo = SettingsRepository(database: db)
 
-        // Construct a v1 payload by hand: same fields as PersistedQueueItemV2
-        // minus playableSource. Encoded directly via Codable.
-        struct LegacyItem: Codable {
-            let id: UUID
-            let trackID: Int64
-            let fileURL: String
-            let duration: TimeInterval
-            let sourceFormat: AudioSourceFormat
-            let title: String?
-            let artistName: String?
-            let genre: String?
-            let rating: Int
-            let loved: Bool
-            let playCount: Int
-            let excludedFromShuffle: Bool
-            let lastPlayedAt: Int64?
-            let albumID: Int64?
-            let artistID: Int64?
-        }
-        struct LegacyPayload: Codable {
-            var items: [LegacyItem]
-            var currentIndex: Int?
-            var repeatMode: RepeatMode
-            var shuffleState: ShuffleState
-        }
-
         let fmt = self.makeFormat()
-        let legacy = LegacyPayload(
-            items: [
-                LegacyItem(
-                    id: UUID(),
-                    trackID: 7,
-                    fileURL: "/tmp/7.flac",
-                    duration: 120,
-                    sourceFormat: fmt,
-                    title: "Seven",
-                    artistName: "Artist",
-                    genre: nil,
-                    rating: 0,
-                    loved: false,
-                    playCount: 0,
-                    excludedFromShuffle: false,
-                    lastPlayedAt: nil,
-                    albumID: nil,
-                    artistID: nil
-                ),
-            ],
-            currentIndex: 0,
-            repeatMode: .off,
-            shuffleState: .off
-        )
+        let legacy = makeLegacyPayload(format: fmt)
         try await repo.set(legacy, for: QueuePersistence.settingsKeyV1)
 
         let persistence = QueuePersistence(database: db)
@@ -350,4 +301,61 @@ struct QueuePersistenceMigrationTests {
         let secondRestore = await persistence.restore()
         #expect(secondRestore?.items.first?.playableSource == .localBookmark(Data()))
     }
+}
+
+// MARK: - Legacy v1 fixture
+
+/// A v1 payload built by hand: same fields as PersistedQueueItemV2
+/// minus playableSource. Encoded directly via Codable.
+private struct LegacyItem: Codable {
+    let id: UUID
+    let trackID: Int64
+    let fileURL: String
+    let duration: TimeInterval
+    let sourceFormat: AudioSourceFormat
+    let title: String?
+    let artistName: String?
+    let genre: String?
+    let rating: Int
+    let loved: Bool
+    let playCount: Int
+    let excludedFromShuffle: Bool
+    let lastPlayedAt: Int64?
+    let albumID: Int64?
+    let artistID: Int64?
+}
+
+private struct LegacyPayload: Codable {
+    var items: [LegacyItem]
+    var currentIndex: Int?
+    var repeatMode: RepeatMode
+    var shuffleState: ShuffleState
+}
+
+/// The one-item v1 queue blob the migration test restores from.
+private func makeLegacyPayload(format fmt: AudioSourceFormat) -> LegacyPayload {
+    LegacyPayload(
+        items: [
+            LegacyItem(
+                id: UUID(),
+                trackID: 7,
+                fileURL: "/tmp/7.flac",
+                duration: 120,
+                sourceFormat: fmt,
+                title: "Seven",
+                artistName: "Artist",
+                genre: nil,
+                rating: 0,
+                loved: false,
+                playCount: 0,
+                excludedFromShuffle: false,
+                lastPlayedAt: nil,
+                albumID: nil,
+                artistID: nil
+            ),
+        ],
+        currentIndex: 0,
+        repeatMode: .off,
+        shuffleState: .off
+    )
 }

@@ -13,6 +13,22 @@ public enum TagDiff {
     public static func diff(before: TrackTags, after: TrackTags) -> TrackTagPatch {
         var patch = TrackTagPatch()
 
+        self.diffDescriptiveFields(before: before, after: after, into: &patch)
+        self.diffLyricsAndSortFields(before: before, after: after, into: &patch)
+        self.diffNumericFields(before: before, after: after, into: &patch)
+        self.diffReplayGain(before: before, after: after, into: &patch)
+
+        // Cover art: compare by SHA-256 hash of the first item
+        let beforeHash = before.coverArt.first?.sha256
+        let afterHash = after.coverArt.first?.sha256
+        if beforeHash != afterHash {
+            patch.coverArt = after.coverArt.first?.data
+        }
+
+        return patch
+    }
+
+    private static func diffDescriptiveFields(before: TrackTags, after: TrackTags, into patch: inout TrackTagPatch) {
         // String fields: set patch field when the value changed.
         if before.title != after.title {
             patch.title = after.title
@@ -41,6 +57,9 @@ public enum TagDiff {
         if before.isrc != after.isrc {
             patch.isrc = after.isrc
         }
+    }
+
+    private static func diffLyricsAndSortFields(before: TrackTags, after: TrackTags, into patch: inout TrackTagPatch) {
         if before.lyrics != after.lyrics {
             patch.lyrics = after.lyrics
         }
@@ -53,7 +72,9 @@ public enum TagDiff {
         if before.sortAlbum != after.sortAlbum {
             patch.sortAlbum = after.sortAlbum
         }
+    }
 
+    private static func diffNumericFields(before: TrackTags, after: TrackTags, into patch: inout TrackTagPatch) {
         // Numeric fields
         if before.trackNumber != after.trackNumber {
             patch.trackNumber = after.trackNumber
@@ -73,7 +94,9 @@ public enum TagDiff {
         if before.bpm != after.bpm {
             patch.bpm = after.bpm
         }
+    }
 
+    private static func diffReplayGain(before: TrackTags, after: TrackTags, into patch: inout TrackTagPatch) {
         // ReplayGain
         if before.replayGain.trackGain != after.replayGain.trackGain {
             patch.replaygainTrackGain = after.replayGain.trackGain
@@ -87,15 +110,6 @@ public enum TagDiff {
         if before.replayGain.albumPeak != after.replayGain.albumPeak {
             patch.replaygainAlbumPeak = after.replayGain.albumPeak
         }
-
-        // Cover art: compare by SHA-256 hash of the first item
-        let beforeHash = before.coverArt.first?.sha256
-        let afterHash = after.coverArt.first?.sha256
-        if beforeHash != afterHash {
-            patch.coverArt = after.coverArt.first?.data
-        }
-
-        return patch
     }
 
     /// Merges `patches` into a single patch.
@@ -104,88 +118,104 @@ public enum TagDiff {
     public static func merge(_ patches: [TrackTagPatch]) -> TrackTagPatch {
         var result = TrackTagPatch()
         for patch in patches {
-            if patch.title != nil {
-                result.title = patch.title
-            }
-            if patch.artist != nil {
-                result.artist = patch.artist
-            }
-            if patch.albumArtist != nil {
-                result.albumArtist = patch.albumArtist
-            }
-            if patch.album != nil {
-                result.album = patch.album
-            }
-            if patch.genre != nil {
-                result.genre = patch.genre
-            }
-            if patch.composer != nil {
-                result.composer = patch.composer
-            }
-            if patch.comment != nil {
-                result.comment = patch.comment
-            }
-            if patch.trackNumber != nil {
-                result.trackNumber = patch.trackNumber
-            }
-            if patch.trackTotal != nil {
-                result.trackTotal = patch.trackTotal
-            }
-            if patch.discNumber != nil {
-                result.discNumber = patch.discNumber
-            }
-            if patch.discTotal != nil {
-                result.discTotal = patch.discTotal
-            }
-            if patch.year != nil {
-                result.year = patch.year
-            }
-            if patch.bpm != nil {
-                result.bpm = patch.bpm
-            }
-            if patch.key != nil {
-                result.key = patch.key
-            }
-            if patch.isrc != nil {
-                result.isrc = patch.isrc
-            }
-            if patch.lyrics != nil {
-                result.lyrics = patch.lyrics
-            }
-            if patch.sortArtist != nil {
-                result.sortArtist = patch.sortArtist
-            }
-            if patch.sortAlbumArtist != nil {
-                result.sortAlbumArtist = patch.sortAlbumArtist
-            }
-            if patch.sortAlbum != nil {
-                result.sortAlbum = patch.sortAlbum
-            }
-            if patch.coverArt != nil {
-                result.coverArt = patch.coverArt
-            }
-            if patch.rating != nil {
-                result.rating = patch.rating
-            }
-            if patch.loved != nil {
-                result.loved = patch.loved
-            }
-            if patch.excludedFromShuffle != nil {
-                result.excludedFromShuffle = patch.excludedFromShuffle
-            }
-            if patch.replaygainTrackGain != nil {
-                result.replaygainTrackGain = patch.replaygainTrackGain
-            }
-            if patch.replaygainTrackPeak != nil {
-                result.replaygainTrackPeak = patch.replaygainTrackPeak
-            }
-            if patch.replaygainAlbumGain != nil {
-                result.replaygainAlbumGain = patch.replaygainAlbumGain
-            }
-            if patch.replaygainAlbumPeak != nil {
-                result.replaygainAlbumPeak = patch.replaygainAlbumPeak
-            }
+            self.mergeDescriptiveFields(of: patch, into: &result)
+            self.mergeNumberAndKeyFields(of: patch, into: &result)
+            self.mergeLyricsSortAndArt(of: patch, into: &result)
+            self.mergeUserStateAndGain(of: patch, into: &result)
         }
         return result
+    }
+
+    private static func mergeDescriptiveFields(of patch: TrackTagPatch, into result: inout TrackTagPatch) {
+        if patch.title != nil {
+            result.title = patch.title
+        }
+        if patch.artist != nil {
+            result.artist = patch.artist
+        }
+        if patch.albumArtist != nil {
+            result.albumArtist = patch.albumArtist
+        }
+        if patch.album != nil {
+            result.album = patch.album
+        }
+        if patch.genre != nil {
+            result.genre = patch.genre
+        }
+        if patch.composer != nil {
+            result.composer = patch.composer
+        }
+        if patch.comment != nil {
+            result.comment = patch.comment
+        }
+    }
+
+    private static func mergeNumberAndKeyFields(of patch: TrackTagPatch, into result: inout TrackTagPatch) {
+        if patch.trackNumber != nil {
+            result.trackNumber = patch.trackNumber
+        }
+        if patch.trackTotal != nil {
+            result.trackTotal = patch.trackTotal
+        }
+        if patch.discNumber != nil {
+            result.discNumber = patch.discNumber
+        }
+        if patch.discTotal != nil {
+            result.discTotal = patch.discTotal
+        }
+        if patch.year != nil {
+            result.year = patch.year
+        }
+        if patch.bpm != nil {
+            result.bpm = patch.bpm
+        }
+        if patch.key != nil {
+            result.key = patch.key
+        }
+        if patch.isrc != nil {
+            result.isrc = patch.isrc
+        }
+    }
+
+    private static func mergeLyricsSortAndArt(of patch: TrackTagPatch, into result: inout TrackTagPatch) {
+        if patch.lyrics != nil {
+            result.lyrics = patch.lyrics
+        }
+        if patch.sortArtist != nil {
+            result.sortArtist = patch.sortArtist
+        }
+        if patch.sortAlbumArtist != nil {
+            result.sortAlbumArtist = patch.sortAlbumArtist
+        }
+        if patch.sortAlbum != nil {
+            result.sortAlbum = patch.sortAlbum
+        }
+        if patch.coverArt != nil {
+            result.coverArt = patch.coverArt
+        }
+    }
+
+    private static func mergeUserStateAndGain(of patch: TrackTagPatch, into result: inout TrackTagPatch) {
+        if patch.rating != nil {
+            result.rating = patch.rating
+        }
+        if patch.loved != nil {
+            result.loved = patch.loved
+        }
+        if patch.excludedFromShuffle != nil {
+            result.excludedFromShuffle = patch.excludedFromShuffle
+        }
+        if patch.replaygainTrackGain != nil {
+            result.replaygainTrackGain = patch.replaygainTrackGain
+        }
+        if patch.replaygainTrackPeak != nil {
+            result.replaygainTrackPeak = patch.replaygainTrackPeak
+        }
+        if patch.replaygainAlbumGain != nil {
+            result.replaygainAlbumGain = patch.replaygainAlbumGain
+        }
+        if patch.replaygainAlbumPeak != nil {
+            result.replaygainAlbumPeak = patch.replaygainAlbumPeak
+        }
     }
 }

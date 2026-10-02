@@ -44,46 +44,21 @@ struct HttpRequestParser {
         if headerBytes.count > Self.maxHeaderBytes {
             return .failure(.error(.internal, message: "Header too large", status: 431))
         }
-        guard let headerText = String(data: headerBytes, encoding: .utf8) else {
-            return .failure(.error(.internal, message: "Malformed request", status: 400))
+        let head: Head
+        switch Self.parseHead(headerBytes) {
+        case let .rejected(response):
+            return .failure(response)
+
+        case let .parsed(parsed):
+            head = parsed
         }
 
-        var lines = headerText.components(separatedBy: "\r\n")
-        guard let requestLine = lines.first else {
-            return .failure(.error(.internal, message: "Malformed request", status: 400))
-        }
-        lines.removeFirst()
+        let bodyLength: Int
+        switch Self.declaredBodyLength(head.headers) {
+        case let .rejected(response):
+            return .failure(response)
 
-        // Request line: METHOD SP target SP HTTP/1.1
-        let parts = requestLine.split(separator: " ", omittingEmptySubsequences: true)
-        guard parts.count == 3 else {
-            return .failure(.error(.internal, message: "Malformed request line", status: 400))
-        }
-        let method = String(parts[0]).uppercased()
-        let target = String(parts[1])
-
-        var headers: [String: String] = [:]
-        for line in lines where !line.isEmpty {
-            guard let colon = line.firstIndex(of: ":") else {
-                return .failure(.error(.internal, message: "Malformed header", status: 400))
-            }
-            let name = line[line.startIndex ..< colon].trimmingCharacters(in: .whitespaces).lowercased()
-            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
-            headers[name] = value
-        }
-
-        if let encoding = headers["transfer-encoding"], encoding.lowercased().contains("chunked") {
-            return .failure(.error(.internal, message: "Chunked encoding is not supported", status: 411))
-        }
-
-        var bodyLength = 0
-        if let contentLength = headers["content-length"] {
-            guard let count = Int(contentLength), count >= 0 else {
-                return .failure(.error(.internal, message: "Bad Content-Length", status: 400))
-            }
-            if count > Self.maxBodyBytes {
-                return .failure(.error(.internal, message: "Body too large", status: 413))
-            }
+        case let .parsed(count):
             bodyLength = count
         }
 
@@ -97,9 +72,76 @@ struct HttpRequestParser {
         let body = self.buffer.subdata(in: bodyStart ..< bodyEnd)
         let leftover = self.buffer.subdata(in: bodyEnd ..< self.buffer.endIndex)
 
-        let (path, query) = Self.splitTarget(target)
-        let request = HttpRequest(method: method, path: path, query: query, headers: headers, body: body)
+        let (path, query) = Self.splitTarget(head.target)
+        let request = HttpRequest(method: head.method, path: path, query: query, headers: head.headers, body: body)
         return .request(request, leftover: leftover)
+    }
+
+    /// The request line and header fields of one request.
+    private struct Head {
+        let method: String
+        let target: String
+        let headers: [String: String]
+    }
+
+    /// One parsing step: the value it produced, or the response that rejects
+    /// the request.
+    private enum Step<Value> {
+        case parsed(Value)
+        case rejected(HttpResponse)
+    }
+
+    /// Parses the bytes before the blank line: the request line, then the
+    /// header fields (names lowercased, a repeated name keeps its last value).
+    private static func parseHead(_ headerBytes: Data) -> Step<Head> {
+        guard let headerText = String(data: headerBytes, encoding: .utf8) else {
+            return .rejected(.error(.internal, message: "Malformed request", status: 400))
+        }
+
+        var lines = headerText.components(separatedBy: "\r\n")
+        guard let requestLine = lines.first else {
+            return .rejected(.error(.internal, message: "Malformed request", status: 400))
+        }
+        lines.removeFirst()
+
+        // Request line: METHOD SP target SP HTTP/1.1
+        let parts = requestLine.split(separator: " ", omittingEmptySubsequences: true)
+        guard parts.count == 3 else {
+            return .rejected(.error(.internal, message: "Malformed request line", status: 400))
+        }
+        let method = String(parts[0]).uppercased()
+        let target = String(parts[1])
+
+        var headers: [String: String] = [:]
+        for line in lines where !line.isEmpty {
+            guard let colon = line.firstIndex(of: ":") else {
+                return .rejected(.error(.internal, message: "Malformed header", status: 400))
+            }
+            let name = line[line.startIndex ..< colon].trimmingCharacters(in: .whitespaces).lowercased()
+            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            headers[name] = value
+        }
+        return .parsed(Head(method: method, target: target, headers: headers))
+    }
+
+    /// The body length the headers declare: 0 with no `Content-Length`.
+    /// Chunked transfer encoding is rejected before the length is read.
+    private static func declaredBodyLength(_ headers: [String: String]) -> Step<Int> {
+        if let encoding = headers["transfer-encoding"], encoding.lowercased().contains("chunked") {
+            return .rejected(.error(.internal, message: "Chunked encoding is not supported", status: 411))
+        }
+
+        var bodyLength = 0
+        if let contentLength = headers["content-length"] {
+            guard let count = Int(contentLength), count >= 0 else {
+                return .rejected(.error(.internal, message: "Bad Content-Length", status: 400))
+            }
+            if count > Self.maxBodyBytes {
+                return .rejected(.error(.internal, message: "Body too large", status: 413))
+            }
+            bodyLength = count
+        }
+        return .parsed(bodyLength)
     }
 
     private static func splitTarget(_ target: String) -> (path: String, query: [String: String]) {

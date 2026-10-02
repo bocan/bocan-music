@@ -150,6 +150,15 @@ public extension Comparator {
         case "greaterThanOrEqual":
             self = .greaterThanOrEqual
 
+        default:
+            self = Self(rangeDateOrMembershipRawValue: rawValue)
+        }
+    }
+
+    /// The second half of `init(rawValue:)`: the range, null, date, flag and
+    /// membership comparators, then `.unknown`.
+    private init(rangeDateOrMembershipRawValue rawValue: String) {
+        switch rawValue {
         case "between":
             self = .between
 

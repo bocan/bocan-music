@@ -210,24 +210,24 @@ public actor PlaylistImportService {
     // MARK: - Preview (no DB writes)
 
     /// Parses `url` and runs the resolver without persisting anything.
-    /// Returns `(matched, missed, stations)` counts for the import preview
-    /// sheet: `stations` is how many entries are http(s) streams (27-4).
+    /// Returns the counts for the import preview sheet.
     /// Never throws: errors are swallowed and return zeros so the UI
     /// degrades gracefully.
-    public func previewFile(at url: URL) async -> (matched: Int, missed: Int, stations: Int) {
+    public func previewFile(at url: URL) async -> PreviewCounts {
         do {
             let data = try Data(contentsOf: url)
             let format = PlaylistFormat.sniff(data: data, fallback: url.pathExtension) ??
                 PlaylistFormat.fromExtension(url.pathExtension) ?? .m3u
+            let counts: PreviewCounts
             switch format {
             case .m3u, .m3u8:
-                return try await self.resolvePreview(M3UReader.parse(data: data, sourceURL: url))
+                counts = try await self.resolvePreview(M3UReader.parse(data: data, sourceURL: url))
 
             case .pls:
-                return try await self.resolvePreview(PLSReader.parse(data: data, sourceURL: url))
+                counts = try await self.resolvePreview(PLSReader.parse(data: data, sourceURL: url))
 
             case .xspf:
-                return try await self.resolvePreview(XSPFReader.parse(data: data, sourceURL: url))
+                counts = try await self.resolvePreview(XSPFReader.parse(data: data, sourceURL: url))
 
             case .cue:
                 // ADR-087: cue FILE entries resolve against indexed tracks
@@ -236,21 +236,32 @@ public actor PlaylistImportService {
                 let entries = cueSheet.files.map {
                     PlaylistPayload.Entry(path: $0.path, absoluteURL: $0.absoluteURL)
                 }
-                return await self.resolvePreview(PlaylistPayload(name: url.lastPathComponent, entries: entries))
+                counts = await self.resolvePreview(PlaylistPayload(name: url.lastPathComponent, entries: entries))
             }
+            return counts
         } catch {
-            return (matched: 0, missed: 0, stations: 0)
+            return PreviewCounts(matched: 0, missed: 0, stations: 0)
         }
     }
 
-    private func resolvePreview(_ payload: PlaylistPayload) async -> (matched: Int, missed: Int, stations: Int) {
+    /// The counts `previewFile(at:)` reports.
+    public struct PreviewCounts: Sendable {
+        /// Entries that resolve to a track in the library.
+        public let matched: Int
+        /// File entries with no track in the library.
+        public let missed: Int
+        /// Entries that are http(s) streams (27-4).
+        public let stations: Int
+    }
+
+    private func resolvePreview(_ payload: PlaylistPayload) async -> PreviewCounts {
         let (fileEntries, streamEntries) = Self.partition(payload.entries)
         guard !fileEntries.isEmpty else {
-            return (matched: 0, missed: 0, stations: streamEntries.count)
+            return PreviewCounts(matched: 0, missed: 0, stations: streamEntries.count)
         }
         let filePayload = PlaylistPayload(name: payload.name, entries: fileEntries)
         let resolution = await resolver.resolve(filePayload)
-        return (
+        return PreviewCounts(
             matched: resolution.matches.count,
             missed: resolution.misses.count,
             stations: streamEntries.count

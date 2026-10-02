@@ -49,27 +49,7 @@ public enum Validator {
             throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
         }
 
-        // `between` requires a range value with low <= high.
-        if rule.comparator == .between {
-            guard case let .range(low, high) = rule.value else {
-                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
-            }
-            guard !Self.isDescending(low, high) else {
-                throw SmartPlaylistError.betweenRangeReversed
-            }
-        }
-
-        // `matchesRegex` value must compile.
-        if rule.comparator == .matchesRegex {
-            guard case let .text(pattern) = rule.value else {
-                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
-            }
-            do {
-                _ = try NSRegularExpression(pattern: pattern)
-            } catch {
-                throw SmartPlaylistError.invalidRegex(pattern)
-            }
-        }
+        try Self.validateRangeAndRegex(rule)
 
         // Membership comparators need a playlistRef or text.
         switch rule.comparator {
@@ -95,6 +75,31 @@ public enum Validator {
 
             default:
                 throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
+            }
+        }
+    }
+
+    /// Checks the value of a `between` rule and of a `matchesRegex` rule.
+    private static func validateRangeAndRegex(_ rule: SmartCriterion.Rule) throws {
+        // `between` requires a range value with low <= high.
+        if rule.comparator == .between {
+            guard case let .range(low, high) = rule.value else {
+                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
+            }
+            guard !Self.isDescending(low, high) else {
+                throw SmartPlaylistError.betweenRangeReversed
+            }
+        }
+
+        // `matchesRegex` value must compile.
+        if rule.comparator == .matchesRegex {
+            guard case let .text(pattern) = rule.value else {
+                throw SmartPlaylistError.incompatibleValue(field: rule.field, value: rule.value)
+            }
+            do {
+                _ = try NSRegularExpression(pattern: pattern)
+            } catch {
+                throw SmartPlaylistError.invalidRegex(pattern)
             }
         }
     }

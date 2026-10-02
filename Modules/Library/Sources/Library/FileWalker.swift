@@ -96,67 +96,84 @@ public enum FileWalker {
                 return
             }
 
-            let name = child.lastPathComponent
-            // Skip hidden
-            if name.hasPrefix(".") {
-                continue
-            }
-            // iCloud placeholder: optionally request download, then skip.
-            if name.hasSuffix(".icloud") {
-                if iCloudDownload {
-                    // The placeholder name is `.<original>.icloud`; the real
-                    // URL is the same parent + the original name.
-                    let realName = String(name.dropFirst().dropLast(".icloud".count))
-                    let realURL = child.deletingLastPathComponent().appendingPathComponent(realName)
-                    do {
-                        try fm.startDownloadingUbiquitousItem(at: realURL)
-                        self.log.debug("walker.icloud.download_requested", ["path": realURL.path])
-                    } catch {
-                        self.log.warning("walker.icloud.download_failed", [
-                            "path": realURL.path,
-                            "error": String(reflecting: error),
-                        ])
-                    }
-                }
-                continue
-            }
+            self.visit(child, extensions: supportedExtensions, iCloudDownload: iCloudDownload, yield: yield)
+        }
+    }
 
-            let resourceValues = try? child.resourceValues(
-                forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .isPackageKey, .isHiddenKey]
+    /// Handles one entry of a directory: skips it, recurses into it, or
+    /// yields it when it is a supported audio file.
+    private static func visit(
+        _ child: URL,
+        extensions supportedExtensions: Set<String>,
+        iCloudDownload: Bool,
+        yield: (URL) -> Void
+    ) {
+        let name = child.lastPathComponent
+        // Skip hidden
+        if name.hasPrefix(".") {
+            return
+        }
+        // iCloud placeholder: optionally request download, then skip.
+        if name.hasSuffix(".icloud") {
+            if iCloudDownload {
+                self.requestICloudDownload(ofPlaceholder: child, named: name)
+            }
+            return
+        }
+
+        let resourceValues = try? child.resourceValues(
+            forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .isPackageKey, .isHiddenKey]
+        )
+        let isDirectory = resourceValues?.isDirectory ?? false
+        let isPackage = resourceValues?.isPackage ?? false
+        let isSymlink = resourceValues?.isSymbolicLink ?? false
+        let isHidden = resourceValues?.isHidden ?? false
+
+        if isHidden {
+            return
+        }
+
+        // Skip broken symlinks (resolve to target; skip if target doesn't exist)
+        if isSymlink {
+            let target = child.resolvingSymlinksInPath()
+            guard FileManager.default.fileExists(atPath: target.path) else { return }
+        }
+
+        if isDirectory {
+            if isPackage {
+                return
+            } // skip .app etc.
+            // Recurse
+            self.enumerate(
+                child,
+                extensions: supportedExtensions,
+                iCloudDownload: iCloudDownload,
+                yield: yield
             )
-            let isDirectory = resourceValues?.isDirectory ?? false
-            let isPackage = resourceValues?.isPackage ?? false
-            let isSymlink = resourceValues?.isSymbolicLink ?? false
-            let isHidden = resourceValues?.isHidden ?? false
+            return
+        }
 
-            if isHidden {
-                continue
-            }
+        // File: check extension
+        let ext = child.pathExtension.lowercased()
+        guard supportedExtensions.contains(ext) else { return }
+        yield(child)
+    }
 
-            // Skip broken symlinks (resolve to target; skip if target doesn't exist)
-            if isSymlink {
-                let target = child.resolvingSymlinksInPath()
-                guard FileManager.default.fileExists(atPath: target.path) else { continue }
-            }
-
-            if isDirectory {
-                if isPackage {
-                    continue
-                } // skip .app etc.
-                // Recurse
-                self.enumerate(
-                    child,
-                    extensions: supportedExtensions,
-                    iCloudDownload: iCloudDownload,
-                    yield: yield
-                )
-                continue
-            }
-
-            // File: check extension
-            let ext = child.pathExtension.lowercased()
-            guard supportedExtensions.contains(ext) else { continue }
-            yield(child)
+    /// Asks iCloud to download the file behind the placeholder `child`.
+    private static func requestICloudDownload(ofPlaceholder child: URL, named name: String) {
+        let fm = FileManager.default
+        // The placeholder name is `.<original>.icloud`; the real
+        // URL is the same parent + the original name.
+        let realName = String(name.dropFirst().dropLast(".icloud".count))
+        let realURL = child.deletingLastPathComponent().appendingPathComponent(realName)
+        do {
+            try fm.startDownloadingUbiquitousItem(at: realURL)
+            self.log.debug("walker.icloud.download_requested", ["path": realURL.path])
+        } catch {
+            self.log.warning("walker.icloud.download_failed", [
+                "path": realURL.path,
+                "error": String(reflecting: error),
+            ])
         }
     }
 

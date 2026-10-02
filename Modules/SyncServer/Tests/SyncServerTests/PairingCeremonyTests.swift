@@ -57,6 +57,41 @@ struct PairingCeremonyTests {
 
         let client = LoopbackClient(clientIdentity: clientIdentity)
 
+        // Steps 1 to 3: start, compute the code and proof, confirm.
+        let confirmResponse = try await self.startAndConfirm(
+            client: client,
+            port: port,
+            serverFingerprint: serverFingerprint,
+            clientFingerprint: clientFingerprint
+        )
+        #expect(confirmResponse.status == "paired")
+        #expect(confirmResponse.serverId == "server-xyz")
+
+        // The device is now trusted and pairing mode has ended.
+        #expect(trusted.fingerprints.contains(clientFingerprint))
+        #expect(coordinator.pairingMode.isOn == false)
+
+        // Step 4: a fresh connection, off pairing mode, is admitted because the
+        // client is now trusted.
+        let ping = try await client.request(port: port, path: "/v1/ping")
+        #expect(ping.status == 200)
+
+        // Step 5: revoking blocks the device at the TLS layer on the next connect.
+        try await trusted.revoke(fingerprint: clientFingerprint)
+        await #expect(throws: (any Error).self) {
+            _ = try await client.request(port: port, path: "/v1/ping")
+        }
+    }
+
+    /// The phone's side of the ceremony: `/v1/pair/start`, the code and proof,
+    /// then `/v1/pair/confirm`. Expects a 200 from both requests and returns
+    /// the decoded confirm response.
+    private func startAndConfirm(
+        client: LoopbackClient,
+        port: UInt16,
+        serverFingerprint: String,
+        clientFingerprint: String
+    ) async throws -> PairConfirmResponse {
         // Step 1: /v1/pair/start (admitted because pairing mode is on).
         let noncePhone = Data((0 ..< 32).map { _ in UInt8.random(in: .min ... .max) })
         let startBody = try JSONEncoder().encode(
@@ -82,23 +117,6 @@ struct PairingCeremonyTests {
         )
         let confirmed = try await client.request(port: port, path: "/v1/pair/confirm", method: "POST", body: confirmBody)
         #expect(confirmed.status == 200)
-        let confirmResponse = try JSONDecoder().decode(PairConfirmResponse.self, from: confirmed.body)
-        #expect(confirmResponse.status == "paired")
-        #expect(confirmResponse.serverId == "server-xyz")
-
-        // The device is now trusted and pairing mode has ended.
-        #expect(trusted.fingerprints.contains(clientFingerprint))
-        #expect(coordinator.pairingMode.isOn == false)
-
-        // Step 4: a fresh connection, off pairing mode, is admitted because the
-        // client is now trusted.
-        let ping = try await client.request(port: port, path: "/v1/ping")
-        #expect(ping.status == 200)
-
-        // Step 5: revoking blocks the device at the TLS layer on the next connect.
-        try await trusted.revoke(fingerprint: clientFingerprint)
-        await #expect(throws: (any Error).self) {
-            _ = try await client.request(port: port, path: "/v1/ping")
-        }
+        return try JSONDecoder().decode(PairConfirmResponse.self, from: confirmed.body)
     }
 }

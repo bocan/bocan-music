@@ -14,8 +14,15 @@ private actor StubPodcastResolver: PodcastEpisodeResolving {
 
     private(set) var audioURLCalls: [(feedURL: URL, guid: String)] = []
     private(set) var resumeCalls: [(feedURL: URL, guid: String)] = []
-    private(set) var persistCalls:
-        [(feedURL: URL, guid: String, position: TimeInterval, duration: TimeInterval)] = []
+    /// One `persistPosition` call, as the stub received it.
+    struct PersistCall {
+        let feedURL: URL
+        let guid: String
+        let position: TimeInterval
+        let duration: TimeInterval
+    }
+
+    private(set) var persistCalls: [PersistCall] = []
     private(set) var markPlayedCalls: [(feedURL: URL, guid: String)] = []
 
     init(audioURL: URL, resumePosition: TimeInterval = 0) {
@@ -39,7 +46,9 @@ private actor StubPodcastResolver: PodcastEpisodeResolving {
         position: TimeInterval,
         duration: TimeInterval
     ) async {
-        self.persistCalls.append((feedURL, episodeGUID, position, duration))
+        self.persistCalls.append(
+            PersistCall(feedURL: feedURL, guid: episodeGUID, position: position, duration: duration)
+        )
     }
 
     func markPlayed(feedURL: URL, episodeGUID: String) async {

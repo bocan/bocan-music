@@ -5,7 +5,9 @@ import Testing
 
 // MARK: - Helper
 
-private func fixture(named name: String) throws -> Data {
+// Shared with `FeedParserShowTypeTests.swift`.
+
+func fixture(named name: String) throws -> Data {
     let url = try #require(
         Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
         "Fixture not found: \(name)"
@@ -13,8 +15,8 @@ private func fixture(named name: String) throws -> Data {
     return try Data(contentsOf: url)
 }
 
-private let sourceURL = URL(string: "https://example.com/feed")!
-private let parser = FeedParser()
+let sourceURL = URL(string: "https://example.com/feed")!
+let parser = FeedParser()
 
 @Suite("FeedParser - RSS full fixture")
 struct FeedParserRSSFullTests {
@@ -478,63 +480,5 @@ struct FeedParserUnreadableDateTests {
         #expect(text.contains("<pubDate>2024-06-01T00:00:00Z</pubDate>"))
         #expect(!text.contains("lastBuildDate"))
         #expect(text.contains("<pubDate>Wed, 01 Jan 2025 10:00:00 BST</pubDate>"))
-    }
-}
-
-// MARK: - itunes:type (show_type)
-
-@Suite("FeedParser - itunes:type")
-struct FeedParserShowTypeTests {
-    /// Minimal RSS with an optional `itunes:type` element.
-    private func rss(itunesType: String?) -> Data {
-        let typeLine = itunesType.map { "<itunes:type>\($0)</itunes:type>" } ?? ""
-        let xml = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
-          <channel>
-            <title>Type Test</title>
-            \(typeLine)
-            <item>
-              <title>Ep</title>
-              <enclosure url="https://example.com/a.mp3" type="audio/mpeg" length="1"/>
-              <guid>g1</guid>
-            </item>
-          </channel>
-        </rss>
-        """
-        return Data(xml.utf8)
-    }
-
-    @Test("serial and episodic parse into showType")
-    func parsesKnownTypes() throws {
-        #expect(try parser.parse(self.rss(itunesType: "serial"), sourceURL: sourceURL).showType == "serial")
-        #expect(try parser.parse(self.rss(itunesType: "episodic"), sourceURL: sourceURL).showType == "episodic")
-    }
-
-    @Test("show type is normalized (trim + lowercase)")
-    func normalizes() throws {
-        #expect(try parser.parse(self.rss(itunesType: "  SERIAL "), sourceURL: sourceURL).showType == "serial")
-    }
-
-    @Test("missing or unrecognized itunes:type yields nil")
-    func unknownYieldsNil() throws {
-        #expect(try parser.parse(self.rss(itunesType: nil), sourceURL: sourceURL).showType == nil)
-        #expect(try parser.parse(self.rss(itunesType: "weekly"), sourceURL: sourceURL).showType == nil)
-    }
-
-    @Test("Atom feeds have nil showType")
-    func atomYieldsNil() throws {
-        let feed = try parser.parse(fixture(named: "atom-full.xml"), sourceURL: sourceURL)
-        #expect(feed.showType == nil)
-    }
-
-    @Test("toPodcast maps show_type and leaves the per-show overrides nil")
-    func toPodcastMapsShowTypeOnly() throws {
-        let feed = try parser.parse(self.rss(itunesType: "serial"), sourceURL: sourceURL)
-        let podcast = feed.toPodcast(feedURL: sourceURL, now: Date(timeIntervalSince1970: 0))
-        #expect(podcast.showType == "serial")
-        #expect(podcast.episodeSort == nil, "default sort is derived, not seeded")
-        #expect(podcast.playbackSpeed == nil)
-        #expect(podcast.retentionLimit == nil)
     }
 }
