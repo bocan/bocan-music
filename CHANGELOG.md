@@ -35,6 +35,8 @@ Phone Sync now checks again before it decides that the Mac's sync identity is mi
 
 The download is smaller. The audio libraries inside the app are now built by the project itself, under the LGPL, and the notices that come with the app say exactly which source they are built from.
 
+A rescan of one music folder no longer hides the songs of a second folder whose name starts with the same letters, for example Music and Music2. Before, those songs could disappear from the library until the second folder was scanned again.
+
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.

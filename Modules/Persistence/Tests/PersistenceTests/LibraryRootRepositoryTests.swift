@@ -52,4 +52,29 @@ struct LibraryRootRepositoryTests {
             _ = try await repo.fetch(id: 9999)
         }
     }
+
+    // MARK: - Containment (#621)
+
+    @Test("a root contains the files under it, at any depth")
+    func containsFilesUnderIt() {
+        let root = self.sample(path: "/Music")
+        #expect(root.contains(filePath: "/Music/a.flac"))
+        #expect(root.contains(filePath: "/Music/Artist/Album/01.flac"))
+    }
+
+    @Test("a root does not contain a sibling whose name starts with its name")
+    func doesNotContainPrefixSibling() {
+        let root = self.sample(path: "/Music")
+        #expect(!root.contains(filePath: "/Music2/a.flac"))
+        #expect(!root.contains(filePath: "/Music Archive/a.flac"))
+        #expect(!root.contains(filePath: "/Musical.flac"))
+    }
+
+    @Test("a root does not contain itself, and a trailing slash changes nothing")
+    func rootItselfAndTrailingSlash() {
+        #expect(!self.sample(path: "/Music").contains(filePath: "/Music"))
+        #expect(self.sample(path: "/Music/").contains(filePath: "/Music/a.flac"))
+        #expect(!self.sample(path: "/Music/").contains(filePath: "/Music2/a.flac"))
+        #expect(self.sample(path: "/").contains(filePath: "/a.flac"))
+    }
 }
