@@ -2,6 +2,13 @@
 
 import PackageDescription
 
+/// The LGPL FFmpeg that AudioEngine links (AudioEngine/Package.swift, ADR-096).
+/// This package loads the CFFmpeg module through Playback and AudioEngine, and
+/// unsafeFlags do not cross package boundaries, so it names the same headers.
+/// Never point this at /opt/homebrew/include: that is Homebrew's GPL FFmpeg.
+let ffmpegPrefix = Context.environment["FFMPEG_PREFIX"]
+    ?? "\(Context.packageDirectory)/../../build/ffmpeg-lgpl"
+
 let package = Package(
     name: "Scrobble",
     platforms: [
@@ -25,10 +32,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                // See AudioEngine/Package.swift. Carried here because
-                // unsafeFlags do not propagate across package boundaries, not
-                // because this target is known to need it (#549).
-                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+                .unsafeFlags(["-Xcc", "-I\(ffmpegPrefix)/include"]),
             ]
         ),
         .testTarget(
@@ -36,7 +40,7 @@ let package = Package(
             dependencies: ["Scrobble"],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+                .unsafeFlags(["-Xcc", "-I\(ffmpegPrefix)/include"]),
             ]
         ),
     ]

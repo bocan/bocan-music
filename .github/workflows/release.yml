@@ -251,19 +251,33 @@ jobs:
             ${{ runner.os }}-spm-release-
             ${{ runner.os }}-spm-
 
-      - name: Install Brewfile dependencies (FFmpeg at the pinned major)
+      - name: Install Brewfile dependencies
         run: |
-          # The release must ship the FFmpeg major the suites ran on. Upgrade
-          # only FFmpeg to current (everything else stays --no-upgrade);
-          # `make doctor` is not run here, but embed-deps bundles whatever is
-          # installed, so this keeps the shipped dylibs on the pinned major.
+          # FFmpeg and Chromaprint are not in the Brewfile: Homebrew's are GPL
+          # builds. The release ships the project's own LGPL source build
+          # (ADR-096), made in the next two steps from the pinned release, so
+          # the shipped FFmpeg is the one the suites ran on.
           brew update --quiet
-          brew upgrade ffmpeg --quiet || brew install --quiet ffmpeg
           brew bundle install --no-upgrade
 
-      - name: Set pkg-config path for FFmpeg and TagLib
+      # The key holds everything the two builds are made from. No restore-keys:
+      # a build from another pin or another configure line must not be reused.
+      - name: Cache the LGPL FFmpeg and Chromaprint builds
+        uses: actions/cache@v6
+        with:
+          path: |
+            build/ffmpeg-lgpl
+            build/chromaprint
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-lgpl-${{ hashFiles('.ffmpeg-source', '.chromaprint-source', 'Scripts/build-ffmpeg-lgpl.sh', 'Scripts/build-fpcalc.sh') }}
+
+      - name: Build FFmpeg from source under the LGPL
+        run: make ffmpeg-lgpl
+
+      # TagLib only. FFmpeg is not found through pkg-config: the package
+      # manifests name the LGPL build by path (ADR-096).
+      - name: Set pkg-config path for TagLib
         run: |
-          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Stub Secrets.xcconfig (xcodegen requires it)
         env:
@@ -322,7 +336,7 @@ jobs:
             -S apple-tool:,apple: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+      - name: Build fpcalc from source and bundle it into Resources/
         env:
           SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
         run: make bundle-fpcalc
@@ -377,10 +391,17 @@ jobs:
           echo "=== Export contents ==="
           ls -la build/export/
 
-      - name: Bundle Homebrew dylibs into app (TagLib, FFmpeg, etc.)
+      - name: Bundle dylibs into app (TagLib, the LGPL FFmpeg, etc.)
         env:
           SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
         run: bash Scripts/embed-deps.sh build/export/Bocan.app
+
+      # The licence gate (ADR-096). It stops the release, before anything is
+      # notarized or published, unless every FFmpeg library in the app is the
+      # LGPL v2.1-or-later build, no GPL-only library is in the bundle, and
+      # nothing loads FFmpeg from outside the bundle. Never add `|| true`.
+      - name: Licence gate (FFmpeg must be the LGPL build)
+        run: bash Scripts/check-bundle-licence.sh build/export/Bocan.app
 
       - name: Verify code signature & hardened runtime
         run: |

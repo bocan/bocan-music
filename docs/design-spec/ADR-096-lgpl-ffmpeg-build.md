@@ -6,8 +6,10 @@
 > Phone Sync uses).
 > Binding docs: `_standards.md`; the root `CLAUDE.md`; `DEVELOPMENT.md`
 > ("FFmpeg", "fpcalc", "Releasing"); `docs/GOTCHAS.md`.
-> Found on 2026-10-01 during the docs-against-code audit. Status: proposed.
-> Not started. Nothing in this ADR is legal advice.
+> Found on 2026-10-01 during the docs-against-code audit. Status: implemented
+> on 2026-10-02 (slices 1 to 6, on branch `feat/096-lgpl-ffmpeg`), not yet
+> released. The implementation differs from the plan in several places; see
+> "Decisions as made" and "As built". Nothing in this ADR is legal advice.
 
 Everything under "Facts the plan rests on" was read from the repository on
 `main` at `76f13c0b`, from the installed release app (2.19.0), or from the
@@ -146,6 +148,150 @@ changes only the slice named.
   website; (c) withdraw the old DMGs once a clean release exists. The source
   of Bòcan itself has always been public under Apache 2.0, which can be
   combined with GPLv3 code. Take advice if it matters.
+
+### Decisions as made (2026-10-02)
+
+The maintainer decided D3, D4 and D5 on 2026-10-02. For D1 and D2 the
+implementer took the recommended answer, said so, and the maintainer did not
+object; D6 below reopens both. The recommendations above are left as they
+were written, so that the change to D3 can be seen.
+
+- **D1: as recommended (see D6).** LGPL v2.1 or later.
+- **D2: as recommended (see D6).** OpenSSL stays; `TLSTrustExport` is not
+  touched.
+- **D3: changed.** Debug does not use Homebrew's FFmpeg. There is one
+  FFmpeg, the project's source build, for Debug, the test suites, CI and the
+  release. The maintainer's reason: to run one thing locally and a different
+  thing from CI/CD is absurd. A Debug build on Homebrew's library and a
+  release on another would test one thing and ship a different one.
+- **D4: wider than recommended.** All CI uses the source build: the
+  branch-push workflow, the PR workflow and the release workflow.
+- **D5: option (a).** The published releases (v0.2.0 to 2.19.0) stay as they
+  are, and the notice is correct from the next release on. Those releases
+  combine GPLv3 FFmpeg with Bòcan's public Apache-2.0 source, which is a
+  permitted combination, so the defect in them is the text of the notice.
+  Nothing here is legal advice.
+- **D6: open. OpenSSL 3 under an LGPL v2.1 build.** Found while the notices
+  were written, after the build was done. OpenSSL 3 is under the Apache
+  License 2.0. FFmpeg 9.0.2's `LICENSE.md` says two things that pull in
+  different directions: of OpenSSL, "To the best of our knowledge, they are
+  compatible with the LGPL" (line 125); and of other Apache-2.0 libraries,
+  "That license is incompatible with the LGPL v2.1 and the GPL v2, but not
+  with version 3 of those licenses" (line 108), which is the Free Software
+  Foundation's position on Apache 2.0. `configure` accepts
+  `--enable-openssl` without `--enable-version3` and reports "LGPL version
+  2.1 or later", and "or later" lets a recipient take the library under
+  version 3. The options, not chosen here:
+  (a) leave it, on FFmpeg's own statement about OpenSSL;
+  (b) pass `--enable-version3`, so the build is "LGPL version 3 or later",
+  which no reading disputes with Apache 2.0; this changes D1, and the gate,
+  `RequiredCodecsTests` and `Scripts/check-ffmpeg-build.sh` must accept the
+  version 3 wording in the same commit;
+  (c) replace OpenSSL with Apple's Secure Transport
+  (`--enable-securetransport`), which removes the question and two bundled
+  dylibs, changes D2, uses a deprecated Apple API, and needs
+  `TLSTrustExport` removed and the HTTPS and HLS paths tested.
+  Take advice if it matters. `NOTICES.md` quotes FFmpeg's sentence and makes
+  no claim of its own.
+
+## As built
+
+Where the implementation differs from the plan in this ADR. The sections
+below this one are the plan as it was written on 2026-10-01 and are not
+rewritten; where they disagree with this section, this section is what the
+code does.
+
+- **One FFmpeg (D3).** `Scripts/build-fpcalc.sh` has no Homebrew mode: it
+  always builds Chromaprint from source against the LGPL prefix.
+  `FFMPEG_PREFIX` is a path override (where the build is), not a switch
+  between two FFmpegs. Homebrew's `ffmpeg` and `chromaprint` are removed
+  from the `Brewfile` outright; there is no environment variable to skip
+  them. `make bootstrap` runs `make ffmpeg-lgpl` and `make bundle-fpcalc`.
+- **No pkg-config.** `pkgConfig:` is gone from
+  `Modules/AudioEngine/Package.swift`. The manifests name the prefix by path
+  (`Context.packageDirectory/../../build/ffmpeg-lgpl`, or `FFMPEG_PREFIX`
+  for command-line builds). The reason: Xcode does not pass the shell
+  environment to SwiftPM, so a pkg-config lookup there finds Homebrew's
+  FFmpeg when it is installed. No `PKG_CONFIG_PATH` is needed for FFmpeg,
+  locally or in CI. Slice 2 step 4 and slice 4 step 2 name
+  `PKG_CONFIG_PATH`; that part was not built.
+- **The shared Homebrew paths are gone.** `/opt/homebrew/include` and
+  `/opt/homebrew/lib` are removed from every manifest and from
+  `project.yml`, which closes the trap in Gotchas, "The Homebrew `-L`
+  flag". TagLib is named by its own keg (`/opt/homebrew/opt/taglib/...`).
+  So this ADR does change `Package.swift` files, although "Dependencies"
+  says no dependency list changes (that part is still true).
+- **Five manifests carry the header path, and it is load-bearing.**
+  `AudioEngine`, `Playback`, `Scrobble`, `SyncServer` and `UI` each pass
+  `-Xcc -I<prefix>/include`. A dependent of `AudioEngine` fails to build
+  without it ("libavcodec/avcodec.h file not found" while scanning the
+  module `CFFmpeg`).
+- **`internal import CFFmpeg` was tried and does not work.** The idea was
+  that dependents would then need no header path. Swift still loads the C
+  module in the dependents, so the flag stays in all five manifests.
+- **The configure line has additions.** The line in "The FFmpeg configure
+  line" below was the draft. The line that is run is `CONFIGURE_ARGS` in
+  `Scripts/build-ffmpeg-lgpl.sh`. It adds `--disable-autodetect` (without
+  it, configure links libX11, libxcb and SDL2 on a machine that has them,
+  so two machines build two different libraries), `--enable-zlib` and
+  `--enable-bzlib` (the system libraries the demuxers use, named because
+  autodetection is off), and `--extra-cflags` and `--extra-ldflags` for the
+  deployment target (macOS 15.0) and for the LAME headers and library.
+  `NOTICES.md` quotes the line from the script.
+- **The stamp is wider.** `.built-from` also holds the checksum of the
+  build script, so an edit to the script makes the next run build again.
+- **The gate matches FFmpeg libraries by name.** Rule 1 of "The gate" says
+  `libav*.dylib` or `libsw*.dylib`. The script matches `libavcodec`,
+  `libavformat`, `libavutil`, `libavfilter`, `libavdevice`, `libswresample`
+  and `libswscale` by name, because a bundled Swift runtime library
+  (`libswiftCore.dylib`) matches the glob `libsw*`.
+- **`RequiredCodecsTests` asserts the licence.** The test plan says the
+  suite must pass on Homebrew's build too. It does not: it fails there on
+  the licence string alone, on purpose, so that a build that picked up
+  Homebrew's FFmpeg through a stray search path fails in a test. With one
+  FFmpeg (D3) there is no second build for it to pass on.
+- **The branch-push workflow uses the source build too (D4).** Slice 5 step
+  2 says `branch.yml` is not changed. It is changed, in the same way as
+  `pr.yml` and `release.yml`: `brew bundle`, a cache keyed on the two pin
+  files and the two build scripts with no restore keys, then `make
+  ffmpeg-lgpl`.
+- **`make doctor` checks, and fails.** It fails when the build is missing,
+  when it is not LGPL v2.1 or later, or when the `fpcalc` dylibs in
+  `Resources/` come from different library majors than the build.
+- **`.ffmpeg-major` is removed.** "What carries over" says the
+  `.ffmpeg-major` pin and `Scripts/check-ffmpeg-major.sh` stay, and that
+  `make doctor` checks the two pins agree. On the maintainer's decision
+  (2026-10-02) the file was deleted, because `.ffmpeg-source` pins the exact
+  release and makes it redundant. The script is now
+  `Scripts/check-ffmpeg-build.sh` (test:
+  `Scripts/tests/check-ffmpeg-build-test.sh`), and there is no "the two pins
+  agree" check. To bump FFmpeg: change the three values in `.ffmpeg-source`,
+  run `make ffmpeg-lgpl` and `make bundle-fpcalc` (and `make generate` if
+  dylib file names changed), then the full suites.
+- **One branch, not six.** The Handoff section names a branch per slice.
+  All the work is on `feat/096-lgpl-ffmpeg`: one commit for slice 1, one
+  for slices 2 and 3, one for slices 4 and 5, one for the removal of
+  `.ffmpeg-major`, and the documents of slice 6.
+
+Measured: the FFmpeg dylibs are about 14 MB (34 MB before). `fpcalc` is
+bundled with 10 dylibs (15 before); `libx264`, `libx265`, `libvpx`,
+`libdav1d`, `libSvtAv1Enc` and `liblzma` are gone, and `libmpg123` stays
+because Homebrew's `lame` links it. The release app's `Frameworks` dylibs
+total about 21 MB with TagLib, OpenSSL, LAME and Opus (10 dylibs, 16
+before). The FFmpeg build itself took 34 seconds on an 18-core machine.
+Fingerprints of five tracks are identical to those from the Homebrew
+`fpcalc`. The gate fails on the installed 2.19.0 with 36 problems.
+
+Not done on 2026-10-02:
+
+- No release was cut, and no tag was made.
+- The changed release workflow was not run in CI.
+- The app was not launched.
+- The manual checks in the test plan are still for the maintainer: one file
+  of each format that has no fixture (APE, WMA, DTS, AC-3, Musepack, TTA,
+  AU, Wave64, Matroska, MP2), an HTTPS internet radio station and an HLS
+  station, a Phone Sync transcode with an MP3 preset and with an Opus
+  preset, and one track identified.
 
 ## Outcome shape
 
@@ -444,23 +590,36 @@ Do these at the start of the slice that needs them; do not rely on memory.
 
 ## Acceptance criteria
 
-- [ ] `Scripts/check-bundle-licence.sh` fails on the installed 2.19.0 app and
-      names each offending file.
+State on 2026-10-02. A ticked box was met on the branch. An unticked box
+has a note that says what is still needed.
+
+- [x] `Scripts/check-bundle-licence.sh` fails on the installed 2.19.0 app and
+      names each offending file. (36 problems.)
 - [ ] The same script passes on an app built by the release workflow.
+      *Needs a CI release run. A local Release build, after
+      `Scripts/embed-deps.sh`, passes with eight FFmpeg libraries.*
 - [ ] The release workflow has the gate as a step before signing
       verification, and a deliberately GPL prefix makes that step fail
       (shown once, in the PR, with a throwaway prefix; not committed).
+      *The step is in `release.yml`, after the dylibs are embedded and
+      before the signature check. The workflow was not run, and the
+      throwaway-prefix demonstration was not done. The hermetic tests cover
+      a GPL licence string and `--enable-gpl`, and the gate fails on
+      2.19.0.*
 - [ ] No `libx264`, `libx265`, `libvpx`, `libdav1d` or `libSvtAv1Enc` file
-      is in the release app.
-- [ ] `RequiredCodecsTests` passes against the LGPL build.
-- [ ] The fingerprint of a reference track is identical before and after.
-- [ ] `NOTICES.md` names the source tarball, the configure line and the
+      is in the release app. *Needs a CI release run. None of them is in
+      `Resources/` after `make bundle-fpcalc`.*
+- [x] `RequiredCodecsTests` passes against the LGPL build.
+- [x] The fingerprint of a reference track is identical before and after.
+      (Five tracks.)
+- [x] `NOTICES.md` names the source tarball, the configure line and the
       build script, and no longer names the Homebrew formula.
-- [ ] `make doctor` prints the FFmpeg in use and its licence.
-- [ ] `docs/GOTCHAS.md` has the entry, and ADR-002 and ADR-032 carry the
+- [x] `make doctor` prints the FFmpeg in use and its licence.
+- [x] `docs/GOTCHAS.md` has the entry, and ADR-002 and ADR-032 carry the
       note.
 - [ ] D5 has an answer recorded in the issue, even if the answer is "leave
-      them".
+      them". *The answer is recorded in this ADR ("Decisions as made");
+      copy it to the issue.*
 
 ## Gotchas
 

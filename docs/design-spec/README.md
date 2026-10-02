@@ -103,7 +103,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-094-play-history-page.md](ADR-094-play-history-page.md) | Play History page: a fourth Recents row listing every recorded play newest first, its own table keyed by play id, and a search that is independent of the library query and cleared on entry and exit |
 | [ADR-095-crossfade-overlap.md](ADR-095-crossfade-overlap.md) | Crossfade that overlaps: the pump mixes the outgoing and incoming tracks with equal-power curves on the one player node, an exact transition moment, and arming that works with the default settings (#567) |
 | [ADR-093-table-sort-chains.md](ADR-093-table-sort-chains.md) | Songs-table sort chains: stop truncating AppKit's descriptor list, cap at four and dedupe, one global tie-breaker chain with four per-column overrides, and the chain persisted across launches |
-| [ADR-096-lgpl-ffmpeg-build.md](ADR-096-lgpl-ffmpeg-build.md) | An LGPL FFmpeg build and a gate that proves it: every release so far bundled Homebrew's GPLv3 FFmpeg against the day-one rule; build FFmpeg and fpcalc from pinned source, fail the release when a bundled library is not LGPL, and correct the notices (proposed, not started) |
+| [ADR-096-lgpl-ffmpeg-build.md](ADR-096-lgpl-ffmpeg-build.md) | An LGPL FFmpeg build and a gate that proves it: every release so far bundled Homebrew's GPLv3 FFmpeg against the day-one rule; FFmpeg and fpcalc are now built from pinned source for every build (Debug, tests, CI and release), the release fails when a bundled library is not LGPL, and the notices are corrected (implemented 2026-10-02, not yet released) |
 
 ## Conventions used in every ADR
 

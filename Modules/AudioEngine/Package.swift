@@ -2,6 +2,16 @@
 
 import PackageDescription
 
+// The FFmpeg every build links: the project's own LGPL source build
+// (ADR-096), made by `make ffmpeg-lgpl` into build/ffmpeg-lgpl at the repo
+// root. It is named by path here, and not found through pkg-config, on
+// purpose: Xcode does not pass the shell environment to SwiftPM, so a
+// pkg-config lookup there finds Homebrew's GPL FFmpeg when it is installed.
+// FFMPEG_PREFIX overrides the path for command-line builds (a worktree that
+// shares one build, for example).
+let ffmpegPrefix = Context.environment["FFMPEG_PREFIX"]
+    ?? "\(Context.packageDirectory)/../../build/ffmpeg-lgpl"
+
 let package = Package(
     name: "AudioEngine",
     platforms: [
@@ -14,14 +24,11 @@ let package = Package(
         .package(path: "../Observability"),
     ],
     targets: [
-        // C system-module wrapping Homebrew FFmpeg (pkg-config: ffmpeg).
-        // Decision: Option B — in-tree CFFmpeg linking Homebrew FFmpeg dynamically.
-        // See DEVELOPMENT.md §FFmpeg for rationale and CI setup.
-        .systemLibrary(
-            name: "CFFmpeg",
-            pkgConfig: "libavformat libavcodec libswresample libavutil",
-            providers: [.brew(["ffmpeg"])]
-        ),
+        // C system-module wrapping FFmpeg, linked dynamically from
+        // `ffmpegPrefix`. No `pkgConfig:` (see the note at the top); the
+        // targets that import it pass the header and library paths.
+        // See DEVELOPMENT.md §FFmpeg.
+        .systemLibrary(name: "CFFmpeg"),
 
         // The render blocks of the custom audio units, in Objective-C so that
         // no Swift code runs on the real-time thread (docs/GOTCHAS.md).
@@ -41,22 +48,14 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                // Homebrew's pkg-config (now pkgconf) stopped feeding system
-                // include paths through Xcode's SPM clang module scanner, so
-                // the CFFmpeg module failed to resolve <libavcodec/avcodec.h>
-                // under `xcodebuild`. Inject the Homebrew prefix explicitly
-                // (ARM64 Homebrew is assumed — both local dev Macs and the
-                // GitHub xcode-27 runners use /opt/homebrew).
-                //
-                // Kept as insurance, not because it is currently load-bearing:
-                // a cold xcodebuild and a clean `swift build` both succeed with
-                // every copy of this flag removed (#549, measured 2026-09-20 on
-                // Xcode 27 with ffmpeg 9.0.1_1). Re-test before removing it,
-                // and see docs/GOTCHAS.md for the procedure.
-                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+                // The CFFmpeg headers. Never add -I/opt/homebrew/include or
+                // -L/opt/homebrew/lib here: with Homebrew's FFmpeg installed
+                // they make the build take that GPL library in place of this
+                // one, and nothing fails (ADR-096).
+                .unsafeFlags(["-Xcc", "-I\(ffmpegPrefix)/include"]),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L\(ffmpegPrefix)/lib"]),
             ]
         ),
 
@@ -78,10 +77,10 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+                .unsafeFlags(["-Xcc", "-I\(ffmpegPrefix)/include"]),
             ],
             linkerSettings: [
-                .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .unsafeFlags(["-L\(ffmpegPrefix)/lib"]),
             ]
         ),
     ]

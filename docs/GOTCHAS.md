@@ -526,15 +526,29 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
 
-### The Homebrew include flag is carried by four manifests and is not currently load-bearing
+### There is one FFmpeg, the project's LGPL source build, and never Homebrew's
 
-**Problem:** `-Xcc -I/opt/homebrew/include` appears in `AudioEngine`, `Playback`, `Scrobble` and `UI`, with comments saying every transitive `CFFmpeg` consumer needs it, while `SyncServer` imports `AudioEngine` and carries nothing. One of the two had to be wrong.
+**Problem:** the project has required an LGPL-only FFmpeg since ADR-002 and ADR-032, and no commit ever built one: the app linked Homebrew's `ffmpeg`, which is a GPLv3 build with libx264 and libx265. Every release from v0.2.0 to 2.19.0 bundled that build, twice (in `Contents/Frameworks` and beside `fpcalc` in `Contents/Resources`), while `NOTICES.md`, the website and the wiki said "LGPL". No script, test or workflow step read the licence of a built or bundled library, so nothing failed for five months.
 
-**Rule:** leave it as it is. `SyncServer` needs no change, and nothing else needs the flag added. Do not remove the four copies on the strength of a local build alone: they are insurance against the pkgconf regression the `AudioEngine` comment records, and the only environment that matters for that is the CI runner, which cannot be tested from a dev Mac. If you do remove them, do it in a PR and let the full CI suite be the test.
+**Rule:** every build links one FFmpeg, the project's own source build under the LGPL v2.1 or later: Debug, the test suites, all CI workflows and the release. Never Homebrew's `ffmpeg` or `chromaprint`; neither goes back in the `Brewfile`. Never `/opt/homebrew/include` or `/opt/homebrew/lib` in a package manifest or in `project.yml`. Never `--enable-gpl` or `--enable-version3` in the configure line. Never `|| true` after the checksum check, the build or the licence gate. Do not fix a licence mismatch by editing the notice.
 
-**Why:** measured on 2026-09-20 (Xcode 27, Homebrew ffmpeg 9.0.1_1, #549). A clean `swift build` of `SyncServer`, with its `.build` moved aside so every dependency was checked out afresh, succeeds. A cold `xcodebuild` of the whole app, with DerivedData deleted and the flag removed from all four manifests, also succeeds. So pkgconf's cflags do reach the module scanner again on this toolchain, and the comments' claim that a transitive consumer "needs" the flag is no longer true.
+**Why:** `make ffmpeg-lgpl` builds the release pinned in `.ffmpeg-source` into `build/ffmpeg-lgpl` and refuses the result unless `libavutil` reports "LGPL version 2.1 or later". `make bundle-fpcalc` builds `fpcalc` from the pinned Chromaprint source against the same FFmpeg, because Homebrew's `chromaprint` depends on Homebrew's `ffmpeg`. Three checks keep it true: `RequiredCodecsTests` asserts the licence of the linked library (and the codec list), `make doctor` fails when the build is missing or not LGPL, and the release workflow runs the licence gate on the exported app after `Scripts/embed-deps.sh` and before the signature check. The shared Homebrew directories are forbidden because they hold Homebrew's FFmpeg when it is installed, and a build that names them takes that library with no error. The original defect survived because a step could not fail, which is why `|| true` is forbidden here.
 
-To re-test: `mv Modules/<Name>/.build{,.bak}` for SwiftPM, or delete `~/Library/Developer/Xcode/DerivedData/Bocan-*` for Xcode, then build. Prefix either with `GIT_CONFIG_PARAMETERS="'core.fsmonitor=false'"` (see the entry below). A dependency-resolution failure part way through is the checkout flake, not a flag problem; re-run before reading anything into it.
+Two smaller traps from the same work. In a script with `set -o pipefail`, `strings file | grep -q` fails when grep finds its match and closes the pipe early, so a correct library is reported as wrong; read the strings into a variable first and grep the variable. And FFmpeg's `configure` links what it finds on the build machine (libX11, libxcb and SDL2 on a machine that has them) unless `--disable-autodetect` is passed, so two machines build two different libraries.
+
+The decisions, and where the implementation differs from the plan, are in `docs/design-spec/ADR-096-lgpl-ffmpeg-build.md`. Nothing in that ADR or in this entry is legal advice.
+
+**Canonical file:** `Scripts/build-ffmpeg-lgpl.sh` and `Scripts/check-bundle-licence.sh`
+
+### The FFmpeg include flag is carried by five manifests and is load-bearing
+
+**Problem:** a package that depends on `AudioEngine` fails to build with "libavcodec/avcodec.h file not found" while the compiler scans the module `CFFmpeg`, although the package never imports FFmpeg itself.
+
+**Rule:** `AudioEngine`, `Playback`, `Scrobble`, `SyncServer` and `UI` each pass `-Xcc -I<prefix>/include`, where the prefix is the LGPL build (`Context.packageDirectory/../../build/ffmpeg-lgpl`, or `FFMPEG_PREFIX` for command-line builds). Keep all five. A new package that depends on `AudioEngine`, directly or through another package, needs the same lines. Do not replace the flag with `pkgConfig:` on the system library, and do not point it at `/opt/homebrew/include`. If the header is not found although the flag is there, the build is missing: run `make ffmpeg-lgpl`. A git worktree has its own empty `build/` and needs its own run.
+
+**Why:** unsafe flags do not cross package boundaries, and Swift loads the C module `CFFmpeg` in every package that imports `AudioEngine`, so each of them must name the headers. Changing `AudioEngine` to `internal import CFFmpeg` was tried and does not remove the need: Swift still loads the C module in the dependents. pkg-config is not used because Xcode does not pass the shell environment to SwiftPM, so a `PKG_CONFIG_PATH` set in a shell or in CI does not reach a lookup made inside Xcode, and that lookup finds Homebrew's GPL FFmpeg when it is installed. A path in the manifest is the same in Xcode, in `swift build` and in CI. `FFMPEG_PREFIX` is read by the manifests through `Context.environment`, so for the same reason it works on the command line only.
+
+This entry replaces one written on 2026-09-20 (#549), which said the flag (then `-I/opt/homebrew/include`, in four manifests) was not load-bearing. That was true while pkg-config supplied the header path. It stopped being true when ADR-096 removed pkg-config.
 
 **Canonical file:** `Modules/AudioEngine/Package.swift`
 

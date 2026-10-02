@@ -9,20 +9,21 @@ brew "swiftlint"
 brew "swiftformat"
 brew "xcbeautify"
 brew "gitleaks"    # secret scan in the pre-commit hook; CI pins its own copy
-# Phase 1 audit #26: bocan-music links against FFmpeg, Chromaprint, and
-# TagLib at fixed major versions.  Homebrew formulae do not pin cleanly
-# (Homebrew refuses old bottles after a few months).  The FFmpeg major is
-# pinned in `.ffmpeg-major` and ENFORCED by `make doctor` (also run in CI)
-# via Scripts/check-ffmpeg-major.sh, which additionally fails when the
-# bundled fpcalc dylibs under Resources/ drift from the installed majors.
-# Expected major versions:
-#   ffmpeg     in .ffmpeg-major  (accepted majors, primary first; bump
-#                                 deliberately: update the pin, re-run
-#                                 'make bundle-fpcalc', run the full suites)
-#   chromaprint >= 1.6 (fpcalc CLI flags assumed by the wrapper)
-#   taglib     >= 2.2 (Swift bindings need MP4ItemFactory APIs)
-brew "ffmpeg"
-brew "chromaprint"
+# FFmpeg and Chromaprint are NOT here, on purpose (ADR-096). Homebrew's
+# `ffmpeg` is a GPLv3 build with libx264 and libx265, and Homebrew's
+# `chromaprint` depends on it. The project builds both from source under the
+# LGPL: `make ffmpeg-lgpl` (pinned in `.ffmpeg-source`) and `make
+# bundle-fpcalc` (pinned in `.chromaprint-source`). Do not add them back. If
+# another tool on your machine installs Homebrew's ffmpeg, that is harmless:
+# no build setting looks at it, and a test fails if one ever does.
+#
+# What those two source builds need:
+brew "lame"       # MP3 encoder for Phone Sync transcodes (LGPL-2.0-or-later)
+brew "opus"       # Opus encoder for Phone Sync transcodes (BSD-3-Clause)
+brew "openssl@3"  # TLS for https streams (Apache-2.0)
+brew "pkgconf"    # FFmpeg's configure finds opus and openssl through it
+brew "cmake"      # builds Chromaprint
+# TagLib >= 2.2 (the Swift bindings need the MP4ItemFactory APIs).
 brew "taglib"
 brew "create-dmg"
 brew "gh"

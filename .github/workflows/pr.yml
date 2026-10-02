@@ -105,15 +105,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: Install Brewfile dependencies (FFmpeg at the pinned major)
+      - name: Install Brewfile dependencies
         run: |
-          # The runner image's FFmpeg can lag the pinned major; upgrade it to
-          # current so CI builds and tests the same major the dev machines do.
-          # `make doctor` then enforces `.ffmpeg-major` and fails loudly if
-          # the runner still cannot reach the primary.
+          # FFmpeg and Chromaprint are not in the Brewfile: Homebrew's are GPL
+          # builds. The project builds both from source below (ADR-096), so
+          # CI tests the same FFmpeg that the release ships.
           brew update --quiet
-          brew upgrade ffmpeg --quiet || brew install --quiet ffmpeg
           brew bundle
+
+      # The key holds everything the two builds are made from. No restore-keys:
+      # a build from another pin or another configure line must not be reused.
+      - name: Cache the LGPL FFmpeg and Chromaprint builds
+        uses: actions/cache@v6
+        with:
+          path: |
+            build/ffmpeg-lgpl
+            build/chromaprint
+          key: ${{ runner.os }}-${{ runner.arch }}-ffmpeg-lgpl-${{ hashFiles('.ffmpeg-source', '.chromaprint-source', 'Scripts/build-ffmpeg-lgpl.sh', 'Scripts/build-fpcalc.sh') }}
+
+      - name: Build FFmpeg from source under the LGPL
+        run: make ffmpeg-lgpl
 
       - name: Pin SwiftLint to .swiftlint-version
         run: |
@@ -137,9 +148,11 @@ jobs:
           # Prepend so this shadows the Homebrew-installed swiftformat for every later step.
           echo "$RUNNER_TEMP/swiftformat" >> "$GITHUB_PATH"
 
-      - name: Set pkg-config path for FFmpeg and TagLib
+      # TagLib only. FFmpeg is not found through pkg-config: the package
+      # manifests name the LGPL build by path (ADR-096).
+      - name: Set pkg-config path for TagLib
         run: |
-          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
 
       - name: Stub Secrets.xcconfig (xcodegen requires it)
         env:
@@ -164,7 +177,7 @@ jobs:
       - name: Doctor (print tool versions)
         run: make doctor
 
-      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+      - name: Build fpcalc from source and bundle it into Resources/
         run: make bundle-fpcalc
 
       - name: Generate Xcode project

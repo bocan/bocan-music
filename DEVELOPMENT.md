@@ -21,8 +21,10 @@ cd bocan-music
 cp Secrets.xcconfig.template Secrets.xcconfig
 
 # Install all tools (swiftlint, swiftformat, xcbeautify, xcodegen, ...),
-# bundle fpcalc + FFmpeg dylibs, and generate Bocan.xcodeproj. There is
-# no separate generation step: bootstrap runs xcodegen at the end.
+# build FFmpeg and fpcalc from source (see "FFmpeg" below), bundle fpcalc
+# and its dylibs, and generate Bocan.xcodeproj. There is no separate
+# generation step: bootstrap runs xcodegen at the end. The first run takes
+# a few minutes, because it downloads and builds FFmpeg and Chromaprint.
 make bootstrap
 
 # Verify environment
@@ -44,7 +46,7 @@ make doctor
 | `make coverage-all` | Per-module SPM coverage with module-level floors |
 | `make test-<module>` | One SPM module's tests: `observability`, `persistence`, `metadata`, `library`, `acoustics`, `audio-engine`, `playback`, `scrobble`, `subsonic`, `podcasts`, `sync-server`, `ui` |
 | `make test-ui` | UI module: snapshot + view-model tests (snapshot tests run only here, not in `make test`) |
-| `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
+| `make test-audio-engine` | AudioEngine SPM package tests (requires the project's LGPL FFmpeg build: `make ffmpeg-lgpl`) |
 | `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
 | `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (ADR-079 journeys, menu crawl, one surface, one radio journey, and the track context menu inside an album opened from the grid) |
 | `make lint` | SwiftLint (strict), the help-text, `try?` and AppKit-import audits, and the check that the workspace `Package.resolved` is tracked. It does not run SwiftFormat; that is `make format-check` |
@@ -57,7 +59,10 @@ make doctor
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
-| `make doctor` | Print tool versions and verify the SwiftLint/SwiftFormat pins and the FFmpeg major pin (`.ffmpeg-major`, enforced by `Scripts/check-ffmpeg-major.sh`) |
+| `make doctor` | Print tool versions and verify the SwiftLint/SwiftFormat pins and the FFmpeg build: it is there, it is LGPL v2.1 or later, and the `fpcalc` dylibs in `Resources/` come from the same library majors (`Scripts/check-ffmpeg-build.sh`) |
+| `make ffmpeg-lgpl` | Build the FFmpeg that every build links, from the pinned source, into `build/ffmpeg-lgpl` (see "FFmpeg" below). Does nothing when the build is up to date |
+| `make bundle-fpcalc` | Build `fpcalc` from the pinned Chromaprint source against that FFmpeg, bundle it with its dylibs into `Resources/`, and regenerate the Xcode project |
+| `make check-licence APP=path/to/Bocan.app` | The licence gate: fail unless every FFmpeg library in a built app is the LGPL build (`Scripts/check-bundle-licence.sh`) |
 
 ## Xcode project
 
@@ -205,8 +210,8 @@ any of these are absent.
 | Dimension | Decision | Rationale |
 |-----------|----------|-----------|
 | **Minimum macOS** | macOS 15 | `project.yml` sets `deploymentTarget: macOS 15.0`. Development requires Xcode 27 (and therefore a Mac running macOS 27), but the built app runs on macOS 15+. |
-| **Architecture** | arm64 only | The bundled FFmpeg dylibs and `fpcalc` come from arm64 Homebrew (`/opt/homebrew`), whose prefix is hardcoded in the `Package.swift` build flags. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
-| **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
+| **Architecture** | arm64 only | The project's FFmpeg and `fpcalc` builds are configured for arm64 only (`--arch=arm64` in `Scripts/build-ffmpeg-lgpl.sh`, `CMAKE_OSX_ARCHITECTURES=arm64` in `Scripts/build-fpcalc.sh`). TagLib, LAME, Opus and OpenSSL come from arm64 Homebrew (`/opt/homebrew`), and TagLib's keg path is hardcoded in `Modules/Metadata/Package.swift` and `project.yml`. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
+| **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, the two source builds given a second architecture, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
 
 ## Design docs
 
@@ -216,57 +221,142 @@ Start with `docs/design-spec/_standards.md`, then read the ADRs relevant to the 
 ## FFmpeg (AudioEngine module)
 
 The `AudioEngine` module decodes non-AVFoundation formats (OGG/Vorbis, Opus, DSD, APE, WavPack)
-via FFmpeg using **Option B: system module + Homebrew dynamic linking**.
+and all network streams via FFmpeg, through an in-tree `CFFmpeg` system
+module that links FFmpeg dynamically.
 
-### Rationale
+### One FFmpeg, built by the project, under the LGPL
 
-| Option | Pros | Cons |
-|--------|------|------|
-| A (vendored static libs) | No runtime dep | 100+ MB repo weight, GPL concerns |
-| **B (system module, chosen)** | ~0 repo weight, easy updates | Homebrew required on dev + CI |
-| C (SPM binary target) | Clean SPM | Complex packaging |
+Every build links the same FFmpeg: the project's own source build, licensed
+under the LGPL v2.1 or later (ADR-096). Debug, the test suites, all three CI
+workflows and the release use it. Homebrew's `ffmpeg` is a GPLv3 build with
+libx264 and libx265; it is not used, and it is not in the `Brewfile`.
+Homebrew's `chromaprint` depends on it, so that is not used either (see
+"fpcalc" below). If another tool installs Homebrew's `ffmpeg` on your
+machine, that is harmless: no build setting looks at it, and
+`RequiredCodecsTests` fails if one ever does.
+
+Until 2026-10-02 the project linked Homebrew's FFmpeg, and every release up
+to 2.19.0 shipped that GPLv3 build against the project's own rule. ADR-096
+has the facts and the decisions.
 
 ### Setup
 
 ```bash
-brew install ffmpeg           # installed automatically by make bootstrap
-make doctor                   # verifies pkg-config finds libavformat etc.
+make ffmpeg-lgpl              # run automatically by make bootstrap
+make doctor                   # checks the build is there and is LGPL
 ```
 
-### The FFmpeg major pin
+`make ffmpeg-lgpl` runs `Scripts/build-ffmpeg-lgpl.sh`, which:
 
-Homebrew cannot pin a formula (old bottles stop resolving), so `brew bundle`
-always installs the current FFmpeg, locally and on CI runners. The supported
-majors live in `.ffmpeg-major` (whitespace-separated, primary first: the
-major the committed fpcalc dylibs in `Resources/` were built from). The CI
-workflows run `brew update` and upgrade FFmpeg before `brew bundle`, so
-runners build, test, and ship the primary major even when their image lags.
+1. Reads the version, the URL and the SHA-256 from `.ffmpeg-source`.
+2. Downloads the tarball into `build/ffmpeg-src` and refuses a wrong
+   checksum.
+3. Configures, builds and installs into `build/ffmpeg-lgpl` (gitignored),
+   for the app's deployment target, macOS 15.0.
+4. Refuses the result unless `libavutil` reports "LGPL version 2.1 or
+   later".
+
+It is idempotent. The stamp file `build/ffmpeg-lgpl/.built-from` records the
+pin, the configure line and the script; when none of them changed, the
+script does nothing. The FFmpeg build itself took 34 seconds on an 18-core
+machine.
+
+The configure line is the `CONFIGURE_ARGS` array in that script, and the
+rules for whoever edits it are in the script's header. In short:
+`--enable-gpl` and `--enable-version3` never appear; decoders and demuxers
+are not cut down to an allow-list; a new `--enable-lib*` needs the library's
+licence named in the PR; and no `|| true` goes after the checksum check, the
+build or the licence check. `--disable-autodetect` is there so that two
+machines build the same library: without it, configure links whatever it
+finds (libX11, libxcb and SDL2 on a machine that has them).
+
+The build links these external libraries, all from Homebrew and all in the
+`Brewfile`: `lame` (LGPL-2.0-or-later), `opus` (BSD-3-Clause) and
+`openssl@3` (Apache-2.0). It also uses the system zlib and bzlib and Apple's
+AudioToolbox. `NOTICES.md` carries the source link, the configure line and
+the licences; regenerate it with `Scripts/gen-notices.sh` after a bump.
+
+### How the packages find it
+
+The package manifests name the FFmpeg prefix by path:
+`Context.packageDirectory/../../build/ffmpeg-lgpl`. They do not use
+pkg-config, on purpose. Xcode does not pass the shell environment to
+SwiftPM, so a pkg-config lookup there finds Homebrew's FFmpeg when it is
+installed. No `PKG_CONFIG_PATH` is needed for FFmpeg, locally or in CI.
+
+- `AudioEngine`, `Playback`, `Scrobble`, `SyncServer` and `UI` each pass
+  `-Xcc -I<prefix>/include`. Every package that loads the `CFFmpeg` module
+  through `AudioEngine` needs it; without it the build fails with
+  "libavcodec/avcodec.h file not found".
+- `project.yml` names `$(SRCROOT)/build/ffmpeg-lgpl` for the Xcode build.
+- No manifest and no line of `project.yml` names the shared
+  `/opt/homebrew/include` or `/opt/homebrew/lib`. Those directories also
+  hold Homebrew's FFmpeg when it is installed, and the build would take it
+  silently. TagLib is named by its own keg (`/opt/homebrew/opt/taglib/...`).
+
+`FFMPEG_PREFIX` overrides the path for command-line builds: the build
+script, `Scripts/build-fpcalc.sh`, `Scripts/embed-deps.sh`, `make doctor`
+and the package manifests under `swift build` and `swift test` all read it.
+An Xcode build does not see it, for the reason above.
+
+**Git worktrees.** A worktree has its own, empty `build/`. Run `make
+ffmpeg-lgpl` in it before anything that links `AudioEngine`, or, for
+command-line builds only, point `FFMPEG_PREFIX` at an existing build.
+
+### The source pin, and how to bump FFmpeg
+
+`.ffmpeg-source` pins the exact release: `FFMPEG_VERSION`, `FFMPEG_URL` and
+`FFMPEG_SHA256`. To move to another release:
+
+1. Change the three values in `.ffmpeg-source`. Confirm the SHA-256 against
+   a second source before you commit it.
+2. Read `LICENSE.md` in the new tarball; do not assume it matches the old
+   one.
+3. Run `make ffmpeg-lgpl`, then `make bundle-fpcalc` (it regenerates the
+   Xcode project itself; run `make generate` too if dylib file names
+   changed).
+4. Run the full test suites; decoder APIs move between releases.
+   `RequiredCodecsTests` is the list of what FFmpeg must provide.
+5. Regenerate `NOTICES.md` with `Scripts/gen-notices.sh`, and update the
+   source link in `website/src/_data/credits.json`.
+
 `make doctor` (run in the PR and branch workflows too) fails via
-`Scripts/check-ffmpeg-major.sh` when the installed FFmpeg has an unlisted
-major, or, on a primary-major machine, when the bundled fpcalc dylibs in
-`Resources/` were built from a different major than the installed one.
-Adding a secondary entry to `.ffmpeg-major` is a deliberate, temporary
-decision (for example while a runner genuinely cannot reach the primary);
-secondary-major machines skip the bundled-dylib comparison by design.
+`Scripts/check-ffmpeg-build.sh` when the build is missing, when it does not
+report "LGPL version 2.1 or later", or when the `fpcalc` dylibs in
+`Resources/` come from different library majors than the build. The check's
+tests are hermetic (`Scripts/tests/check-ffmpeg-build-test.sh`, run by `make
+test-scripts`, on Linux in CI).
 
-When a new FFmpeg major lands and you decide to move to it:
+### What proves the licence
 
-1. Update `.ffmpeg-major`.
-2. Re-run `make bundle-fpcalc` if any dylib major changed (it regenerates the
-   Xcode project itself).
-3. Run the full test suites; decoder APIs move between majors.
+- `RequiredCodecsTests` (`Modules/AudioEngine/Tests/AudioEngineTests/`) asks
+  the linked FFmpeg for every decoder, demuxer, protocol, encoder and muxer
+  the app relies on, and asserts the licence string. It fails against
+  Homebrew's build on the licence alone.
+- `make check-licence APP=path/to/Bocan.app` runs
+  `Scripts/check-bundle-licence.sh`, the release gate. It fails unless every
+  FFmpeg library in the bundle reports "LGPL version 2.1 or later", no
+  GPL-only library is in the bundle, and no binary loads FFmpeg from outside
+  the bundle. `release.yml` runs it after `Scripts/embed-deps.sh` and before
+  the signature check. Its tests are `Scripts/tests/check-bundle-licence-test.sh`.
 
-The check's tests are hermetic (`Scripts/tests/check-ffmpeg-major-test.sh`,
-run by `make test-scripts`, on Linux in CI).
+### CI
+
+`branch.yml`, `pr.yml` and `release.yml` run `brew bundle`, then `make
+ffmpeg-lgpl`, from a cache of `build/ffmpeg-lgpl` and `build/chromaprint`
+keyed on the two pin files and the two build scripts. The cache has no
+restore keys, so a build from another pin or another configure line is never
+reused.
 
 ### Building AudioEngine outside Xcode
 
 ```bash
+make ffmpeg-lgpl              # once per checkout or worktree
 cd Modules/AudioEngine
-PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig swift build
-PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig swift test
-# or simply:
-make test-audio-engine        # (PKG_CONFIG_PATH already in $GITHUB_ENV on CI)
+swift build
+swift test
+# or simply, from the repo root:
+make test-audio-engine
 ```
 
 ### Key Swift concurrency decisions
@@ -285,39 +375,46 @@ Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to genera
 
 ### Why the binaries are not in the repo
 
-`fpcalc` transitively pulls in ~15 FFmpeg/codec dylibs (~32 MB total: libavcodec, libavformat, libavutil, libswresample, libssl, libcrypto, and several codec libs). Storing those in git would bloat every clone. Instead, `Scripts/build-fpcalc.sh` generates them locally and in CI from the Homebrew installation.
+`fpcalc` needs 10 dylibs: `libchromaprint`, the four FFmpeg libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`), `libssl`, `libcrypto`, `libmp3lame`, `libopus`, and `libmpg123` (Homebrew's `lame` links it). Storing those in git would bloat every clone. Instead, `Scripts/build-fpcalc.sh` builds and bundles them locally and in CI.
+
+### Why fpcalc is built from source
+
+Homebrew's `chromaprint` depends on Homebrew's `ffmpeg`, which is a GPLv3 build (ADR-096). So the project builds Chromaprint itself, from the release pinned in `.chromaprint-source` (`CHROMAPRINT_VERSION`, `CHROMAPRINT_URL`, `CHROMAPRINT_SHA256`), against the project's LGPL FFmpeg. `fpcalc` and the app then use the same FFmpeg. Apple's vDSP does the FFT, so no FFT library is linked. Fingerprints of five tracks were identical to those from the Homebrew `fpcalc`.
 
 ### Setup (done automatically by `make bootstrap`)
 
 ```bash
-# Requires: brew install chromaprint ffmpeg  (both are in Brewfile)
+# Requires: brew bundle  (cmake, lame, opus, openssl@3)
 make bundle-fpcalc
 ```
 
 This runs `Scripts/build-fpcalc.sh`, which:
 
-1. Copies `fpcalc` from `$(brew --prefix chromaprint)/bin/`.
-2. Recursively walks every Homebrew dylib dependency of `fpcalc` and `libchromaprint`.
-3. Copies each dylib into `Resources/` and rewrites all Homebrew-absolute paths to `@loader_path/<name>`.
-4. Ad-hoc signs every binary (sufficient for Debug builds; release builds use a real Developer ID identity via `$SIGNING_IDENTITY`).
+1. Builds the LGPL FFmpeg if it is not there (`Scripts/build-ffmpeg-lgpl.sh`).
+2. Downloads the pinned Chromaprint source, refuses a wrong checksum, and builds `fpcalc` and `libchromaprint` with CMake into `build/chromaprint`. This step is skipped when that build is up to date.
+3. Empties `Resources/` of the previous `fpcalc` and dylibs, so a dylib that is no longer needed cannot stay behind and ship.
+4. Copies `fpcalc` and, recursively, every dylib it needs that is not a system library into `Resources/`, and rewrites each reference to `@loader_path/<name>`.
+5. Ad-hoc signs every binary (sufficient for Debug builds; release builds use a real Developer ID identity via `$SIGNING_IDENTITY`).
 
-After the script runs, `make generate` picks up the new files in `Resources/` and XcodeGen adds them to the bundle automatically.
+`make bundle-fpcalc` then runs `xcodegen generate`, so XcodeGen adds the new files in `Resources/` to the bundle.
 
-### Re-running after an FFmpeg or Chromaprint upgrade
+### Re-running after an FFmpeg or Chromaprint bump
 
 ```bash
-make bundle-fpcalc   # re-copies and relinks all dylibs, then regenerates the Xcode project
+make bundle-fpcalc   # rebuilds what changed, re-bundles all dylibs, then regenerates the Xcode project
 ```
 
+Run it whenever `.ffmpeg-source` or `.chromaprint-source` changes.
 `bundle-fpcalc` runs `xcodegen generate` itself, so the project picks up
-renamed dylibs (e.g. `libavcodec.62` to `libavcodec.63`) automatically; no
-separate `make generate` is needed. If the upgrade crossed an FFmpeg major,
-update `.ffmpeg-major` too or `make doctor` (and CI) will fail on the
-mismatch; see "The FFmpeg major pin" above.
+renamed dylibs (e.g. `libavcodec.62` to `libavcodec.63`) automatically. If
+the dylibs in `Resources/` come from different library majors than the
+FFmpeg build, `make doctor` (and CI) fails; see "The source pin, and how to
+bump FFmpeg" above. After a Chromaprint bump, compare the fingerprint of
+one track before and after.
 
 ### CI
 
-The CI workflows (`pr.yml`, `branch.yml`) install both `ffmpeg` and `chromaprint` via `brew bundle` (both are in the Brewfile). A dedicated step runs `make bundle-fpcalc` before `make generate` so all dylibs are present when XcodeGen scans `Resources/`.
+The CI workflows (`pr.yml`, `branch.yml`, `release.yml`) do not install Homebrew's `ffmpeg` or `chromaprint`; neither is in the Brewfile. A dedicated step runs `make bundle-fpcalc` before `make generate` so all dylibs are present when XcodeGen scans `Resources/`.
 
 ### Signing for distribution
 
@@ -350,10 +447,12 @@ discoverable from the spec alone:
   before any operation that truncates playback mid-cycle (`stop`, `pause`,
   `seek`, track-change). This is a separate gain stage from the user-volume
   mixer and the per-track ReplayGain in the pump; do not collapse them.
-- **`make bundle-fpcalc`.** Re-link the bundled `fpcalc` and dependent
-  FFmpeg dylibs whenever Homebrew bumps FFmpeg's major version (e.g.
-  `libavcodec.61` → `libavcodec.62`). The script also re-signs the binaries
-  with the ad-hoc identity; pass `SIGNING_IDENTITY` for Developer-ID builds.
+- **`make bundle-fpcalc`.** Rebuild and re-bundle `fpcalc` and its FFmpeg
+  dylibs whenever `.ffmpeg-source` or `.chromaprint-source` changes (a new
+  FFmpeg release can rename a dylib, e.g. `libavcodec.61` → `libavcodec.62`).
+  Homebrew upgrades no longer change the FFmpeg the project links. The
+  script also re-signs the binaries with the ad-hoc identity; pass
+  `SIGNING_IDENTITY` for Developer-ID builds.
 - **Thread Sanitizer on the test action.** `Scripts/patch-scheme.sh` is run
   by `xcodegen` (via `postGenCommand`) to enable TSan in the generated
   scheme, because XcodeGen has no first-class flag for it.
