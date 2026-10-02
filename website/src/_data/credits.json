@@ -2,7 +2,8 @@
   {
     "name": "FFmpeg",
     "url": "https://ffmpeg.org",
-    "license": "LGPL 2.1+ (configured without GPL/non-free flags)",
+    "license": "LGPL 2.1+ (built by the project from source, without GPL or non-free parts)",
+    "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
     "purpose": "Decoding for OGG/Opus/WavPack/APE/DSD."
   },
   {
@@ -14,7 +15,8 @@
   {
     "name": "Chromaprint / fpcalc",
     "url": "https://acoustid.org/chromaprint",
-    "license": "LGPL 2.1+",
+    "license": "LGPL 2.1 (built by the project from source)",
+    "source": "https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz",
     "purpose": "Acoustic fingerprinting for AcoustID lookups."
   },
   {

@@ -1,5 +1,19 @@
 # ADR-002 — Audio Engine & Single-File Playback
 
+> **Note, 2026-10-02.** The LGPL rule stated here (implementation plan, step
+> 2: "LGPL-only FFmpeg build is sufficient") was not implemented until
+> ADR-096, on 2026-10-02. Until then the app linked, and every release from
+> v0.2.0 to 2.19.0 shipped, Homebrew's FFmpeg, which is a GPLv3 build. Two
+> other statements below are also superseded. Option B ("linking Homebrew's
+> FFmpeg") is no longer what the project does: FFmpeg is the project's own
+> source build, linked dynamically. And the Dependencies section says FFmpeg
+> is a "pinned Homebrew formula version" that CI installs with `brew install
+> ffmpeg@<pinned>`: Homebrew cannot pin a formula that way, and that was
+> never done. The pin is now the exact source release in `.ffmpeg-source`,
+> which `Scripts/build-ffmpeg-lgpl.sh` builds for every build, CI included.
+> The body below is left as it was written. See
+> [ADR-096](ADR-096-lgpl-ffmpeg-build.md).
+
 > Prerequisites: ADR-001 complete. `Observability` module importable. App launches.
 >
 > Read `docs/design-spec/_standards.md` first.

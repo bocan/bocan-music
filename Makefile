@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
+.PHONY: help bootstrap ffmpeg-lgpl bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -49,11 +49,15 @@ help:
 		awk 'BEGIN {FS = ": "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | \
 		sed 's/## //'
 
-## bootstrap: Install all tools and git hooks
-bootstrap: brew-bundle install-hooks bundle-fpcalc
+## bootstrap: Install all tools and git hooks, and build FFmpeg and fpcalc
+bootstrap: brew-bundle install-hooks ffmpeg-lgpl bundle-fpcalc
 	@echo "✓ Bootstrap complete. Run 'make doctor' to verify."
 
-## bundle-fpcalc: Copy fpcalc + FFmpeg dylibs from Homebrew into Resources/ and relink
+## ffmpeg-lgpl: Build the LGPL FFmpeg every build links, from source, into build/ffmpeg-lgpl (ADR-096)
+ffmpeg-lgpl:
+	bash Scripts/build-ffmpeg-lgpl.sh
+
+## bundle-fpcalc: Build fpcalc from source against the LGPL FFmpeg and bundle it with its dylibs into Resources/
 bundle-fpcalc:
 	bash Scripts/build-fpcalc.sh
 	xcodegen generate
@@ -62,6 +66,11 @@ bundle-fpcalc:
 ## Usage: make embed-deps APP=build/export/Bocan.app
 embed-deps:
 	bash Scripts/embed-deps.sh "$(APP)"
+
+## check-licence: Fail unless every FFmpeg library in a built app is LGPL (ADR-096)
+## Usage: make check-licence APP=build/export/Bocan.app
+check-licence:
+	@bash Scripts/check-bundle-licence.sh "$(APP)"
 
 ## brew-bundle: Install Brewfile dependencies
 brew-bundle:
@@ -77,15 +86,14 @@ doctor:
 	@xcbeautify --version
 	@xcodegen --version
 	@gh --version | head -1
-	@printf 'ffmpeg     '; ffmpeg -version 2>/dev/null | head -1 || echo '(missing)'
-	@printf 'fpcalc     '; fpcalc -version 2>/dev/null | head -1 || echo '(missing)'
+	@printf 'fpcalc     '; Resources/fpcalc -version 2>/dev/null | head -1 || echo "(not bundled; run 'make bundle-fpcalc')"
 	@printf 'taglib     '; pkg-config --modversion taglib 2>/dev/null || echo '(missing)'
 	@echo "=============================="
 	@if [ ! -f Brewfile.lock.json ]; then \
 		echo "⚠️  WARNING: Brewfile.lock.json is missing. Run 'brew bundle install' then commit the lock file."; \
 	fi
 	@$(MAKE) -s check-swiftlint-version check-swiftformat-version
-	@Scripts/check-ffmpeg-major.sh
+	@Scripts/check-ffmpeg-build.sh
 
 ## check-swiftlint-version: Fail unless the installed SwiftLint is the release pinned in .swiftlint-version
 check-swiftlint-version:
@@ -227,7 +235,7 @@ coverage-all:
 	COVERAGE_MIN_UI=$(or $(COVERAGE_MIN_UI),20) \
 		Scripts/coverage-all.sh $(or $(COVERAGE_THRESHOLD),70)
 
-## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
+## test-audio-engine: Run AudioEngine SPM package tests (requires the LGPL FFmpeg: make ffmpeg-lgpl)
 test-audio-engine:
 	@echo "=============================="
 	@echo "= Executing AudioEngine Test"
