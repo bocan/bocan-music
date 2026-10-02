@@ -21,7 +21,7 @@ permalink: /credits/
       {% for c in credits %}
       <tr>
         <td><a href="{{ c.url }}" rel="external noopener">{{ c.name }}</a></td>
-        <td>{{ c.license }}</td>
+        <td>{{ c.license }}{% if c.source %} (<a href="{{ c.source }}" rel="external noopener">source</a>){% endif %}</td>
         <td>{{ c.purpose }}</td>
       </tr>
       {% endfor %}
@@ -52,5 +52,7 @@ permalink: /credits/
     The complete <code>NOTICES.md</code> with full licence text is included in
     every release and viewable
     <a href="{{ site.repo }}/blob/main/NOTICES.md" rel="external noopener">on GitHub</a>.
+    It also gives the exact source and the build recipe for the FFmpeg and
+    Chromaprint libraries inside the app.
   </p>
 </div>

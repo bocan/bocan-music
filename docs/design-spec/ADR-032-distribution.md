@@ -1,5 +1,14 @@
 # ADR-032 — Distribution, Updates & Beyond
 
+> **Note, 2026-10-02.** The licence rule stated here (Gotchas, "License
+> compatibility": "Keep FFmpeg configured LGPL-only") was not implemented
+> until ADR-096, on 2026-10-02. Until then every release from v0.2.0 to
+> 2.19.0 shipped Homebrew's FFmpeg, which is a GPLv3 build, with a
+> `NOTICES.md` that said LGPL. The same line asks for `--disable-gpl`: that
+> is not an FFmpeg configure option. The LGPL build is what you get when
+> `--enable-gpl` and `--enable-version3` are not passed. The body below is
+> left as it was written. See [ADR-096](ADR-096-lgpl-ffmpeg-build.md).
+
 > Prerequisites: All prior ADRs complete. The app builds, tests pass, and it runs nicely in Debug and Release.
 >
 > Read `docs/design-spec/_standards.md` first.

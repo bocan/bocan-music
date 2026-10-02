@@ -5,20 +5,184 @@ reproduced below as required by each project's terms.
 
 ---
 
-## FFmpeg 9.0.1_1
+## FFmpeg 9.0.2
 
 <https://ffmpeg.org>
 
-Bòcan links against FFmpeg libraries built **without any GPL or non-free
-components**, making them available under the GNU Lesser General Public Licence,
-version 2.1 or later (LGPL 2.1+).
+Licensed under the **GNU Lesser General Public Licence, version 2.1 or later**
+(LGPL 2.1+).
+
+Bòcan builds FFmpeg itself, from the unmodified source release named below,
+and configures it with none of `--enable-gpl`, `--enable-version3` and
+`--enable-nonfree`. FFmpeg's own `LICENSE.md` says that in this
+configuration the LGPL v2.1 or later applies to FFmpeg, and each built
+library reports "LGPL version 2.1 or later". The release build stops if a
+bundled FFmpeg library reports anything else
+(`Scripts/check-bundle-licence.sh`).
+
+The app ships four FFmpeg libraries, as separate dynamic libraries:
+`libavcodec`, `libavformat`, `libavutil` and `libswresample`. There is
+one copy in `Contents/Frameworks` and one copy beside the `fpcalc` helper
+in `Contents/Resources`.
 
 The LGPL 2.1 full text is available at:
 <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
 
-FFmpeg source code is available at <https://ffmpeg.org/download.html>.
-The Homebrew formula used to build the bundled dylibs is
-`homebrew-core/Formula/f/ffmpeg.rb`.
+### Source and build recipe
+
+- Source: <https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz>
+- SHA-256 of that file: `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`
+- Build recipe: `Scripts/build-ffmpeg-lgpl.sh` in the Bòcan source
+  (<https://github.com/bocan/bocan-music>), run as `make ffmpeg-lgpl`. The
+  version, the address and the checksum are pinned in `.ffmpeg-source`.
+
+The script runs this configure line, then `make` and `make install`:
+
+```bash
+./configure \
+  --prefix="$PREFIX" \
+  --enable-shared --disable-static \
+  --disable-programs --disable-doc --disable-debug \
+  --disable-nonfree \
+  --disable-autodetect \
+  --enable-zlib --enable-bzlib \
+  --disable-avdevice --disable-avfilter --disable-swscale \
+  --disable-encoders --enable-encoder=libmp3lame --enable-encoder=libopus \
+  --disable-muxers --enable-muxer=mp3 --enable-muxer=ogg --enable-muxer=opus \
+  --disable-hwaccels --disable-videotoolbox \
+  --enable-audiotoolbox \
+  --enable-libmp3lame --enable-libopus \
+  --enable-openssl \
+  --enable-neon \
+  --arch=arm64 --cc=clang \
+  --install-name-dir="$PREFIX/lib" \
+  --extra-cflags="-mmacosx-version-min=$DEPLOYMENT_TARGET -I$LAME_PREFIX/include" \
+  --extra-ldflags="-mmacosx-version-min=$DEPLOYMENT_TARGET -L$LAME_PREFIX/lib"
+```
+
+`$PREFIX` is the directory the libraries are installed into
+(`build/ffmpeg-lgpl` by default). `$DEPLOYMENT_TARGET` is the oldest
+macOS the app runs on (15.0). `$LAME_PREFIX` is the Homebrew directory of
+the LAME library.
+
+### External libraries in this build
+
+The configure line turns autodetection off, so the build links only the
+libraries it names: LAME, Opus and OpenSSL (each has its own section below),
+the zlib and bzip2 libraries that come with macOS, and Apple's AudioToolbox
+framework.
+
+### Independent JPEG Group
+
+Three files in `libavcodec` (`jfdctfst.c`, `jfdctint_template.c` and
+`jrevdct.c`) come from libjpeg. This software is based in part on the work
+of the Independent JPEG Group.
+
+---
+
+## LAME 4.0
+
+<https://lame.sourceforge.io>
+
+The MP3 encoder (`libmp3lame`). FFmpeg uses it when Phone Sync converts a
+track to MP3. Licensed under the **GNU Library General Public Licence,
+version 2 or later** (LGPL 2.0+). It is shipped as a separate dynamic
+library, unmodified, as built by Homebrew.
+
+The LGPL 2.0 full text is available at:
+<https://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>
+
+LAME source code is available at <https://lame.sourceforge.io>.
+
+---
+
+## mpg123 1.33.7
+
+<https://www.mpg123.de>
+
+`libmpg123` is shipped because Homebrew's build of LAME links it. Licensed
+under the **GNU Lesser General Public Licence, version 2.1**. It is shipped
+as a separate dynamic library, unmodified, as built by Homebrew.
+
+The LGPL 2.1 full text is available at:
+<https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
+
+mpg123 source code is available at <https://www.mpg123.de/download/>.
+
+---
+
+## Opus 1.6.1
+
+<https://opus-codec.org>
+
+The Opus encoder (`libopus`). FFmpeg uses it when Phone Sync converts a
+track to Opus. It is shipped as a separate dynamic library, unmodified, as
+built by Homebrew.
+
+BSD 3-Clause License
+
+Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic,
+                    Jean-Marc Valin, Timothy B. Terriberry,
+                    CSIRO, Gregory Maxwell, Mark Borgerding,
+                    Erik de Castro Lopo, Mozilla, Amazon
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
+names of specific contributors, may be used to endorse or promote
+products derived from this software without specific prior written
+permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Opus is subject to the royalty-free patent licenses which are
+specified at:
+
+Xiph.Org Foundation:
+<https://datatracker.ietf.org/ipr/1524/>
+
+Microsoft Corporation:
+<https://datatracker.ietf.org/ipr/1914/>
+
+Broadcom Corporation:
+<https://datatracker.ietf.org/ipr/1526/>
+
+---
+
+## OpenSSL 3.6.5
+
+<https://openssl-library.org>
+
+TLS for HTTPS streams (`libssl` and `libcrypto`), used by FFmpeg.
+Licensed under the **Apache License, Version 2.0**. It is shipped as
+separate dynamic libraries, unmodified, as built by Homebrew.
+
+FFmpeg's `LICENSE.md` says of OpenSSL: "To the best of our knowledge, they
+are compatible with the LGPL."
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+OpenSSL source code is available at <https://openssl-library.org/source/>.
 
 ---
 
@@ -43,18 +207,31 @@ TagLib source code is available at <https://github.com/taglib/taglib>.
 
 ---
 
-## Chromaprint / fpcalc 1.6.1_1
+## Chromaprint / fpcalc 1.6.1
 
 <https://acoustid.org/chromaprint>
 
-Licensed under the **GNU Lesser General Public Licence, version 2.1 or later**
-(LGPL 2.1+).
+Licensed, as a whole, under the **GNU Lesser General Public Licence, version
+2.1** (LGPL 2.1). Chromaprint's own code is under the MIT licence, and it
+includes parts of FFmpeg, which are under the LGPL (Chromaprint's
+`LICENSE.md`).
+
+Bòcan builds the `fpcalc` helper and `libchromaprint` itself, from the
+unmodified source release named below, against the FFmpeg build described
+above. Apple's Accelerate framework (vDSP) does the FFT, so no separate FFT
+library is linked.
 
 The LGPL 2.1 full text is available at:
 <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
 
-Chromaprint source code is available at
-<https://github.com/acoustid/chromaprint>.
+### Source and build recipe
+
+- Source: <https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz>
+- SHA-256 of that file: `3368805af0ee47b9df74df10b5001a44569e01df2844dab520031720dde9ad23`
+- Build recipe: `Scripts/build-fpcalc.sh` in the Bòcan source
+  (<https://github.com/bocan/bocan-music>), run as `make bundle-fpcalc`.
+  The version, the address and the checksum are pinned in
+  `.chromaprint-source`. The CMake options are in that script.
 
 ---
 
@@ -308,5 +485,6 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.19.0. Dependency versions are pinned in
-the workspace `Package.resolved`.*
+*This file was generated for Bòcan 2.19.0. The FFmpeg and Chromaprint
+versions are pinned in `.ffmpeg-source` and `.chromaprint-source`; the Swift
+package versions are pinned in the workspace `Package.resolved`.*

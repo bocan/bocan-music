@@ -25,17 +25,18 @@ let package = Package(
                 .unsafeFlags([
                     "-fexceptions",
                     "-fcxx-exceptions",
-                    "-I/opt/homebrew/include",
-                    "-I/opt/homebrew/include/taglib",
-                    "-I/usr/local/include",
-                    "-I/usr/local/include/taglib",
+                    // TagLib's own keg, never the shared /opt/homebrew/include
+                    // or /opt/homebrew/lib: those also hold Homebrew's GPL
+                    // FFmpeg when it is installed, and a linker flag here
+                    // reaches the final link of every product (ADR-096).
+                    "-I/opt/homebrew/opt/taglib/include",
+                    "-I/opt/homebrew/opt/taglib/include/taglib",
                 ]),
             ],
             linkerSettings: [
                 .linkedLibrary("tag"),
                 .linkedLibrary("z"),
                 .unsafeFlags([
-                    "-L/opt/homebrew/lib",
                     "-L/opt/homebrew/opt/taglib/lib",
                 ]),
             ]
