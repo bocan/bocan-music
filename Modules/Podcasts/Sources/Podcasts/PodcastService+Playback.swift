@@ -167,6 +167,34 @@ public extension PodcastService {
         }
     }
 
+    /// Marks a selection of one show's episodes played in one write (UI seam, #635).
+    func markPlayed(podcastID: Int64, guids: [String]) async {
+        do {
+            try await self.stateRepo.markPlayed(
+                podcastID: podcastID,
+                guids: guids,
+                now: self.now().timeIntervalSince1970
+            )
+        } catch {
+            self.log.warning(
+                "podcast.markPlayed.batch.failed",
+                ["podcastID": podcastID, "count": guids.count, "error": String(reflecting: error)]
+            )
+        }
+    }
+
+    /// Resets a selection of one show's episodes to unplayed in one write (UI seam, #635).
+    func markUnplayed(podcastID: Int64, guids: [String]) async {
+        do {
+            try await self.stateRepo.markUnplayed(podcastID: podcastID, guids: guids)
+        } catch {
+            self.log.warning(
+                "podcast.markUnplayed.batch.failed",
+                ["podcastID": podcastID, "count": guids.count, "error": String(reflecting: error)]
+            )
+        }
+    }
+
     /// Marks all episodes for a podcast as played (UI seam).
     func markAllPlayed(podcastID: Int64) async {
         do {

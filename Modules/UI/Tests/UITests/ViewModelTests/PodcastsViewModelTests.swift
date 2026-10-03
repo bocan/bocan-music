@@ -85,6 +85,8 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func play(episode: EpisodeListItem, podcast: Podcast) async {}
     func markPlayed(podcastID: Int64, guid: String) async {}
     func markUnplayed(podcastID: Int64, guid: String) async {}
+    func markPlayed(podcastID: Int64, guids: [String]) async {}
+    func markUnplayed(podcastID: Int64, guids: [String]) async {}
     func markAllPlayed(podcastID: Int64) async {}
     func download(podcastID: Int64, guid: String) async {}
     func removeDownload(podcastID: Int64, guid: String) async {}
@@ -128,6 +130,8 @@ private final class RecordingPodcastActions: PodcastActions, @unchecked Sendable
     func play(episode: EpisodeListItem, podcast: Podcast) async {}
     func markPlayed(podcastID: Int64, guid: String) async {}
     func markUnplayed(podcastID: Int64, guid: String) async {}
+    func markPlayed(podcastID: Int64, guids: [String]) async {}
+    func markUnplayed(podcastID: Int64, guids: [String]) async {}
     func download(podcastID: Int64, guid: String) async {}
     func removeDownload(podcastID: Int64, guid: String) async {}
     func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
@@ -332,6 +336,8 @@ struct PodcastsViewModelTests {
             func play(episode: EpisodeListItem, podcast: Podcast) async {}
             func markPlayed(podcastID: Int64, guid: String) async {}
             func markUnplayed(podcastID: Int64, guid: String) async {}
+            func markPlayed(podcastID: Int64, guids: [String]) async {}
+            func markUnplayed(podcastID: Int64, guids: [String]) async {}
             func markAllPlayed(podcastID: Int64) async {}
             func download(podcastID: Int64, guid: String) async {}
             func removeDownload(podcastID: Int64, guid: String) async {}

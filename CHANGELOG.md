@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Select several podcast episodes, right-click, and choose "Mark Selected as Played" or "Mark Selected as Unplayed" to change them all at once. Thanks for suggesting this one @GitMyAccount.
+
 ## [2.20.0](https://github.com/bocan/bocan-music/compare/v2.19.0...v2.20.0) (2026-10-02)
 
 We have a wiki now [here](https://github.com/bocan/bocan-music/wiki)
