@@ -83,23 +83,36 @@ public struct EpisodeStateRepository: Sendable {
         }
     }
 
+    /// The played upsert, shared by the single, selection and whole-show writes
+    /// so the three cannot drift apart. Arguments: podcast id, guid, now, now.
+    private static let markPlayedSQL = """
+    INSERT INTO podcast_episode_state
+        (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
+    VALUES (?, ?, 0.0, 'played', ?, ?)
+    ON CONFLICT(podcast_id, guid) DO UPDATE SET
+        play_position  = 0.0,
+        play_state     = 'played',
+        last_played_at = excluded.last_played_at,
+        completed_at   = excluded.completed_at
+    """
+
+    /// The unplayed upsert, shared by the single and selection writes.
+    /// Arguments: podcast id, guid.
+    private static let markUnplayedSQL = """
+    INSERT INTO podcast_episode_state
+        (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
+    VALUES (?, ?, 0.0, 'unplayed', NULL, NULL)
+    ON CONFLICT(podcast_id, guid) DO UPDATE SET
+        play_position = 0.0,
+        play_state    = 'unplayed',
+        completed_at  = NULL
+    """
+
     /// Marks the episode fully played: resets `play_position` to 0, sets `play_state`
     /// to `played`, and records `completed_at`.
     public func markPlayed(podcastID: Int64, guid: String, now: Double) async throws {
         try await self.database.write { db in
-            try db.execute(
-                sql: """
-                INSERT INTO podcast_episode_state
-                    (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
-                VALUES (?, ?, 0.0, 'played', ?, ?)
-                ON CONFLICT(podcast_id, guid) DO UPDATE SET
-                    play_position  = 0.0,
-                    play_state     = 'played',
-                    last_played_at = excluded.last_played_at,
-                    completed_at   = excluded.completed_at
-                """,
-                arguments: [podcastID, guid, now, now]
-            )
+            try db.execute(sql: Self.markPlayedSQL, arguments: [podcastID, guid, now, now])
         }
         self.log.debug("episode.markPlayed", ["podcastID": podcastID, "guid": guid])
     }
@@ -107,20 +120,33 @@ public struct EpisodeStateRepository: Sendable {
     /// Resets the episode to unplayed: clears `play_position`, `play_state`, and `completed_at`.
     public func markUnplayed(podcastID: Int64, guid: String) async throws {
         try await self.database.write { db in
-            try db.execute(
-                sql: """
-                INSERT INTO podcast_episode_state
-                    (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
-                VALUES (?, ?, 0.0, 'unplayed', NULL, NULL)
-                ON CONFLICT(podcast_id, guid) DO UPDATE SET
-                    play_position = 0.0,
-                    play_state    = 'unplayed',
-                    completed_at  = NULL
-                """,
-                arguments: [podcastID, guid]
-            )
+            try db.execute(sql: Self.markUnplayedSQL, arguments: [podcastID, guid])
         }
         self.log.debug("episode.markUnplayed", ["podcastID": podcastID, "guid": guid])
+    }
+
+    /// Marks each episode in `guids` played in one transaction, so a selection of
+    /// any size is one write and one observation refresh (#635). All or nothing:
+    /// a failure part-way rolls the whole selection back.
+    public func markPlayed(podcastID: Int64, guids: [String], now: Double) async throws {
+        guard !guids.isEmpty else { return }
+        try await self.database.write { db in
+            for guid in guids {
+                try db.execute(sql: Self.markPlayedSQL, arguments: [podcastID, guid, now, now])
+            }
+        }
+        self.log.debug("episode.markPlayed.batch", ["podcastID": podcastID, "count": guids.count])
+    }
+
+    /// Resets each episode in `guids` to unplayed in one transaction (#635).
+    public func markUnplayed(podcastID: Int64, guids: [String]) async throws {
+        guard !guids.isEmpty else { return }
+        try await self.database.write { db in
+            for guid in guids {
+                try db.execute(sql: Self.markUnplayedSQL, arguments: [podcastID, guid])
+            }
+        }
+        self.log.debug("episode.markUnplayed.batch", ["podcastID": podcastID, "count": guids.count])
     }
 
     /// Marks every episode for a podcast as played in a single transaction.
@@ -132,25 +158,7 @@ public struct EpisodeStateRepository: Sendable {
                 arguments: [podcastID]
             )
         }
-        guard !guids.isEmpty else { return }
-        try await self.database.write { db in
-            for guid in guids {
-                try db.execute(
-                    sql: """
-                    INSERT INTO podcast_episode_state
-                        (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
-                    VALUES (?, ?, 0.0, 'played', ?, ?)
-                    ON CONFLICT(podcast_id, guid) DO UPDATE SET
-                        play_position  = 0.0,
-                        play_state     = 'played',
-                        last_played_at = excluded.last_played_at,
-                        completed_at   = excluded.completed_at
-                    """,
-                    arguments: [podcastID, guid, now, now]
-                )
-            }
-        }
-        self.log.debug("episode.markAllPlayed", ["podcastID": podcastID, "count": guids.count])
+        try await self.markPlayed(podcastID: podcastID, guids: guids, now: now)
     }
 
     // MARK: - Unread counts

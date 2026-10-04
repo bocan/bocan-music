@@ -112,6 +112,14 @@ struct AppPodcastActions: PodcastActions {
         await self.service.markUnplayed(podcastID: podcastID, guid: guid)
     }
 
+    func markPlayed(podcastID: Int64, guids: [String]) async {
+        await self.service.markPlayed(podcastID: podcastID, guids: guids)
+    }
+
+    func markUnplayed(podcastID: Int64, guids: [String]) async {
+        await self.service.markUnplayed(podcastID: podcastID, guids: guids)
+    }
+
     func markAllPlayed(podcastID: Int64) async {
         await self.service.markAllPlayed(podcastID: podcastID)
     }

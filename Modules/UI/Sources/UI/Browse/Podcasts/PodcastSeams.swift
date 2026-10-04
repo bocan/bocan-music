@@ -226,6 +226,10 @@ public protocol PodcastActions: Sendable {
     func play(episode: EpisodeListItem, podcast: Podcast) async
     func markPlayed(podcastID: Int64, guid: String) async
     func markUnplayed(podcastID: Int64, guid: String) async
+    /// Marks a selection of one show's episodes in a single write, so the list
+    /// refreshes once rather than once per episode (#635).
+    func markPlayed(podcastID: Int64, guids: [String]) async
+    func markUnplayed(podcastID: Int64, guids: [String]) async
     func markAllPlayed(podcastID: Int64) async
     /// No-op when ADR-043 downloads are not built.
     func download(podcastID: Int64, guid: String) async

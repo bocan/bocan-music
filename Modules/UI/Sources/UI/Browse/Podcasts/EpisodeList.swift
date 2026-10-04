@@ -201,11 +201,28 @@ struct EpisodeList: View {
         }
     }
 
-    /// Bulk actions over a multi-row selection: download every episode that is not
-    /// already downloaded, or remove every one that is.
+    /// Bulk actions over a multi-row selection: mark the selection played or
+    /// unplayed (#635), download every episode that is not already downloaded, or
+    /// remove every one that is. Each item shows only when it would change
+    /// something.
     @ViewBuilder
     private func bulkMenuItems(ids: Set<EpisodeListItem.ID>) -> some View {
-        let items = self.vm.episodes.filter { ids.contains($0.id) }
+        let items = self.vm.selectedEpisodes(ids)
+        let toPlay = PodcastsViewModel.episodesToMarkPlayed(items)
+        let toUnplay = PodcastsViewModel.episodesToMarkUnplayed(items)
+        if !toPlay.isEmpty {
+            Button(L10n.string("Mark Selected as Played")) {
+                Task { await self.vm.setPlayed(true, episodes: toPlay) }
+            }
+        }
+        if !toUnplay.isEmpty {
+            Button(L10n.string("Mark Selected as Unplayed")) {
+                Task { await self.vm.setPlayed(false, episodes: toUnplay) }
+            }
+        }
+        if !toPlay.isEmpty || !toUnplay.isEmpty {
+            Divider()
+        }
         let pending = items.filter { ($0.state?.downloadState ?? .none) != .downloaded }
         let downloaded = items.filter { ($0.state?.downloadState ?? .none) == .downloaded }
         if !pending.isEmpty {

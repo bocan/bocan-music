@@ -113,6 +113,30 @@ struct PodcastServicePlaybackTests {
         #expect(state == nil)
     }
 
+    // MARK: selection writes (#635)
+
+    @Test("markPlayed(guids:) and markUnplayed(guids:) write the whole selection with the service clock")
+    func selectionPlayState() async throws {
+        let bed = try await makePodcastServiceBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            try (rssData, stubResponse(url: testFeedURL))
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+
+        await bed.service.markPlayed(podcastID: podcastID, guids: [ep1GUID, ep2GUID])
+        for guid in [ep1GUID, ep2GUID] {
+            let row = try #require(try await stateRepo.fetch(podcastID: podcastID, guid: guid))
+            #expect(row.playState == .played)
+            #expect(row.completedAt == fixedNow.timeIntervalSince1970)
+        }
+
+        await bed.service.markUnplayed(podcastID: podcastID, guids: [ep2GUID])
+        #expect(try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)?.playState == .played)
+        #expect(try await stateRepo.fetch(podcastID: podcastID, guid: ep2GUID)?.playState == .unplayed)
+    }
+
     // MARK: audioURL
 
     @Test("audioURL returns the enclosure URL when no download exists")

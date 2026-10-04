@@ -42,6 +42,15 @@ struct EpisodeDownloadMenuConventionTests {
         #expect(list.contains("Remove Downloads"))
     }
 
+    @Test("Episode context menu marks a multi-row selection played or unplayed in one batch (#635)")
+    func bulkPlayStateActions() throws {
+        let list = try self.source("Browse/Podcasts/EpisodeList.swift")
+        #expect(list.contains("L10n.string(\"Mark Selected as Played\")"))
+        #expect(list.contains("L10n.string(\"Mark Selected as Unplayed\")"))
+        #expect(list.contains("self.vm.setPlayed(true, episodes: toPlay)"))
+        #expect(list.contains("self.vm.setPlayed(false, episodes: toUnplay)"))
+    }
+
     @Test("Status indicator badges downloaded and in-flight episodes")
     func statusBadge() throws {
         let indicator = try self.source("Browse/Podcasts/EpisodeStatusIndicator.swift")

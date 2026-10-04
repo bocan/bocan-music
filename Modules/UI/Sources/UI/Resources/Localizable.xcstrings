@@ -14128,6 +14128,26 @@
         }
       }
     },
+    "Mark Selected as Played" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿáŕķ Šéĺéçţéđ áš Ƥĺáýéđ one two"
+          }
+        }
+      }
+    },
+    "Mark Selected as Unplayed" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿáŕķ Šéĺéçţéđ áš Úñƥĺáýéđ one two"
+          }
+        }
+      }
+    },
     "Mark all episodes as played?" : {
       "localizations" : {
         "en-XA" : {
@@ -14196,6 +14216,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ḿáŕķéŕš one"
+          }
+        }
+      }
+    },
+    "Marking episodes played" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿáŕķíñĝ éƥíšóđéš ƥĺáýéđ one two"
           }
         }
       }
@@ -20616,6 +20647,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕévóķé %@ one"
+          }
+        }
+      }
+    },
+    "Right-click an episode to mark it played or unplayed. To change several at once, select them with Shift-click or Command-click, then right-click and choose Mark Selected as Played or Mark Selected as Unplayed. Download Selected and Remove Downloads work on a selection the same way. To mark a whole show played, use Mark All as Played on the show's page." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕíĝĥţ-çĺíçķ áñ éƥíšóđé ţó ḿáŕķ íţ ƥĺáýéđ óŕ úñƥĺáýéđ. Ţó çĥáñĝé šévéŕáĺ áţ óñçé, šéĺéçţ ţĥéḿ ŵíţĥ Šĥíƒţ-çĺíçķ óŕ Çóḿḿáñđ-çĺíçķ, ţĥéñ ŕíĝĥţ-çĺíçķ áñđ çĥóóšé Ḿáŕķ Šéĺéçţéđ áš Ƥĺáýéđ óŕ Ḿáŕķ Šéĺéçţéđ áš Úñƥĺáýéđ. Đóŵñĺóáđ Šéĺéçţéđ áñđ Ŕéḿóvé Đóŵñĺóáđš ŵóŕķ óñ á šéĺéçţíóñ ţĥé šáḿé ŵáý. Ţó ḿáŕķ á ŵĥóĺé šĥóŵ ƥĺáýéđ, úšé Ḿáŕķ Áĺĺ áš Ƥĺáýéđ óñ ţĥé šĥóŵ'š ƥáĝé. one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three"
           }
         }
       }
