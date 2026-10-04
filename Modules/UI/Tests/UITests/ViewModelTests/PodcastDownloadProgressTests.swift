@@ -45,6 +45,8 @@ struct PodcastDownloadProgressTests {
         func play(episode _: EpisodeListItem, podcast _: Podcast) async {}
         func markPlayed(podcastID _: Int64, guid _: String) async {}
         func markUnplayed(podcastID _: Int64, guid _: String) async {}
+        func markPlayed(podcastID _: Int64, guids _: [String]) async {}
+        func markUnplayed(podcastID _: Int64, guids _: [String]) async {}
         func markAllPlayed(podcastID _: Int64) async {}
         func download(podcastID _: Int64, guid _: String) async {}
         func removeDownload(podcastID _: Int64, guid _: String) async {}

@@ -116,6 +116,10 @@ struct AppPodcastActionsTests {
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .unplayed)
         await actions.markAllPlayed(podcastID: id)
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .played)
+        await actions.markUnplayed(podcastID: id, guids: ["seam-ep1"])
+        #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .unplayed)
+        await actions.markPlayed(podcastID: id, guids: ["seam-ep1"])
+        #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .played)
     }
 
     @Test("exportOPML includes the subscribed feed and unsubscribe removes it")

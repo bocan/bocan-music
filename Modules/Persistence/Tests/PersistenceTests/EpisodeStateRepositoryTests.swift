@@ -179,6 +179,84 @@ struct EpisodeStateRepositoryTests {
         #expect(state?.playPosition == 0)
     }
 
+    // MARK: - Selection writes (#635)
+
+    @Test("markPlayed(guids:) marks only the listed episodes and keeps download columns")
+    func markPlayedSelection() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeStateRepository(database: db)
+        try await repo.savePosition(podcastID: podcastID, guid: "ep-1", position: 900, now: 1_700_001_000)
+        try await repo.setDownloadState(
+            podcastID: podcastID, guid: "ep-2", state: .downloaded, path: "/dl/ep-2.mp3", bytes: 99
+        )
+        try await repo.savePosition(podcastID: podcastID, guid: "ep-3", position: 50, now: 1_700_001_000)
+
+        try await repo.markPlayed(podcastID: podcastID, guids: ["ep-1", "ep-2", "ep-new"], now: 1_700_002_000)
+
+        for guid in ["ep-1", "ep-2", "ep-new"] {
+            let row = try #require(try await repo.fetch(podcastID: podcastID, guid: guid))
+            #expect(row.playState == .played, "\(guid) must be played")
+            #expect(row.playPosition == 0)
+            #expect(row.completedAt == 1_700_002_000)
+            #expect(row.lastPlayedAt == 1_700_002_000)
+        }
+        let ep2 = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep-2"))
+        #expect(ep2.downloadState == .downloaded, "a selection write must not reset download columns")
+        #expect(ep2.downloadPath == "/dl/ep-2.mp3")
+        let ep3 = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep-3"))
+        #expect(ep3.playState == .inProgress, "an episode outside the selection is untouched")
+        #expect(ep3.playPosition == 50)
+    }
+
+    @Test("markUnplayed(guids:) resets only the listed episodes")
+    func markUnplayedSelection() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeStateRepository(database: db)
+        try await repo.markPlayed(podcastID: podcastID, guids: ["ep-1", "ep-2", "ep-3"], now: 1_700_001_000)
+
+        try await repo.markUnplayed(podcastID: podcastID, guids: ["ep-1", "ep-2", "ep-new"])
+
+        for guid in ["ep-1", "ep-2", "ep-new"] {
+            let row = try #require(try await repo.fetch(podcastID: podcastID, guid: guid))
+            #expect(row.playState == .unplayed, "\(guid) must be unplayed")
+            #expect(row.playPosition == 0)
+            #expect(row.completedAt == nil)
+        }
+        let ep3 = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep-3"))
+        #expect(ep3.playState == .played, "an episode outside the selection is untouched")
+        #expect(ep3.completedAt == 1_700_001_000)
+    }
+
+    @Test("an empty selection writes nothing")
+    func emptySelectionIsNoOp() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeStateRepository(database: db)
+
+        try await repo.markPlayed(podcastID: podcastID, guids: [], now: 1_700_001_000)
+        try await repo.markUnplayed(podcastID: podcastID, guids: [])
+
+        #expect(try await repo.fetchAll(podcastID: podcastID).isEmpty)
+    }
+
+    @Test("a selection write makes one observation emission, not one per episode")
+    func selectionWriteEmitsOnce() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeStateRepository(database: db)
+        let stream = await repo.observe(podcastID: podcastID)
+        var iterator = stream.makeAsyncIterator()
+        _ = try await iterator.next()
+
+        try await repo.markPlayed(podcastID: podcastID, guids: ["ep-1", "ep-2", "ep-3"], now: 1_700_001_000)
+
+        let updated = try await iterator.next()
+        #expect(updated?.count == 3, "the first emission after the write already holds the whole selection")
+        #expect(Set(updated?.map(\.playState) ?? []) == [.played])
+    }
+
     // MARK: - setDownloadState
 
     @Test("setDownloadState creates row and round-trips")

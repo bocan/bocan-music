@@ -138,6 +138,14 @@ enum HelpContent {
                 + " Settings → Podcasts."
         ),
         HelpTopic(
+            title: "Marking episodes played",
+            body: "Right-click an episode to mark it played or unplayed. To change several at once,"
+                + " select them with Shift-click or Command-click, then right-click and choose Mark"
+                + " Selected as Played or Mark Selected as Unplayed. Download Selected and Remove"
+                + " Downloads work on a selection the same way. To mark a whole show played, use Mark"
+                + " All as Played on the show's page."
+        ),
+        HelpTopic(
             title: "Resuming playback",
             body: "Bòcan remembers your position in every episode."
                 + " Play the episode again to resume from where you left off."
