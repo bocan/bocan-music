@@ -516,13 +516,13 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Canonical file:** `Makefile` (`WORKSPACE_RESOLVED`)
 
-### The UI suite aborts on macOS 27 inside a snapshot comparison
+### Snapshot references follow the macOS version that recorded them
 
-**Problem:** `make test-ui` stops with signal 6 in a snapshot test. The log shows `-[NSConcreteValue CGRectValue]: unrecognized selector`, below `CIAreaAverage` and `perceptuallyCompare`. The abort kills the process, so no test after it runs.
+**Problem:** after a macOS upgrade, a full local `make test-ui` fails a group of snapshot tests with "does not match reference", although no view changed. On macOS 27 these were the 13 views built on `ContentUnavailableView` (Phone Sync pane, Identify Track no-match and error, Radio empty), because the system draws its title smaller and moves the layout. CI does not catch it: the whole `UISnapshotTests` suite is disabled there.
 
-**Rule:** run `make test-ui SWIFT_TEST_FLAGS="--skip UISnapshotTests"` on macOS 27. Do not switch the snapshot gate on until the library is fixed.
+**Rule:** look at the new image next to the old one first (the failure message prints both paths). When the change is only the system's own drawing, record again with `SNAPSHOT_TESTING_RECORD=failed swift test --filter UISnapshotTests` under `Modules/UI`, which rewrites only the failing references, then run the suite once more without the variable to confirm it passes. Commit the images on their own branch.
 
-**Why:** swift-snapshot-testing gives `CIAreaAverage` its extent as a bare `CGRect`, which Swift wraps in an `NSValue`. macOS 27 Core Image reads that value with `CGRectValue`, a selector a macOS `NSValue` does not have. The documented type for the key is `CIVector`. Version 1.19.5 does not fix it, and there is no upstream report yet. CI is not affected, because the snapshot suite is disabled there.
+**Why:** a reference is a picture of what one macOS version draws, so it moves when AppKit or SwiftUI does. Recording only the failures keeps the rest of the suite's history. An older trap is gone: on macOS 27 the suite used to abort with `-[NSConcreteValue CGRectValue]: unrecognized selector` inside `perceptuallyCompare`, which swift-snapshot-testing 1.19.6 fixed (upstream #1120, now the floor in `Modules/UI/Package.swift`), so `--skip UISnapshotTests` is no longer needed. Also note that the offscreen host does not capture a `ContentUnavailableView`'s icon and text: those references show only the background and any buttons, on macOS 26 as on 27, so they do not check that copy.
 
 **Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
 
