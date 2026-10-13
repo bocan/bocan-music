@@ -142,6 +142,29 @@ public actor ScrobbleQueueRepository {
         }
     }
 
+    /// The soonest time a row of `providerID` that waits for a retry becomes
+    /// due, or `nil` when no row waits. The time can be in the past: the row
+    /// is then due now. The worker sleeps until this time when nothing is due,
+    /// so the conditions match `fetchPending`.
+    public func nextAttemptDate(providerID: String) async throws -> Date? {
+        try await self.db.read { db in
+            let epoch = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT MIN(s.next_attempt_at)
+                  FROM scrobble_submissions s
+                  JOIN scrobble_queue q ON q.id = s.queue_id
+                 WHERE s.provider_id = ?
+                   AND s.status IN ('pending', 'retry')
+                   AND q.dead = 0
+                   AND s.next_attempt_at IS NOT NULL
+                """,
+                arguments: [providerID]
+            )
+            return epoch.map { Date(timeIntervalSince1970: TimeInterval($0)) }
+        }
+    }
+
     /// Maps one `fetchPending` result row. The local-track columns win; the
     /// `payload_*` columns fill in for Subsonic-sourced rows.
     private static func pendingRow(from row: Row) -> PendingRow {

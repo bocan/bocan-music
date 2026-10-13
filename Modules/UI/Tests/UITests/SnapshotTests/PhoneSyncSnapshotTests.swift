@@ -21,12 +21,13 @@ extension UISnapshotTests {
         }
 
         private func assertPane(_ vm: PhoneSyncViewModel, dark: Bool, named: String) {
+            // Most pane states end in the "No Phones Paired" empty state, which
+            // only a sparse-view snapshot checks (#641).
             let view = PhoneSyncSettingsView(viewModel: vm)
                 .frame(width: self.paneSize.width, height: self.paneSize.height)
-                .colorScheme(dark ? .dark : .light)
             assertSnapshot(
-                of: host(view, size: self.paneSize),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: self.paneSize, dark: dark),
+                as: .sparseImage,
                 named: named
             )
         }

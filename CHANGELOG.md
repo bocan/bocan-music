@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- A scrobble that the service asked Bòcan to send again later is now sent again at that time. Before, it could wait until you played the next song or the network came back.
+
 - When Mark as Played, Mark as Unplayed, Mark All as Played or a podcast download cannot be done, Bòcan now tells you. Before, nothing happened and the list stayed as it was.
 
 - Removing a folder under Settings → Library now takes its songs out of the library. Before, they stayed behind, so after you moved your music to a new drive and added the new folder, every song appeared twice and no rescan cleared it. If your library already has these doubles, they go away on the next launch. Songs from a folder you removed also no longer come back while the app stays open. Thanks for reporting this one @go1968.
