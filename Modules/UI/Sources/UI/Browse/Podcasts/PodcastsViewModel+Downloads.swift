@@ -14,6 +14,39 @@ public extension PodcastsViewModel {
         "\(podcastID)/\(guid)"
     }
 
+    /// Queues one episode for download. The menus call this, not the seam, so
+    /// a download that could not start reaches the listener (#640). A transfer
+    /// that fails later shows on the episode's badge.
+    func download(podcastID: Int64, guid: String) async {
+        if await !self.downloadQuietly(podcastID: podcastID, guid: guid) {
+            self.onActionFailed?(L10n.string("Could not start the download"))
+        }
+    }
+
+    /// Queues each episode in turn. One that cannot start does not stop the
+    /// others, and the listener is told once.
+    func download(_ items: [EpisodeListItem]) async {
+        var failed = false
+        for item in items
+            where await !self.downloadQuietly(podcastID: item.episode.podcastID, guid: item.episode.guid) {
+            failed = true
+        }
+        if failed {
+            self.onActionFailed?(L10n.string("Could not start the download"))
+        }
+    }
+
+    /// - Returns: `false` when the download could not be queued (logged here).
+    private func downloadQuietly(podcastID: Int64, guid: String) async -> Bool {
+        do {
+            try await self.actions?.download(podcastID: podcastID, guid: guid)
+            return true
+        } catch {
+            self.log.error("podcasts.download.failed", ["id": podcastID, "error": String(reflecting: error)])
+            return false
+        }
+    }
+
     /// Toggles auto-download for the open show.
     func toggleAutoDownload(_ on: Bool) async {
         guard let id = currentShow?.id else { return }

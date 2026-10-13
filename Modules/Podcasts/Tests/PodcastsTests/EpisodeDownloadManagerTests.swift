@@ -154,7 +154,7 @@ struct EpisodeDownloadManagerTests {
         defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
         try await insertEpisode(bed, guid: "g1")
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
 
         // A control was created and state is downloading.
         let control = try #require(bed.fake.control(forGUIDFragment: "g1"))
@@ -186,11 +186,11 @@ struct EpisodeDownloadManagerTests {
             await collector.add(podcastID: podcastID, guid: guid)
         }
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "bad")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "bad")
         try #require(bed.fake.control(forGUIDFragment: "bad")).onFinished(.failure(URLError(.timedOut)))
         #expect(await eventually { await self.state(bed, "bad")?.downloadState == .failed })
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "ok")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "ok")
         try #require(bed.fake.control(forGUIDFragment: "ok")).onFinished(.success(makeTempFile(bytes: 128)))
         #expect(await eventually { await !collector.seen.isEmpty })
 
@@ -212,7 +212,7 @@ struct EpisodeDownloadManagerTests {
             }
         }
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
         let control = try #require(bed.fake.control(forGUIDFragment: "g1"))
         for written in stride(from: Int64(100), through: 1000, by: 100) {
             control.onProgress(written, 1000)
@@ -239,13 +239,13 @@ struct EpisodeDownloadManagerTests {
         defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
         try await insertEpisode(bed, guid: "g1")
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
         let first = try #require(bed.fake.control(forGUIDFragment: "g1"))
         #expect(first.resumeData == nil, "first start is a fresh download")
         first.onProgress(500, 1000)
 
         await bed.manager.pause(podcastID: bed.podcastID, guid: "g1")
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
 
         let resumed = await eventually { bed.fake.controls.count == 2 }
         #expect(resumed)
@@ -259,7 +259,7 @@ struct EpisodeDownloadManagerTests {
         defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
         try await insertEpisode(bed, guid: "g1")
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
         _ = try #require(bed.fake.control(forGUIDFragment: "g1"))
 
         // Simulate a partial file already written at the computed store path.
@@ -282,7 +282,7 @@ struct EpisodeDownloadManagerTests {
         defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
         try await insertEpisode(bed, guid: "g1")
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
         let control = try #require(bed.fake.control(forGUIDFragment: "g1"))
         try control.onFinished(.success(makeTempFile(bytes: 2048)))
         _ = await eventually { await self.state(bed, "g1")?.downloadState == .downloaded }
@@ -305,9 +305,9 @@ struct EpisodeDownloadManagerTests {
         try await insertEpisode(bed, guid: "b", audioFragment: "b")
         try await insertEpisode(bed, guid: "c", audioFragment: "c")
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "a")
-        await bed.manager.download(podcastID: bed.podcastID, guid: "b")
-        await bed.manager.download(podcastID: bed.podcastID, guid: "c")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "a")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "b")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "c")
 
         #expect(bed.fake.controls.count == 2, "only two downloads run at once")
         #expect(await self.state(bed, "a")?.downloadState == .downloading)
@@ -355,7 +355,7 @@ struct EpisodeDownloadManagerTests {
             podcastID: bed.podcastID, guid: "g1", state: .downloaded, path: dest.path, bytes: 64
         )
 
-        await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
 
         #expect(bed.fake.controls.isEmpty, "no new transfer is started for an already-downloaded episode")
     }
@@ -439,5 +439,21 @@ struct EpisodeDownloadManagerTests {
         #expect(await self.state(bed, "a")?.downloadState == EpisodeDownloadState.none)
         #expect(await self.state(bed, "b")?.downloadState == EpisodeDownloadState.none)
         #expect(await bed.manager.totalBytesOnDisk() == 0)
+    }
+
+    @Test("download throws when the episode cannot be read, and queues nothing (#640)")
+    func downloadThrowsWhenEpisodeUnreadable() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        try await insertEpisode(bed, guid: "g1")
+        // With no episodes table, the read that starts a download throws.
+        try await bed.db.write { try $0.execute(sql: "DROP TABLE podcast_episodes") }
+
+        await #expect(throws: (any Error).self) {
+            try await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
+        }
+
+        #expect(await self.state(bed, "g1") == nil, "a download that never started must not leave a queued state")
+        #expect(bed.fake.controls.isEmpty, "no transfer may start")
     }
 }

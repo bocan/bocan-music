@@ -579,6 +579,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             searchProvider: podcastSearch,
             transcriptProvider: podcastTranscript
         )
+        self.podcasts.onActionFailed = { [weak self] text in
+            self?.showToast(ToastMessage(text: text, kind: .info))
+        }
 
         self.searchQueryCancellable = self.makeSearchQuerySubscription()
 

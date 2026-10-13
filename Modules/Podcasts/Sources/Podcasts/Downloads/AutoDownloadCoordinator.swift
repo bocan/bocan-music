@@ -83,8 +83,15 @@ public struct AutoDownloadCoordinator: Sendable {
             if let state, state.downloadState == .downloaded || state.playState == .played {
                 continue // already downloaded or already heard
             }
-            await self.manager.download(podcastID: podcastID, guid: episode.guid)
-            enqueued += 1
+            do {
+                try await self.manager.download(podcastID: podcastID, guid: episode.guid)
+                enqueued += 1
+            } catch {
+                // Already logged with its context by `download`. Nobody asked
+                // for this download, so there is nobody to tell; the next
+                // refresh tries the episode again.
+                continue
+            }
         }
         self.log.debug("autoDownload.enqueued", ["podcastID": podcastID, "count": enqueued])
     }
