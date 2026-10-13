@@ -60,6 +60,13 @@ enum HelpContent {
                 + " reads their tags automatically."
         ),
         HelpTopic(
+            title: "Moving your music to a new drive or folder",
+            body: "Move or copy the music, then open Settings → Library, remove the old folder"
+                + " and add the new one, in that order. Bòcan recognises each file in its new"
+                + " place, so your ratings, play counts, playlists and listening history stay"
+                + " with it."
+        ),
+        HelpTopic(
             title: "Playing tracks",
             body: "Double-click any track to start playback."
                 + " Use Space to play/pause, ⌘→ for next track, and ⌘← for previous."

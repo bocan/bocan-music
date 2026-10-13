@@ -1,4 +1,5 @@
 import Foundation
+import Metadata
 import Observability
 import Persistence
 
@@ -10,11 +11,14 @@ extension LibraryScanner {
     /// A track that another root still holds (a nested or overlapping folder)
     /// stays. The folder is no longer watched afterwards. Files on disk are
     /// not touched.
-    public func removeRoot(id: Int64) async throws {
+    ///
+    /// - Returns: The number of tracks hidden.
+    @discardableResult
+    public func removeRoot(id: Int64) async throws -> Int {
         // Fetch the roots before deleting so we can disable the root's tracks.
         let roots = try await self.rootRepo.fetchAll()
         try await self.rootRepo.delete(id: id)
-        guard let root = roots.first(where: { $0.id == id }) else { return }
+        guard let root = roots.first(where: { $0.id == id }) else { return 0 }
 
         let remaining = roots.filter { $0.id != id }
         let trackRepo = TrackRepository(database: self.database)
@@ -37,6 +41,54 @@ extension LibraryScanner {
             await self.stopWatching()
             await self.startWatching()
         }
+        return hidden
+    }
+
+    /// Removes each single-file root whose file was deleted and hides its
+    /// track (#646). Such a root can never be scanned again, so nothing else
+    /// would hide the track, and as an unreachable root it would stop
+    /// `hideTracksOutsideRoots` for good.
+    ///
+    /// - Parameters:
+    ///   - roots: Every persisted root.
+    ///   - reachable: The ids of the roots whose bookmarks resolved.
+    /// - Returns: The roots that remain, and the number of tracks hidden.
+    func removeDeletedFileRoots(
+        _ roots: [LibraryRoot],
+        reachable: Set<Int64>
+    ) async -> (roots: [LibraryRoot], hidden: Int) {
+        var remaining: [LibraryRoot] = []
+        var hidden = 0
+        for root in roots {
+            guard let id = root.id, !reachable.contains(id), Self.isDeletedFile(root.path) else {
+                remaining.append(root)
+                continue
+            }
+            do {
+                hidden += try await self.removeRoot(id: id)
+                self.log.info("library.root.fileDeleted", ["id": id, "path": root.path])
+            } catch {
+                self.log.warning("library.root.fileDeleted.failed", [
+                    "id": id,
+                    "error": String(reflecting: error),
+                ])
+                remaining.append(root)
+            }
+        }
+        return (remaining, hidden)
+    }
+
+    /// Whether `path` names an audio file that is gone while the folder it was
+    /// in is still there. A file on a drive that is not connected has no
+    /// folder either, so it does not count as deleted.
+    private static func isDeletedFile(_ path: String) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        guard TagReader.isSupported(url) else { return false }
+        let files = FileManager.default
+        guard !files.fileExists(atPath: path) else { return false }
+        var isDirectory: ObjCBool = false
+        return files.fileExists(atPath: url.deletingLastPathComponent().path, isDirectory: &isDirectory)
+            && isDirectory.boolValue
     }
 
     /// Soft-deletes the enabled local tracks that no root holds, and returns
@@ -81,7 +133,7 @@ extension LibraryScanner {
     /// The stored path of each root, plus where its bookmark points now when
     /// that can be resolved. The scan walks the bookmark's target, so a root
     /// whose folder was renamed holds tracks under a path the row does not show.
-    private func paths(of roots: [LibraryRoot]) -> [String] {
+    func paths(of roots: [LibraryRoot]) -> [String] {
         roots.flatMap { root -> [String] in
             var isStale = false
             do {

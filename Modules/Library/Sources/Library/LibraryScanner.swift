@@ -136,9 +136,11 @@ public actor LibraryScanner {
             }
         }
 
+        // A single-file root whose file was deleted goes, with its track (#646).
         // Tracks that no current root holds were left behind by a removed
-        // folder; hide them, and count them as removed in the summary (#643).
-        let orphans = await self.hideTracksOutsideRoots(allRoots, resolved: resolved.map(\.url))
+        // folder; hide them too, and count both as removed in the summary (#643).
+        let kept = await self.removeDeletedFileRoots(allRoots, reachable: Set(resolved.map(\.rootID)))
+        let orphans = await kept.hidden + self.hideTracksOutsideRoots(kept.roots, resolved: resolved.map(\.url))
 
         guard !resolved.isEmpty else {
             continuation.yield(.finished(ScanProgress.Summary(
@@ -362,7 +364,9 @@ public actor LibraryScanner {
     /// Returns the URL that FSEvents should watch for a given root path.
     ///
     /// FSEvents monitors directories. For file-type roots the parent directory
-    /// is watched; the `onChange` handler then filters to just that file.
+    /// is watched, and so is the parent of a root folder that is missing (its
+    /// drive, when the folder sat at the top of one). `handleFSChange` then
+    /// drops every event for a path that no root holds.
     private func watchableURL(for path: String) -> URL {
         let url = URL(fileURLWithPath: path)
         var isDir: ObjCBool = false
@@ -370,47 +374,13 @@ public actor LibraryScanner {
         return isDir.boolValue ? url : url.deletingLastPathComponent()
     }
 
-    /// Handles a batch of FS-event URLs: filters to known audio extensions and
-    /// triggers `scanSingleFile` for each matching, non-hidden file.
-    ///
-    /// When FSEvents reports a directory (e.g. when an entire folder is moved
-    /// into a watched root) the event carries only the directory path — not one
-    /// event per file inside it.  We recursively enumerate such directories so
-    /// every audio file they contain is picked up automatically.
-    private func handleFSChange(urls: [URL]) async {
-        var didChange = false
-        let trackRepo = TrackRepository(database: self.database)
-        for raw in urls {
-            // NFC-normalise — APFS may deliver decomposed UTF-8.
-            let url = URL(fileURLWithPath: raw.path.precomposedStringWithCanonicalMapping)
-            guard !url.lastPathComponent.hasPrefix(".") else { continue }
-
-            var isDir: ObjCBool = false
-            let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
-
-            if !exists {
-                if await self.handleRemovedPath(url, trackRepo: trackRepo) {
-                    didChange = true
-                }
-            } else if isDir.boolValue {
-                if await self.handleChangedDirectory(url, trackRepo: trackRepo) {
-                    didChange = true
-                }
-            } else {
-                if await self.handleChangedFile(url, trackRepo: trackRepo) {
-                    didChange = true
-                }
-            }
-        }
-        if didChange, let callback = self.onFileImported {
-            await callback()
-        }
-    }
-
     /// File or directory was deleted: disable matching tracks.
     ///
+    /// Stays in this file, and is internal for `LibraryScanner+FSChanges.swift`:
+    /// `SwallowedErrorLibraryConventionTests` reads its log events from here.
+    ///
     /// - Returns: `true` when the library changed.
-    private func handleRemovedPath(_ url: URL, trackRepo: TrackRepository) async -> Bool {
+    func handleRemovedPath(_ url: URL, trackRepo: TrackRepository) async -> Bool {
         var didChange = false
         if TagReader.isSupported(url) {
             // Single audio file: look it up by URL and mark disabled.

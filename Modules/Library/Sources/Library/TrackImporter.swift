@@ -98,7 +98,8 @@ actor TrackImporter {
         let file = ImportedFile(url: url, bookmark: bookmark, tags: tags, fileMtime: fileMtime, fileSize: fileSize)
 
         // If the user has manually edited tags, skip overwriting them
-        if let ex = existing, ex.userEdited {
+        if var ex = existing, ex.userEdited {
+            Self.restorePrunedLinks(on: &ex, albumID: album.id, albumArtistID: albumArtistID, artistID: artist.id)
             return try await self.refreshUserEditedTrack(ex, file: file, audioUnchanged: audioUnchanged, now: now)
         }
 
@@ -218,6 +219,24 @@ actor TrackImporter {
         if let kind = tags.releaseType, !kind.isEmpty, album.releaseType != kind, let albumID = album.id {
             try await self.albumRepo.setReleaseType(albumID: albumID, releaseType: kind)
         }
+    }
+
+    /// Links a user-edited row to an album again when it has none.
+    ///
+    /// The album of a hidden track is pruned when nothing visible uses it,
+    /// which clears the link on the row. Such a row comes back under the
+    /// album and artist the file's tags name: the edited names went with the
+    /// pruned rows.
+    private static func restorePrunedLinks(
+        on track: inout Track,
+        albumID: Int64?,
+        albumArtistID: Int64?,
+        artistID: Int64?
+    ) {
+        guard track.albumID == nil else { return }
+        track.albumID = albumID
+        track.albumArtistID = albumArtistID
+        track.artistID = track.artistID ?? artistID
     }
 
     /// Updates the file-level fields of a track whose tags the user edited,

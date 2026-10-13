@@ -25,7 +25,7 @@ struct SwallowedErrorLibraryConventionTests {
         let source = try self.source("Sources/Library/ScanCoordinator.swift")
         // Scoped to the import path: the removal sweep's own `try?` is a
         // separate, still-open audit finding, not this one.
-        let start = try #require(source.range(of: "private func importOne("))
+        let start = try #require(source.range(of: "    func importOne("))
         let end = try #require(source.range(of: "private static func canonicalPath("))
         let importOne = String(source[start.lowerBound ..< end.lowerBound])
 

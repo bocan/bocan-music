@@ -69,9 +69,22 @@ struct RootCoverage: Sendable {
         path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
     }
 
-    /// `path` with symlinks resolved by `realpath(3)`, or `nil` when it does
-    /// not exist. Same reasoning as `ScanCoordinator.canonicalPath`.
+    /// `path` with symlinks resolved by `realpath(3)`, or `nil` when neither
+    /// it nor its folder exists. Same reasoning as
+    /// `ScanCoordinator.canonicalPath`. A deleted file in a folder that is
+    /// still there resolves through the folder, so a deleted single-file root
+    /// and its track still compare equal (#646).
     static func canonicalPath(_ path: String) -> String? {
+        if let resolved = self.realPath(path) {
+            return resolved
+        }
+        let url = URL(fileURLWithPath: path)
+        guard url.pathComponents.count > 1,
+              let folder = self.realPath(url.deletingLastPathComponent().path) else { return nil }
+        return URL(fileURLWithPath: folder).appendingPathComponent(url.lastPathComponent).path
+    }
+
+    private static func realPath(_ path: String) -> String? {
         guard let resolved = realpath(path, nil) else { return nil }
         defer { free(resolved) }
         return String(cString: resolved)
