@@ -54,14 +54,4 @@ extension PlaylistSidebarViewModel {
         let props: [NSBitmapImageRep.PropertyKey: Any] = [.compressionFactor: NSNumber(value: 0.90)]
         return bmp.representation(using: .jpeg, properties: props)
     }
-
-    /// Async wrapper around `NSOpenPanel.begin(completionHandler:)`.
-    /// Does NOT spin a modal run loop; safe to call during active playback.
-    static func openPanelAsync(
-        _ panel: NSOpenPanel
-    ) async -> NSApplication.ModalResponse {
-        await withCheckedContinuation { (c: CheckedContinuation<NSApplication.ModalResponse, Never>) in
-            panel.begin { response in c.resume(returning: response) }
-        }
-    }
 }

@@ -92,16 +92,13 @@ public struct PlaylistExportSheet: View {
     enum PathStyle: Hashable { case absolute, relative }
 
     private func pickRoot() {
-        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from ADR-007.
+        // Non-blocking and one at a time: see `PanelPresenter`.
         Task { @MainActor in
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
             panel.allowsMultipleSelection = false
-            let result = await withCheckedContinuation { cont in
-                panel.begin { cont.resume(returning: $0) }
-            }
+            let result = await PanelPresenter.present(panel)
             if result == .OK {
                 self.relativeRoot = panel.url
             }
@@ -114,11 +111,7 @@ public struct PlaylistExportSheet: View {
         if let type = UTType(filenameExtension: self.format.preferredExtension) {
             save.allowedContentTypes = [type]
         }
-        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from ADR-007.
-        let saveResult = await withCheckedContinuation { cont in
-            save.begin { cont.resume(returning: $0) }
-        }
+        let saveResult = await PanelPresenter.present(save)
         guard saveResult == .OK, let dest = save.url else { return }
         self.isExporting = true
         defer { self.isExporting = false }

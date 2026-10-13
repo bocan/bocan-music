@@ -43,7 +43,7 @@ public extension LibraryViewModel {
         // ADR-007 audit L2: use non-blocking `begin(completionHandler:)`
         // instead of `runModal()` so the modal run loop doesn't starve the
         // audio render callback on slower machines.
-        let response = await Self.runOpenPanelAsync(panel)
+        let response = await PanelPresenter.present(panel)
         guard response == .OK else { return }
         await self.addURLs(panel.urls)
     }
@@ -65,15 +65,12 @@ public extension LibraryViewModel {
             L10n.string("Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library.")
         panel.prompt = L10n.string("Add")
         // ADR-007 audit L2: non-blocking begin() — see `addFolderByPicker`.
-        let response = await Self.runOpenPanelAsync(panel)
+        let response = await PanelPresenter.present(panel)
         guard response == .OK else { return }
         // Add each file directly — the sandbox grants access to the selected URLs,
         // not their parent directories.
         await self.addURLs(panel.urls)
     }
-
-    // `runOpenPanelAsync`, which both pickers above use, is in
-    // `LibraryViewModel+OpenPanel.swift`.
 
     /// Handles a drag-and-drop of URLs onto the main window.
     ///

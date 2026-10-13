@@ -2,12 +2,12 @@ import Foundation
 import Testing
 @testable import UI
 
-/// One picker panel at a time (#643). The panel itself cannot be driven
+/// One open or save panel at a time (#643). The panel itself cannot be driven
 /// host-less, so the gate is tested on its own and a source-convention check
-/// pins the library pickers to it.
-@Suite("SinglePresentationGate")
+/// keeps every panel in the module behind it.
+@Suite("PanelPresenter")
 @MainActor
-struct SinglePresentationGateTests {
+struct PanelPresenterTests {
     @Test("a second request while the first is on screen is turned away and does not present")
     func secondRequestIsTurnedAway() async {
         let gate = SinglePresentationGate()
@@ -51,19 +51,31 @@ struct SinglePresentationGateTests {
         #expect(second == 2)
     }
 
-    @Test("the library pickers present through the gated helper, not a bare panel.begin")
-    func libraryPickersUseTheGate() throws {
-        let viewModels = URL(filePath: #filePath)
+    @Test("no source file in the module calls begin on a panel except PanelPresenter")
+    func everyPanelGoesThroughThePresenter() throws {
+        let sources = URL(filePath: #filePath)
             .deletingLastPathComponent() // ViewModelTests/
             .deletingLastPathComponent() // UITests/
             .deletingLastPathComponent() // Tests/
             .deletingLastPathComponent() // Modules/UI/
-            .appendingPathComponent("Sources/UI/ViewModels")
-        let scanning = try String(contentsOf: viewModels.appendingPathComponent("LibraryViewModel+Scanning.swift"), encoding: .utf8)
-        #expect(scanning.components(separatedBy: "await Self.runOpenPanelAsync(panel)").count == 3, "folder and file pickers")
-        #expect(!scanning.contains("panel.begin"))
-
-        let helper = try String(contentsOf: viewModels.appendingPathComponent("LibraryViewModel+OpenPanel.swift"), encoding: .utf8)
-        #expect(helper.contains("self.openPanelGate.run("))
+            .appendingPathComponent("Sources/UI")
+        let enumerator = try #require(FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil))
+        var offenders: [String] = []
+        var presenterCalls = 0
+        for case let file as URL in enumerator where file.pathExtension == "swift" {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            presenterCalls += text.components(separatedBy: "await PanelPresenter.present(").count - 1
+            guard file.lastPathComponent != "PanelPresenter.swift" else {
+                #expect(text.contains("self.gate.run("))
+                continue
+            }
+            // `begin {` and `begin(completionHandler:` are how a panel is shown
+            // without the gate; `beginSheetModal` (alerts) is a different call.
+            if text.contains(".begin {") || text.contains(".begin(completionHandler") {
+                offenders.append(file.lastPathComponent)
+            }
+        }
+        #expect(offenders.isEmpty, "show the panel with PanelPresenter.present(_:) instead: \(offenders)")
+        #expect(presenterCalls >= 12, "the pickers known on 2026-10-13; found \(presenterCalls)")
     }
 }

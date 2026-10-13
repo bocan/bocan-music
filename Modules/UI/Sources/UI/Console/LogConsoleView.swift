@@ -283,9 +283,7 @@ public struct LogConsoleView: View {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "bocan-\(Self.exportFilename()).log"
         panel.allowedContentTypes = [.plainText]
-        let outcome = await withCheckedContinuation { cont in
-            panel.begin { cont.resume(returning: $0) }
-        }
+        let outcome = await PanelPresenter.present(panel)
         guard outcome == .OK, let url = panel.url else { return }
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
