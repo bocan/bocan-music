@@ -44,9 +44,14 @@ extension LibraryScanner {
     ///
     /// Such tracks are what a removed folder left behind before #643: nothing
     /// scans them, so nothing else would ever hide them, and a library moved
-    /// to a new folder showed every song twice. A root that cannot be reached
-    /// right now (an unplugged drive) still holds its tracks. Best effort: a
-    /// failure is logged and counts as none.
+    /// to a new folder showed every song twice. Best effort: a failure is
+    /// logged and counts as none.
+    ///
+    /// Nothing is hidden while any root cannot be reached (an unplugged
+    /// drive, a deleted single-file source). Such a root's bookmark cannot be
+    /// resolved, so only its stored path is known, and its tracks may be
+    /// stored under another spelling of that place (through a symlink, or
+    /// after a rename). They would look left behind when they are not.
     ///
     /// - Parameters:
     ///   - roots: Every persisted root, reachable or not.
@@ -54,6 +59,10 @@ extension LibraryScanner {
     ///     differ from the stored path after a folder is renamed.
     func hideTracksOutsideRoots(_ roots: [LibraryRoot], resolved: [URL]) async -> Int {
         guard !Task.isCancelled else { return 0 }
+        guard resolved.count == roots.count else {
+            self.log.debug("library.orphans.skipped", ["roots": roots.count, "reachable": resolved.count])
+            return 0
+        }
         let coverage = RootCoverage(paths: roots.map(\.path) + resolved.map(\.path))
         let trackRepo = TrackRepository(database: self.database)
         do {

@@ -117,27 +117,44 @@ struct LibraryRootRemovalTests {
         let scanner = LibraryScanner(database: db)
         let tracks = TrackRepository(database: db)
         try await scanner.addRoot(makeFolder())
-        // A root on a drive that is not connected: its bookmark cannot be
-        // resolved, but its tracks still belong to it.
-        try await LibraryRootRepository(database: db).upsert(LibraryRoot(
-            path: "/Volumes/Unplugged 643/Music",
-            bookmark: Data([0x00]),
-            addedAt: 0
-        ))
         let leftBehind = try await tracks.insert(makeTrack("file:///Volumes/Old%20643/Music/1.flac"))
-        let unplugged = try await tracks.insert(makeTrack("file:///Volumes/Unplugged%20643/Music/1.flac"))
         let remote = try await tracks.insert(makeTrack("https://example.test/stream.mp3"))
 
         let summary = try #require(await finishedSummary(of: scanner))
 
         #expect(summary.removed == 1)
         #expect(try await tracks.fetch(id: leftBehind).disabled)
-        #expect(try await !tracks.fetch(id: unplugged).disabled, "an unreachable root still holds its tracks")
         #expect(try await !tracks.fetch(id: remote).disabled, "a track that is not a local file is never touched")
     }
 
-    @Test("with no reachable root the scan still hides left-behind tracks")
-    func scanWithNoReachableRootHidesOrphans() async throws {
+    @Test("while any root cannot be reached, a scan hides nothing")
+    func scanHidesNothingWhileARootIsUnreachable() async throws {
+        let db = try await Database(location: .inMemory)
+        let scanner = LibraryScanner(database: db)
+        let tracks = TrackRepository(database: db)
+        try await scanner.addRoot(makeFolder())
+        // A root on a drive that is not connected: its bookmark cannot be
+        // resolved, so only its stored path is known.
+        try await LibraryRootRepository(database: db).upsert(LibraryRoot(
+            path: "/Volumes/Unplugged 643/Music",
+            bookmark: Data([0x00]),
+            addedAt: 0
+        ))
+        let inUnplugged = try await tracks.insert(makeTrack("file:///Volumes/Unplugged%20643/Music/1.flac"))
+        // The same drive's tracks, stored under another spelling of its path
+        // (the root was added through a symlink): not left behind, although no
+        // stored root path is a prefix of it.
+        let otherSpelling = try await tracks.insert(makeTrack("file:///Volumes/Real%20643/Music/2.flac"))
+
+        let summary = try #require(await finishedSummary(of: scanner))
+
+        #expect(summary.removed == 0)
+        #expect(try await !tracks.fetch(id: inUnplugged).disabled)
+        #expect(try await !tracks.fetch(id: otherSpelling).disabled)
+    }
+
+    @Test("with no roots at all the scan still hides left-behind tracks")
+    func scanWithNoRootsHidesOrphans() async throws {
         let db = try await Database(location: .inMemory)
         let scanner = LibraryScanner(database: db)
         let tracks = TrackRepository(database: db)
