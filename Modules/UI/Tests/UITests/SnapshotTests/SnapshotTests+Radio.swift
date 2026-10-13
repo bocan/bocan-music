@@ -25,8 +25,8 @@ extension UISnapshotTests {
             let view = RadioView(library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
             assertSnapshot(
-                of: host(view, size: self.size),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: self.size, dark: false),
+                as: .sparseImage,
                 named: "radio-empty-light"
             )
         }
@@ -36,10 +36,9 @@ extension UISnapshotTests {
             let libVM = try await makeLibVM()
             let view = RadioView(library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
-                .colorScheme(.dark)
             assertSnapshot(
-                of: host(view, size: self.size),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: self.size, dark: true),
+                as: .sparseImage,
                 named: "radio-empty-dark"
             )
         }

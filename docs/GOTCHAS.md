@@ -552,9 +552,19 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Rule:** look at the new image next to the old one first (the failure message prints both paths). When the change is only the system's own drawing, record again with `SNAPSHOT_TESTING_RECORD=failed swift test --filter UISnapshotTests` under `Modules/UI`, which rewrites only the failing references, then run the suite once more without the variable to confirm it passes. Commit the images on their own branch.
 
-**Why:** a reference is a picture of what one macOS version draws, so it moves when AppKit or SwiftUI does. Recording only the failures keeps the rest of the suite's history. An older trap is gone: on macOS 27 the suite used to abort with `-[NSConcreteValue CGRectValue]: unrecognized selector` inside `perceptuallyCompare`, which swift-snapshot-testing 1.19.6 fixed (upstream #1120, now the floor in `Modules/UI/Package.swift`), so `--skip UISnapshotTests` is no longer needed. Also note that the offscreen host does not capture a `ContentUnavailableView`'s icon and text: those references show only the background and any buttons, on macOS 26 as on 27, so they do not check that copy.
+**Why:** a reference is a picture of what one macOS version draws, so it moves when AppKit or SwiftUI does. Recording only the failures keeps the rest of the suite's history. An older trap is gone: on macOS 27 the suite used to abort with `-[NSConcreteValue CGRectValue]: unrecognized selector` inside `perceptuallyCompare`, which swift-snapshot-testing 1.19.6 fixed (upstream #1120, now the floor in `Modules/UI/Package.swift`), so `--skip UISnapshotTests` is no longer needed.
 
 **Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
+
+### A snapshot of a mostly empty view checks nothing without `hostSparse`
+
+**Problem:** the references for the empty states built on `ContentUnavailableView` (Radio, Identify Track no-match and error, the Phone Sync pane) looked blank, and it was recorded here that the offscreen host does not capture that view's icon and text. That was wrong. The label was in the image, in white on a transparent background, which a viewer shows as white on white. The real faults were three, and together they let a view with no label at all pass (#641).
+
+**Rule:** host a mostly empty view with `hostSparse(_:size:dark:)` and compare with `.sparseImage`. Never judge a reference by how it looks in a viewer: composite it over black and over white first, or count its opaque pixels. Give every snapshot test an explicit colour scheme, the light one included.
+
+**Why:** (1) a view with no background of its own gives a transparent image; (2) a test that sets no colour scheme follows the appearance of the Mac that runs it, so the "light" Radio reference was the dark one, byte for byte, recorded on a Mac in dark mode; (3) the label of an empty state covers under 2% of the pixels (26,691 of 1,344,000 for Radio), and the suite's usual `precision: 0.98` lets 2% differ. `hostSparse` adds the window background and pins the scheme; `.sparseImage` allows one pixel in a thousand. Proved by changing the Radio title and seeing both tests fail. Many older "light" tests in the suite still set no colour scheme; their views are dense enough that the copy is checked, but their references depend on the recording Mac's appearance.
+
+**Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotHosting.swift`
 
 ### There is one FFmpeg, the project's LGPL source build, and never Homebrew's
 

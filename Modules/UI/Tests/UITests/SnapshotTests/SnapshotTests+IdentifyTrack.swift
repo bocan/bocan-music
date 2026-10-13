@@ -246,8 +246,8 @@ extension UISnapshotTests {
             let view = IdentifyTrackSheet(vm: vm)
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
-                of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: Self.sheetSize, dark: false),
+                as: .sparseImage,
                 named: "identify-nomatch-light"
             )
         }
@@ -257,10 +257,9 @@ extension UISnapshotTests {
             let vm = try await makeVM(phase: .noMatch)
             let view = IdentifyTrackSheet(vm: vm)
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
-                .colorScheme(.dark)
             assertSnapshot(
-                of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: Self.sheetSize, dark: true),
+                as: .sparseImage,
                 named: "identify-nomatch-dark"
             )
         }
@@ -273,8 +272,8 @@ extension UISnapshotTests {
             let view = IdentifyTrackSheet(vm: vm)
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
-                of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: Self.sheetSize, dark: false),
+                as: .sparseImage,
                 named: "identify-error-light"
             )
         }
@@ -284,10 +283,9 @@ extension UISnapshotTests {
             let vm = try await makeVM(phase: .error("fpcalc exited with code 1"))
             let view = IdentifyTrackSheet(vm: vm)
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
-                .colorScheme(.dark)
             assertSnapshot(
-                of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                of: hostSparse(view, size: Self.sheetSize, dark: true),
+                as: .sparseImage,
                 named: "identify-error-dark"
             )
         }
