@@ -17,13 +17,13 @@ import Persistence
 public actor LibraryScanner {
     // MARK: - Properties
 
-    // `database` and `log` are internal rather than private for
-    // `LibraryScanner+FSChanges.swift`.
+    // `database`, `log`, `rootRepo` and `fsWatcher` are internal rather than
+    // private for `LibraryScanner+FSChanges.swift` and `LibraryScanner+Roots.swift`.
     let database: Database
-    private let rootRepo: LibraryRootRepository
+    let rootRepo: LibraryRootRepository
     private let maintenanceRepo: PendingMaintenanceRepository
     private let coordinator: ScanCoordinator
-    private var fsWatcher: FSWatcher?
+    var fsWatcher: FSWatcher?
     private var isScanning = false
     let log = AppLogger.make(.library)
 
@@ -76,20 +76,6 @@ public actor LibraryScanner {
         self.log.info("library.root.added", ["path": url.path])
         // If a watcher is already running, begin watching the new root immediately.
         await self.watchNewRoot(path: url.path)
-    }
-
-    /// Removes a root by its database ID and soft-deletes all tracks under it.
-    public func removeRoot(id: Int64) async throws {
-        // Fetch the root path before deleting so we can disable its tracks.
-        let roots = try await self.rootRepo.fetchAll()
-        guard let root = roots.first(where: { $0.id == id }) else {
-            try await self.rootRepo.delete(id: id)
-            return
-        }
-        try await self.rootRepo.delete(id: id)
-        let trackRepo = TrackRepository(database: self.database)
-        try await trackRepo.disableAll(underPath: root.path)
-        self.log.info("library.root.removed", ["id": id, "path": root.path])
     }
 
     /// Returns all persisted library roots.
@@ -150,11 +136,15 @@ public actor LibraryScanner {
             }
         }
 
+        // Tracks that no current root holds were left behind by a removed
+        // folder; hide them, and count them as removed in the summary (#643).
+        let orphans = await self.hideTracksOutsideRoots(allRoots, resolved: resolved.map(\.url))
+
         guard !resolved.isEmpty else {
             continuation.yield(.finished(ScanProgress.Summary(
                 inserted: 0,
                 updated: 0,
-                removed: 0,
+                removed: orphans,
                 skipped: 0,
                 errors: 0,
                 duration: .zero
@@ -169,8 +159,10 @@ public actor LibraryScanner {
         let effectiveMode = await self.effectiveScanMode(requested: mode)
         let finished = FinishedFlag()
         await self.coordinator.scan(roots: resolved, mode: effectiveMode) { event in
-            if case .finished = event {
+            if case let .finished(summary) = event {
                 finished.mark()
+                continuation.yield(.finished(summary.addingRemoved(orphans)))
+                return
             }
             continuation.yield(event)
         }
@@ -441,12 +433,12 @@ public actor LibraryScanner {
             }
         } else {
             // Directory (or unrecognised path): disable all tracks whose
-            // file_url starts with this URL.  This is a no-op if nothing
+            // file_url is inside this URL.  This is a no-op if nothing
             // in the DB lives under this path.
             do {
-                try await trackRepo.disableAll(underPath: url.absoluteString)
-                self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
-                didChange = true
+                let count = try await trackRepo.disableAll(underDirectoryURL: url.absoluteString)
+                self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent, "count": count])
+                didChange = count > 0
             } catch {
                 self.log.warning("fsevents.dir_removed.failed", [
                     "path": url.lastPathComponent,

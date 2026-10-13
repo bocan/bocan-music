@@ -21,7 +21,7 @@ public extension LibraryViewModel {
         panel.allowedContentTypes = [.commaSeparatedText, .plainText]
         panel.message = L10n.string("Choose a Last.fm listening-history export (a CSV with uts, artist, and track columns).")
         panel.prompt = L10n.string("Import")
-        let response = await Self.runOpenPanelAsync(panel)
+        let response = await PanelPresenter.present(panel)
         guard response == .OK, let url = panel.urls.first else { return }
         await self.importListeningHistory(from: url)
     }

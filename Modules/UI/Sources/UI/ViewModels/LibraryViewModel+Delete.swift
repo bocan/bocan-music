@@ -229,35 +229,8 @@ public extension LibraryViewModel {
     /// Removes album and artist rows that have no remaining active (non-disabled) tracks.
     private func pruneOrphanAlbumsAndArtists() async {
         do {
-            let (prunedAlbums, prunedArtists): (Int, Int) = try await self.database.write { db in
-                try db.execute(sql: """
-                DELETE FROM albums
-                WHERE id NOT IN (
-                    SELECT DISTINCT album_id FROM tracks
-                    WHERE album_id IS NOT NULL
-                      AND (disabled IS NULL OR disabled = 0)
-                )
-                """)
-                let albums = db.changesCount
-                try db.execute(sql: """
-                DELETE FROM artists
-                WHERE id NOT IN (
-                    SELECT DISTINCT artist_id FROM tracks
-                    WHERE artist_id IS NOT NULL
-                      AND (disabled IS NULL OR disabled = 0)
-                    UNION
-                    SELECT DISTINCT album_artist_id FROM tracks
-                    WHERE album_artist_id IS NOT NULL
-                      AND (disabled IS NULL OR disabled = 0)
-                    UNION
-                    SELECT DISTINCT album_artist_id FROM albums
-                    WHERE album_artist_id IS NOT NULL
-                )
-                """)
-                let artists = db.changesCount
-                return (albums, artists)
-            }
-            self.log.debug("library.pruneOrphans", ["albums": prunedAlbums, "artists": prunedArtists])
+            let pruned = try await TrackRepository(database: self.database).pruneAlbumsAndArtistsWithoutEnabledTracks()
+            self.log.debug("library.pruneOrphans", ["albums": pruned.albums, "artists": pruned.artists])
         } catch {
             self.log.error("library.pruneOrphans.failed", ["error": String(reflecting: error)])
         }

@@ -158,7 +158,7 @@ public struct PodcastsHomeView: View {
     // MARK: - OPML import / export
 
     private func importSubscriptions() {
-        // Non-blocking begin{} panel, matching the PlaylistIO file-picker idiom.
+        // Non-blocking and one at a time: see `PanelPresenter`.
         Task { @MainActor in
             let panel = NSOpenPanel()
             panel.allowsMultipleSelection = false
@@ -169,9 +169,7 @@ public struct PodcastsHomeView: View {
                 types.insert(opml, at: 0)
             }
             panel.allowedContentTypes = types
-            let result = await withCheckedContinuation { cont in
-                panel.begin { cont.resume(returning: $0) }
-            }
+            let result = await PanelPresenter.present(panel)
             guard result == .OK, let url = panel.url else { return }
             self.importFile = OPMLImportFile(url: url)
         }
@@ -189,9 +187,7 @@ public struct PodcastsHomeView: View {
             if let opml = UTType(filenameExtension: "opml") {
                 save.allowedContentTypes = [opml]
             }
-            let result = await withCheckedContinuation { cont in
-                save.begin { cont.resume(returning: $0) }
-            }
+            let result = await PanelPresenter.present(save)
             guard result == .OK, let dest = save.url else { return }
             try data.write(to: dest, options: .atomic)
             self.library.showToast(ToastMessage(text: L10n.string("Exported subscriptions"), kind: .success))
