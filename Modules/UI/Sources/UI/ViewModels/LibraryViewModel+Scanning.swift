@@ -96,16 +96,20 @@ public extension LibraryViewModel {
         guard let scanner else { return }
         do {
             try await scanner.removeRoot(id: id)
-            await self.refreshRoots()
-            // Albums/Artists are separate models; tracks are reloaded for the
-            // active destination via loadCurrentDestination() so a scoped
-            // detail view isn't clobbered with the full library.
-            await self.albums.load()
-            await self.artists.load()
-            await self.loadCurrentDestination()
         } catch {
+            // The folder row can be gone while its songs are still listed, so
+            // the listener is told, and the lists below still reload (#645).
             self.log.error("library.removeRoot.failed", ["error": String(reflecting: error)])
+            self.playbackErrorMessage =
+                L10n.string("Could not remove the folder from the library: \(error.localizedDescription)")
         }
+        await self.refreshRoots()
+        // Albums/Artists are separate models; tracks are reloaded for the
+        // active destination via loadCurrentDestination() so a scoped
+        // detail view isn't clobbered with the full library.
+        await self.albums.load()
+        await self.artists.load()
+        await self.loadCurrentDestination()
     }
 
     /// Dismisses the finished scan summary banner.

@@ -7249,6 +7249,22 @@
         }
       }
     },
+    "Could not remove the folder from the library: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not remove the folder from the library: %@"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđ ñóţ ŕéḿóvé ţĥé ƒóĺđéŕ ƒŕóḿ ţĥé ĺíƀŕáŕý: %@ one two three four"
+          }
+        }
+      }
+    },
     "Could not reshuffle playlist." : {
       "localizations" : {
         "en" : {
