@@ -102,16 +102,25 @@ private func makeDownloaded(
     return dest.path
 }
 
-/// Yields cooperatively until `condition` holds (the manager processes transfer
-/// callbacks on hopped Tasks) or the yield budget is exhausted. Deterministic:
-/// no wall-clock waits.
+/// Polls until `condition` holds (the manager processes transfer callbacks on
+/// hopped Tasks) or `timeout` passes. It returns as soon as the condition is
+/// true, so the timeout costs nothing on a pass.
+///
+/// This was a budget of 2000 yields with no clock. The work it waits for
+/// moves a file, hashes it and writes the database, off this executor, and a
+/// condition that only reads an actor spends 2000 yields faster than a slow
+/// machine does that work: the first run on a CI runner failed that way.
 @discardableResult
-private func eventually(_ maxYields: Int = 2000, _ condition: @Sendable () async -> Bool) async -> Bool {
-    for _ in 0 ..< maxYields {
+private func eventually(
+    _ timeout: Duration = .seconds(10),
+    _ condition: @Sendable () async -> Bool
+) async -> Bool {
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
         if await condition() {
             return true
         }
-        await Task.yield()
+        try? await Task.sleep(for: .milliseconds(2))
     }
     return await condition()
 }

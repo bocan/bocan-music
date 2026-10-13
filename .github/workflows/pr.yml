@@ -201,6 +201,27 @@ jobs:
       - name: Test Library package
         run: make test-library
 
+      # The Xcode bundle above holds only the Observability, UI view-model and
+      # App tests, so each of these suites runs here or not at all. Until
+      # 2026-10 they did not: six modules were tested only on a developer's Mac.
+      - name: Test Acoustics package
+        run: make test-acoustics
+
+      - name: Test Subsonic package
+        run: make test-subsonic
+
+      - name: Test Podcasts package
+        run: make test-podcasts
+
+      - name: Test Playback package
+        run: make test-playback
+
+      - name: Test Scrobble package
+        run: make test-scrobble
+
+      - name: Test SyncServer package
+        run: make test-sync-server
+
       - name: Test UI package
         run: make test-ui
 
