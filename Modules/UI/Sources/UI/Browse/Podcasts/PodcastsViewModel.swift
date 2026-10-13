@@ -78,6 +78,9 @@ public final class PodcastsViewModel: ObservableObject {
     let searchProvider: (any PodcastSearchProviding)?
     let transcriptProvider: (any PodcastTranscriptProviding)?
     let log = AppLogger.make(.ui)
+    /// Tells the listener that an action of theirs failed. `LibraryViewModel`
+    /// sets it to show a toast; the text is already localized (#640).
+    var onActionFailed: ((String) -> Void)?
 
     // MARK: - Observation tasks
 
@@ -428,20 +431,6 @@ public final class PodcastsViewModel: ObservableObject {
             try await self.actions?.unsubscribe(podcastID: id)
         } catch {
             self.log.error("podcasts.unsubscribe.failed", ["id": id, "error": String(reflecting: error)])
-        }
-    }
-
-    public func markAllPlayed() async {
-        guard let id = currentShow?.id else { return }
-        await self.actions?.markAllPlayed(podcastID: id)
-    }
-
-    /// Marks every episode of every subscribed show as played. Backs the
-    /// "Mark All as Played" toolbar action on the Podcasts home view.
-    public func markAllSubscribedPlayed() async {
-        guard let actions else { return }
-        for id in self.subscribed.compactMap(\.id) {
-            await actions.markAllPlayed(podcastID: id)
         }
     }
 

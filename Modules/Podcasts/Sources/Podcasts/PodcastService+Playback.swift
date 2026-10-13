@@ -142,8 +142,15 @@ public extension PodcastService {
         }
     }
 
+    // MARK: - UI seam
+
+    // These are the listener's own actions, so a failed write is logged here,
+    // with the context only this layer has, and then thrown: the caller owes
+    // the listener a message (#640). The feed-URL versions above belong to the
+    // player, which has nobody to tell, so they recover.
+
     /// Marks the episode fully played by podcast database ID (UI seam, bypasses feedURL cache).
-    func markPlayed(podcastID: Int64, guid: String) async {
+    func markPlayed(podcastID: Int64, guid: String) async throws {
         do {
             try await self.stateRepo.markPlayed(
                 podcastID: podcastID,
@@ -155,20 +162,22 @@ public extension PodcastService {
                 "podcast.markPlayed.byID.failed",
                 ["error": String(reflecting: error)]
             )
+            throw error
         }
     }
 
     /// Resets the episode to unplayed with position 0 by podcast database ID (UI seam).
-    func markUnplayed(podcastID: Int64, guid: String) async {
+    func markUnplayed(podcastID: Int64, guid: String) async throws {
         do {
             try await self.stateRepo.markUnplayed(podcastID: podcastID, guid: guid)
         } catch {
             self.log.warning("podcast.markUnplayed.byID.failed", ["error": String(reflecting: error)])
+            throw error
         }
     }
 
     /// Marks a selection of one show's episodes played in one write (UI seam, #635).
-    func markPlayed(podcastID: Int64, guids: [String]) async {
+    func markPlayed(podcastID: Int64, guids: [String]) async throws {
         do {
             try await self.stateRepo.markPlayed(
                 podcastID: podcastID,
@@ -180,11 +189,12 @@ public extension PodcastService {
                 "podcast.markPlayed.batch.failed",
                 ["podcastID": podcastID, "count": guids.count, "error": String(reflecting: error)]
             )
+            throw error
         }
     }
 
     /// Resets a selection of one show's episodes to unplayed in one write (UI seam, #635).
-    func markUnplayed(podcastID: Int64, guids: [String]) async {
+    func markUnplayed(podcastID: Int64, guids: [String]) async throws {
         do {
             try await self.stateRepo.markUnplayed(podcastID: podcastID, guids: guids)
         } catch {
@@ -192,15 +202,17 @@ public extension PodcastService {
                 "podcast.markUnplayed.batch.failed",
                 ["podcastID": podcastID, "count": guids.count, "error": String(reflecting: error)]
             )
+            throw error
         }
     }
 
     /// Marks all episodes for a podcast as played (UI seam).
-    func markAllPlayed(podcastID: Int64) async {
+    func markAllPlayed(podcastID: Int64) async throws {
         do {
             try await self.stateRepo.markAllPlayed(podcastID: podcastID, now: self.now().timeIntervalSince1970)
         } catch {
             self.log.warning("podcast.markAllPlayed.failed", ["error": String(reflecting: error)])
+            throw error
         }
     }
 }

@@ -224,15 +224,19 @@ public protocol PodcastActions: Sendable {
     func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws
     /// Builds and enqueues a podcast `QueueItem`, then begins playback.
     func play(episode: EpisodeListItem, podcast: Podcast) async
-    func markPlayed(podcastID: Int64, guid: String) async
-    func markUnplayed(podcastID: Int64, guid: String) async
+    /// The play-state writes throw so the caller can tell the listener: a
+    /// failed write leaves the list as it was, which looks like the click did
+    /// nothing (#640). Views go through `PodcastsViewModel`, which reports it.
+    func markPlayed(podcastID: Int64, guid: String) async throws
+    func markUnplayed(podcastID: Int64, guid: String) async throws
     /// Marks a selection of one show's episodes in a single write, so the list
     /// refreshes once rather than once per episode (#635).
-    func markPlayed(podcastID: Int64, guids: [String]) async
-    func markUnplayed(podcastID: Int64, guids: [String]) async
-    func markAllPlayed(podcastID: Int64) async
-    /// No-op when ADR-043 downloads are not built.
-    func download(podcastID: Int64, guid: String) async
+    func markPlayed(podcastID: Int64, guids: [String]) async throws
+    func markUnplayed(podcastID: Int64, guids: [String]) async throws
+    func markAllPlayed(podcastID: Int64) async throws
+    /// No-op when ADR-043 downloads are not built. Throws when the download
+    /// could not be queued; a transfer that fails later shows on the badge.
+    func download(podcastID: Int64, guid: String) async throws
     func removeDownload(podcastID: Int64, guid: String) async
     /// Live download progress: one element per state change or throttled tick,
     /// so the episode badge can show how far a download has got. Persisted

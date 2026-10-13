@@ -136,7 +136,7 @@ struct EpisodeList: View {
             if isPlayed {
                 Button(L10n.string("Mark as Unplayed")) {
                     Task {
-                        await self.vm.actions?.markUnplayed(
+                        await self.vm.markUnplayed(
                             podcastID: item.episode.podcastID,
                             guid: item.episode.guid
                         )
@@ -145,7 +145,7 @@ struct EpisodeList: View {
             } else {
                 Button(L10n.string("Mark as Played")) {
                     Task {
-                        await self.vm.actions?.markPlayed(
+                        await self.vm.markPlayed(
                             podcastID: item.episode.podcastID,
                             guid: item.episode.guid
                         )
@@ -196,7 +196,7 @@ struct EpisodeList: View {
 
         case .none, .failed:
             Button(L10n.string("Download")) {
-                Task { await self.vm.actions?.download(podcastID: item.episode.podcastID, guid: item.episode.guid) }
+                Task { await self.vm.download(podcastID: item.episode.podcastID, guid: item.episode.guid) }
             }
         }
     }
@@ -227,11 +227,7 @@ struct EpisodeList: View {
         let downloaded = items.filter { ($0.state?.downloadState ?? .none) == .downloaded }
         if !pending.isEmpty {
             Button(L10n.string("Download Selected")) {
-                Task {
-                    for item in pending {
-                        await self.vm.actions?.download(podcastID: item.episode.podcastID, guid: item.episode.guid)
-                    }
-                }
+                Task { await self.vm.download(pending) }
             }
         }
         if !downloaded.isEmpty {

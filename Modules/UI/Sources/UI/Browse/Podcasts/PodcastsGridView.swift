@@ -127,7 +127,7 @@ struct PodcastsGridView: View {
             // state observation. This stamps completed_at, which starts the
             // 30-day transcript cleanup clock (ADR-051) for each episode.
             Button(L10n.string("Mark All as Played")) {
-                Task { await self.library.podcastActions?.markAllPlayed(podcastID: id) }
+                Task { await self.vm.markAllPlayed(podcastID: id) }
             }
             Button(L10n.string("Show Settings…")) {
                 self.settingsTarget = SettingsTarget(podcast: podcast)

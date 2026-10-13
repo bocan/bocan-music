@@ -125,16 +125,46 @@ struct PodcastServicePlaybackTests {
         let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
         let stateRepo = EpisodeStateRepository(database: bed.db)
 
-        await bed.service.markPlayed(podcastID: podcastID, guids: [ep1GUID, ep2GUID])
+        try await bed.service.markPlayed(podcastID: podcastID, guids: [ep1GUID, ep2GUID])
         for guid in [ep1GUID, ep2GUID] {
             let row = try #require(try await stateRepo.fetch(podcastID: podcastID, guid: guid))
             #expect(row.playState == .played)
             #expect(row.completedAt == fixedNow.timeIntervalSince1970)
         }
 
-        await bed.service.markUnplayed(podcastID: podcastID, guids: [ep2GUID])
+        try await bed.service.markUnplayed(podcastID: podcastID, guids: [ep2GUID])
         #expect(try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)?.playState == .played)
         #expect(try await stateRepo.fetch(podcastID: podcastID, guid: ep2GUID)?.playState == .unplayed)
+    }
+
+    @Test("The listener's play-state actions throw when the write fails (#640)")
+    func playStateActionsThrowOnFailure() async throws {
+        let bed = try await makePodcastServiceBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            try (rssData, stubResponse(url: testFeedURL))
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        // With no state table, every play-state write throws.
+        try await bed.db.write { try $0.execute(sql: "DROP TABLE podcast_episode_state") }
+
+        await #expect(throws: (any Error).self) {
+            try await bed.service.markPlayed(podcastID: podcastID, guid: ep1GUID)
+        }
+        await #expect(throws: (any Error).self) {
+            try await bed.service.markUnplayed(podcastID: podcastID, guid: ep1GUID)
+        }
+        await #expect(throws: (any Error).self) {
+            try await bed.service.markPlayed(podcastID: podcastID, guids: [ep1GUID, ep2GUID])
+        }
+        await #expect(throws: (any Error).self) {
+            try await bed.service.markUnplayed(podcastID: podcastID, guids: [ep1GUID])
+        }
+        await #expect(throws: (any Error).self) {
+            try await bed.service.markAllPlayed(podcastID: podcastID)
+        }
+        // The player's own write has nobody to tell, so it still recovers.
+        await bed.service.markPlayed(feedURL: testFeedURL, episodeGUID: ep1GUID)
     }
 
     // MARK: audioURL

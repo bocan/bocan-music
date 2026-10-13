@@ -24,10 +24,12 @@ struct EpisodeDownloadMenuConventionTests {
         try String(contentsOf: self.uiSourcesURL.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
-    @Test("Episode context menu wires manual download and removal through the actions seam")
+    @Test("Episode context menu wires manual download through the view model, and removal through the actions seam")
     func singleEpisodeActions() throws {
         let list = try self.source("Browse/Podcasts/EpisodeList.swift")
-        #expect(list.contains("actions?.download(podcastID:"))
+        // Through the view model, which reports a download that cannot start (#640).
+        #expect(list.contains("self.vm.download(podcastID:"))
+        #expect(!list.contains("actions?.download("))
         #expect(list.contains("actions?.removeDownload(podcastID:"))
         #expect(list.contains("Download"))
         #expect(list.contains("Remove Download"))

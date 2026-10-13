@@ -110,16 +110,31 @@ struct AppPodcastActionsTests {
         let actions = AppPodcastActions(service: bed.service, player: bed.player, downloads: nil)
         let id = try await actions.subscribe(feedURL: feedURL)
         let state = EpisodeStateRepository(database: bed.db)
-        await actions.markPlayed(podcastID: id, guid: "seam-ep1")
+        try await actions.markPlayed(podcastID: id, guid: "seam-ep1")
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .played)
-        await actions.markUnplayed(podcastID: id, guid: "seam-ep1")
+        try await actions.markUnplayed(podcastID: id, guid: "seam-ep1")
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .unplayed)
-        await actions.markAllPlayed(podcastID: id)
+        try await actions.markAllPlayed(podcastID: id)
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .played)
-        await actions.markUnplayed(podcastID: id, guids: ["seam-ep1"])
+        try await actions.markUnplayed(podcastID: id, guids: ["seam-ep1"])
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .unplayed)
-        await actions.markPlayed(podcastID: id, guids: ["seam-ep1"])
+        try await actions.markPlayed(podcastID: id, guids: ["seam-ep1"])
         #expect(try await state.fetch(podcastID: id, guid: "seam-ep1")?.playState == .played)
+    }
+
+    @Test("a failed play-state write comes out of the adapter as a throw (#640)")
+    func playStateFailureThrows() async throws {
+        let bed = try await makeBed()
+        let actions = AppPodcastActions(service: bed.service, player: bed.player, downloads: nil)
+        let id = try await actions.subscribe(feedURL: feedURL)
+        try await bed.db.write { try $0.execute(sql: "DROP TABLE podcast_episode_state") }
+
+        await #expect(throws: (any Error).self) {
+            try await actions.markPlayed(podcastID: id, guid: "seam-ep1")
+        }
+        await #expect(throws: (any Error).self) {
+            try await actions.markAllPlayed(podcastID: id)
+        }
     }
 
     @Test("exportOPML includes the subscribed feed and unsubscribe removes it")

@@ -7039,6 +7039,38 @@
         }
       }
     },
+    "Could not mark as played" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not mark as played"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđ ñóţ ḿáŕķ áš ƥĺáýéđ one two"
+          }
+        }
+      }
+    },
+    "Could not mark as unplayed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not mark as unplayed"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđ ñóţ ḿáŕķ áš úñƥĺáýéđ one two"
+          }
+        }
+      }
+    },
     "Could not permanently delete the file: %@" : {
       "localizations" : {
         "en" : {
@@ -7293,6 +7325,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çóúĺđ ñóţ šéţ çóvéŕ áŕţ. one two"
+          }
+        }
+      }
+    },
+    "Could not start the download" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not start the download"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđ ñóţ šţáŕţ ţĥé đóŵñĺóáđ one two three"
           }
         }
       }
