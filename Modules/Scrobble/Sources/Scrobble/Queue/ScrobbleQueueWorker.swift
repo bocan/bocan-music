@@ -131,11 +131,29 @@ public actor ScrobbleQueueWorker {
             }
 
             if pending.isEmpty {
-                await self.waitForKick(timeout: nil)
+                await self.waitForKick(timeout: self.timeUntilNextRetry())
                 continue
             }
 
             await self.process(pending)
+        }
+    }
+
+    /// How long to sleep when nothing is due: until the soonest scheduled
+    /// retry, or `nil` (until a kick) when no retry is scheduled.
+    ///
+    /// Without this, a submission the provider asked to retry later was
+    /// stored with its time and then never looked at again until something
+    /// else woke the worker: the next song, or the network coming back.
+    private func timeUntilNextRetry() async -> Duration? {
+        do {
+            guard let next = try await self.repo.nextAttemptDate(providerID: self.provider.id) else { return nil }
+            // The floor stops a row that is due this instant from making the
+            // loop spin.
+            return .seconds(max(next.timeIntervalSince(self.now()), 0.05))
+        } catch {
+            self.log.error("scrobble.worker.nextAttempt.fail", ["err": String(reflecting: error)])
+            return .seconds(30)
         }
     }
 

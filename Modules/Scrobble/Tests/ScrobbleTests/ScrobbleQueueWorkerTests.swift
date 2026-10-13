@@ -95,6 +95,30 @@ struct ScrobbleQueueWorkerTests {
         await worker.stop()
     }
 
+    /// The retry time is two seconds away, so nothing is due after the first
+    /// pass and the worker goes to sleep. It must wake for the retry by itself.
+    /// Before, it slept until a kick, and the test above passed only because
+    /// its 10 ms retry almost always fell inside the same stored second.
+    @Test("a retry scheduled for later is sent when it is due, with no kick")
+    func laterRetryNeedsNoKick() async throws {
+        let db = try await self.makeDB()
+        let repo = try await self.seedAndEnqueue(db, count: 1)
+        let provider = MockProvider()
+        await provider.queue([
+            { plays in plays.map { SubmissionResult(queueID: $0.queueID, outcome: .retry(reason: "5xx", after: 2)) } },
+            { plays in plays.map { SubmissionResult(queueID: $0.queueID, outcome: .success) } },
+        ])
+        let worker = ScrobbleQueueWorker(
+            provider: provider,
+            repository: repo,
+            reachability: StaticReachability(reachable: true),
+            policy: RetryPolicy(baseDelay: 0.01, maxDelay: 0.05, maxAttempts: 5, jitter: 0)
+        )
+        await worker.start()
+        try await self.waitFor(timeout: 10.0) { try await repo.stats().pending == 0 }
+        await worker.stop()
+    }
+
     @Test("permanent failure marks dead immediately")
     func permanentFailureMarksDead() async throws {
         let db = try await self.makeDB()
