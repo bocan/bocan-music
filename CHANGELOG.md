@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removing a folder under Settings → Library now takes its songs out of the library. Before, they stayed behind, so after you moved your music to a new drive and added the new folder, every song appeared twice and no rescan cleared it. If your library already has these doubles, they go away on the next launch. Songs from a folder you removed also no longer come back while the app stays open. Thanks for reporting this one @go1968.
 
+- Clicking Add Folder or Add Files again while the dialog is open no longer opens a second dialog beside the first. The one that is open comes to the front.
+
 ## [2.21.0](https://github.com/bocan/bocan-music/compare/v2.20.0...v2.21.0) (2026-10-06)
 
 - Select several podcast episodes, right-click, and choose "Mark Selected as Played" or "Mark Selected as Unplayed" to change them all at once. Thanks for suggesting this one @GitMyAccount.

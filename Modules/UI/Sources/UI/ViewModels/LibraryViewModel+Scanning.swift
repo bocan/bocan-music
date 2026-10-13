@@ -72,19 +72,8 @@ public extension LibraryViewModel {
         await self.addURLs(panel.urls)
     }
 
-    /// Async wrapper around `NSOpenPanel.begin(completionHandler:)`. Unlike
-    /// `runModal()` this does **not** spin a nested modal run loop, so the
-    /// audio engine's render callback keeps its scheduling priority while the
-    /// panel is on screen.
-    /// Internal (not private): the listening-history import picker in
-    /// `LibraryViewModel+ListenImport.swift` shares this helper.
-    static func runOpenPanelAsync(_ panel: NSOpenPanel) async -> NSApplication.ModalResponse {
-        await withCheckedContinuation { (continuation: CheckedContinuation<NSApplication.ModalResponse, Never>) in
-            panel.begin { response in
-                continuation.resume(returning: response)
-            }
-        }
-    }
+    // `runOpenPanelAsync`, which both pickers above use, is in
+    // `LibraryViewModel+OpenPanel.swift`.
 
     /// Handles a drag-and-drop of URLs onto the main window.
     ///
