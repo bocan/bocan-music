@@ -14644,6 +14644,17 @@
         }
       }
     },
+    "Move or copy the music, then open Settings → Library, remove the old folder and add the new one, in that order. Bòcan recognises each file in its new place, so your ratings, play counts, playlists and listening history stay with it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿóvé óŕ çóƥý ţĥé ḿúšíç, ţĥéñ óƥéñ Šéţţíñĝš → Ĺíƀŕáŕý, ŕéḿóvé ţĥé óĺđ ƒóĺđéŕ áñđ áđđ ţĥé ñéŵ óñé, íñ ţĥáţ óŕđéŕ. Ɓòçáñ ŕéçóĝñíšéš éáçĥ ƒíĺé íñ íţš ñéŵ ƥĺáçé, šó ýóúŕ ŕáţíñĝš, ƥĺáý çóúñţš, ƥĺáýĺíšţš áñđ ĺíšţéñíñĝ ĥíšţóŕý šţáý ŵíţĥ íţ. one two three four five six seven eight nine ten one two three four five"
+          }
+        }
+      }
+    },
     "Move sort key down" : {
       "localizations" : {
         "en-XA" : {
@@ -14755,6 +14766,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ḿóvíñĝ áŕóúñđ one"
+          }
+        }
+      }
+    },
+    "Moving your music to a new drive or folder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿóvíñĝ ýóúŕ ḿúšíç ţó á ñéŵ đŕívé óŕ ƒóĺđéŕ one two three"
           }
         }
       }

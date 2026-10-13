@@ -6,6 +6,41 @@ import Persistence
 // MARK: - Per-file import, after the conflict check
 
 extension ScanCoordinator {
+    // MARK: - Single file rescan
+
+    /// Re-imports a single file, refreshing its tags and bookmarks.
+    ///
+    /// Completes in < 200 ms for normal files.  Returns a one-entry
+    /// `ScanProgress.Summary` describing the outcome.
+    ///
+    /// - Parameter url: The resolved, security-scoped URL for the file.
+    func scanSingleFile(url: URL) async throws -> ScanProgress.Summary {
+        let start = ContinuousClock.now
+        var inserted = 0, updated = 0, errors = 0
+
+        let result = await self.importOne(url: url, mode: .full) { _ in }
+        switch result {
+        case .inserted:
+            inserted += 1
+
+        case .updated:
+            updated += 1
+
+        default:
+            errors += 1
+        }
+
+        let elapsed = ContinuousClock.now - start
+        return ScanProgress.Summary(
+            inserted: inserted,
+            updated: updated,
+            removed: 0,
+            skipped: 0,
+            errors: errors,
+            duration: elapsed
+        )
+    }
+
     /// Imports the file through a `TrackImporter` and emits the outcome.
     func importAndReport(
         file: ScannedFile,

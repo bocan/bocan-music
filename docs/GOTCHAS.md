@@ -256,6 +256,26 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Library/Sources/Library/RootCoverage.swift`, used from `Modules/Library/Sources/Library/LibraryScanner+Roots.swift`
 
+### The folder watcher hears about more than the roots
+
+**Problem:** albums appear in the library from a folder that is not a music source (#643). They sat beside the music folder on the same drive.
+
+**Rule:** every import path that does not start from a root walk must ask `RootCoverage` whether a root holds the file. `LibraryScanner.handleFSChange` does this for each watcher event and drops the ones outside. Do not import a path only because FSEvents named it.
+
+**Why:** FSEvents watches directories. `LibraryScanner.watchableURL` gives the watcher the parent folder for a single-file root, and also for a root whose path is missing when the watcher starts and whose bookmark does not resolve (the app started before the drive was connected, or the folder was moved away). For a root at the top of a drive, that parent is the whole drive. Before the check, every audio file that changed there was imported through `scanSingleFile`, which needs no root.
+
+**Canonical file:** `Modules/Library/Sources/Library/LibraryScanner+FSChanges.swift`
+
+### A file that is new by path can take the row of a hidden track
+
+**Problem:** a library moved to a new drive came in as new tracks, and the ratings, play counts, playlist entries and history stayed on the hidden rows of the old folder (#647).
+
+**Rule:** identity across a move is decided in one place, `TrackRelinker`, and only hidden rows (`disabled = 1`) are candidates. Same size, name and modification time is enough; with only the name or only the time equal, the new file's SHA-256 must equal the stored `content_hash`. The claim is one `UPDATE ... WHERE disabled = 1`, so two files never get the same row. A re-linked row has no bookmark until the import that follows mints one, and a user-edited row whose album was pruned goes through the importer, not the conflict path, so it gets an album again. The order matters to the listener: remove the old folder first, then add the new one. A file added while its old row is still visible is a second track.
+
+**Why:** rows are keyed by `file_url`. Re-using the row keeps its id, and every table that refers to a track follows without a list of those tables to maintain. Hashing every new file during the scan would turn a few minutes into an hour on a large library, so the whole-file read is kept for the case where the cheap evidence is incomplete.
+
+**Canonical file:** `Modules/Library/Sources/Library/TrackRelinker.swift`
+
 ---
 
 ## Persistence and keychain
