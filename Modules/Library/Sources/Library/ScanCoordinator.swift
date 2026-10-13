@@ -24,6 +24,7 @@ actor ScanCoordinator {
     private let changeDetector: ChangeDetector
     private let tagReader: TagReader
     private let settingsRepo: SettingsRepository
+    private let relinker: TrackRelinker
     let log = AppLogger.make(.library)
 
     // MARK: - Init
@@ -39,41 +40,7 @@ actor ScanCoordinator {
         self.changeDetector = ChangeDetector()
         self.tagReader = TagReader()
         self.settingsRepo = SettingsRepository(database: database)
-    }
-
-    // MARK: - Single file rescan
-
-    /// Re-imports a single file, refreshing its tags and bookmarks.
-    ///
-    /// Completes in < 200 ms for normal files.  Returns a one-entry
-    /// `ScanProgress.Summary` describing the outcome.
-    ///
-    /// - Parameter url: The resolved, security-scoped URL for the file.
-    func scanSingleFile(url: URL) async throws -> ScanProgress.Summary {
-        let start = ContinuousClock.now
-        var inserted = 0, updated = 0, errors = 0
-
-        let result = await self.importOne(url: url, mode: .full) { _ in }
-        switch result {
-        case .inserted:
-            inserted += 1
-
-        case .updated:
-            updated += 1
-
-        default:
-            errors += 1
-        }
-
-        let elapsed = ContinuousClock.now - start
-        return ScanProgress.Summary(
-            inserted: inserted,
-            updated: updated,
-            removed: 0,
-            skipped: 0,
-            errors: errors,
-            duration: elapsed
-        )
+        self.relinker = TrackRelinker(trackRepo: self.trackRepo)
     }
 
     // MARK: - Scan
@@ -103,7 +70,10 @@ actor ScanCoordinator {
         let iCloudDownload = await self.readICloudDownloadSetting()
         let settings = WalkSettings(supported: supported, concurrency: concurrency, iCloudDownload: iCloudDownload)
 
+        // The hidden tracks a new file may be re-linked to are read once (#647).
+        await self.relinker.beginScan()
         let results = await self.walkAndImport(roots: roots, mode: mode, settings: settings, emit: emit)
+        await self.relinker.endScan()
 
         self.log.debug("scan.walk.end", ["results": results.count])
         guard !Task.isCancelled else { return }
@@ -183,7 +153,8 @@ actor ScanCoordinator {
             guard !track.disabled else { return false }
             guard let trackURL = URL(string: track.fileURL) else { return false }
             let trackPath = Self.canonicalPath(trackURL.path) ?? trackURL.path
-            return rootPaths.contains { LibraryRoot.directory($0, contains: trackPath) }
+            // Equality is the single-file root: a directory does not contain itself (#646).
+            return rootPaths.contains { $0 == trackPath || LibraryRoot.directory($0, contains: trackPath) }
         }
         await self.changeDetector.seed(scopedEnabledTracks.map {
             ChangeDetector.KnownFile(url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
@@ -319,9 +290,10 @@ actor ScanCoordinator {
         }
     }
 
-    // MARK: - Private
+    // MARK: - Per-file import
 
-    private func importOne(
+    /// Internal for `scanSingleFile` in `ScanCoordinator+Import.swift`.
+    func importOne(
         url: URL,
         mode: ScanMode,
         emit: @Sendable (ScanProgress) -> Void
@@ -362,7 +334,7 @@ actor ScanCoordinator {
         // Check for conflict. A failed lookup must not read as "no such row":
         // that is what protects a user-edited track from being overwritten by
         // the scan, so the file is reported as an error and left alone (#481).
-        let existingTrack: Track?
+        var existingTrack: Track?
         do {
             existingTrack = try await self.trackRepo.fetchOne(fileURL: url.absoluteString)
         } catch {
@@ -370,7 +342,14 @@ actor ScanCoordinator {
             emit(.error(url: url, error: error))
             return .error
         }
-        if let ex = existingTrack, let exID = ex.id, ex.userEdited,
+        if existingTrack == nil {
+            // New by path. A hidden track that is the same file gives it its
+            // row, and with the row the listener's history with it (#647).
+            existingTrack = await self.relinker.relink(url: url, size: size, mtime: mtime)
+        }
+        // A user-edited row whose album was pruned while it was hidden has no
+        // album to keep: it takes the importer's path, which links one again.
+        if let ex = existingTrack, let exID = ex.id, ex.userEdited, ex.albumID != nil,
            let conflict = await self.resolveUserEditConflict(ex, exID: exID, tags: tags, file: file, emit: emit) {
             return conflict
         }
@@ -413,6 +392,10 @@ actor ScanCoordinator {
             }
             if ex.disabled {
                 updated.disabled = false
+            }
+            // A re-linked row (#647) has no bookmark for its new place yet.
+            if ex.fileBookmark == nil {
+                updated.fileBookmark = self.bookmark(for: url, existingTrack: nil)
             }
             // Only raise the review flag when disk tags actually differ from
             // the DB values. A mtime-only change (e.g. app rewrote the file
@@ -483,17 +466,6 @@ actor ScanCoordinator {
     /// unreliable assumption when comparing roots against tracks whose files
     /// may have just been removed.
     private static func canonicalPath(_ path: String) -> String? {
-        var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
-        let resolved = buffer.withUnsafeMutableBufferPointer { ptr -> UnsafeMutablePointer<CChar>? in
-            // The buffer is never empty, so there is always a base address;
-            // without one the path counts as unresolvable, like a realpath failure.
-            guard let base = ptr.baseAddress else { return nil }
-            return base.withMemoryRebound(to: CChar.self, capacity: ptr.count) { cPtr in
-                realpath(path, cPtr)
-            }
-        }
-        guard resolved != nil else { return nil }
-        let length = buffer.firstIndex(of: 0) ?? buffer.count
-        return String(bytes: buffer[..<length], encoding: .utf8)
+        RootCoverage.canonicalPath(path)
     }
 }

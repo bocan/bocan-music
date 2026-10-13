@@ -6,6 +6,66 @@ import Persistence
 // MARK: - FSEvents changes to existing paths
 
 extension LibraryScanner {
+    /// Handles a batch of FS-event URLs: filters to known audio extensions and
+    /// triggers `scanSingleFile` for each matching, non-hidden file.
+    ///
+    /// When FSEvents reports a directory (e.g. when an entire folder is moved
+    /// into a watched root) the event carries only the directory path, not one
+    /// event per file inside it.  We recursively enumerate such directories so
+    /// every audio file they contain is picked up automatically.
+    ///
+    /// An event for a path that no root holds is dropped. The watcher can
+    /// follow more than the roots: the folder around a single-file root, and
+    /// the parent of a root that is missing, which for a root at the top of a
+    /// drive is the whole drive. Without the check every audio file changed
+    /// there was imported, from folders the listener never added (#643).
+    func handleFSChange(urls: [URL]) async {
+        var didChange = false
+        let trackRepo = TrackRepository(database: self.database)
+        guard let coverage = await self.currentRootCoverage() else { return }
+        for raw in urls {
+            // NFC-normalise: APFS may deliver decomposed UTF-8.
+            let url = URL(fileURLWithPath: raw.path.precomposedStringWithCanonicalMapping)
+            guard !url.lastPathComponent.hasPrefix(".") else { continue }
+            guard coverage.position(ofFileURL: url.absoluteString) == .inside else {
+                self.log.debug("fsevents.outside_roots", ["path": url.lastPathComponent])
+                continue
+            }
+
+            var isDir: ObjCBool = false
+            let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+
+            if !exists {
+                if await self.handleRemovedPath(url, trackRepo: trackRepo) {
+                    didChange = true
+                }
+            } else if isDir.boolValue {
+                if await self.handleChangedDirectory(url, trackRepo: trackRepo) {
+                    didChange = true
+                }
+            } else {
+                if await self.handleChangedFile(url, trackRepo: trackRepo) {
+                    didChange = true
+                }
+            }
+        }
+        if didChange, let callback = self.onFileImported {
+            await callback()
+        }
+    }
+
+    /// What the roots hold now, or `nil` when the roots cannot be read. Then
+    /// nothing is known to be inside a root, so the batch is dropped; the next
+    /// scan finds whatever it named.
+    private func currentRootCoverage() async -> RootCoverage? {
+        do {
+            return try await RootCoverage(paths: self.paths(of: self.rootRepo.fetchAll()))
+        } catch {
+            self.log.warning("fsevents.rootsUnavailable", ["error": String(reflecting: error)])
+            return nil
+        }
+    }
+
     /// A whole directory was moved/created: enumerate it recursively.
     ///
     /// - Returns: `true` when the library changed.
