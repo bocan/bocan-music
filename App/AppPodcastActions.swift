@@ -104,28 +104,28 @@ struct AppPodcastActions: PodcastActions {
         }
     }
 
-    func markPlayed(podcastID: Int64, guid: String) async {
-        await self.service.markPlayed(podcastID: podcastID, guid: guid)
+    func markPlayed(podcastID: Int64, guid: String) async throws {
+        try await self.service.markPlayed(podcastID: podcastID, guid: guid)
     }
 
-    func markUnplayed(podcastID: Int64, guid: String) async {
-        await self.service.markUnplayed(podcastID: podcastID, guid: guid)
+    func markUnplayed(podcastID: Int64, guid: String) async throws {
+        try await self.service.markUnplayed(podcastID: podcastID, guid: guid)
     }
 
-    func markPlayed(podcastID: Int64, guids: [String]) async {
-        await self.service.markPlayed(podcastID: podcastID, guids: guids)
+    func markPlayed(podcastID: Int64, guids: [String]) async throws {
+        try await self.service.markPlayed(podcastID: podcastID, guids: guids)
     }
 
-    func markUnplayed(podcastID: Int64, guids: [String]) async {
-        await self.service.markUnplayed(podcastID: podcastID, guids: guids)
+    func markUnplayed(podcastID: Int64, guids: [String]) async throws {
+        try await self.service.markUnplayed(podcastID: podcastID, guids: guids)
     }
 
-    func markAllPlayed(podcastID: Int64) async {
-        await self.service.markAllPlayed(podcastID: podcastID)
+    func markAllPlayed(podcastID: Int64) async throws {
+        try await self.service.markAllPlayed(podcastID: podcastID)
     }
 
-    func download(podcastID: Int64, guid: String) async {
-        await self.downloads?.download(podcastID: podcastID, guid: guid)
+    func download(podcastID: Int64, guid: String) async throws {
+        try await self.downloads?.download(podcastID: podcastID, guid: guid)
     }
 
     func removeDownload(podcastID: Int64, guid: String) async {

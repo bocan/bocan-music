@@ -105,7 +105,12 @@ public actor EpisodeDownloadManager {
     /// Enqueue a download. Sets state to `queued`, then `downloading` when a slot
     /// frees. Idempotent: a no-op for an in-flight, queued, or already-downloaded
     /// episode. Resumes a paused download using its saved resume data.
-    public func download(podcastID: Int64, guid: String) async {
+    ///
+    /// Throws when the episode cannot be read, because then nothing was
+    /// queued and no state changed: without the throw, Download looks like it
+    /// did nothing (#640). A transfer that fails later does not throw; it
+    /// sets the episode's state to `failed`.
+    public func download(podcastID: Int64, guid: String) async throws {
         let key = Key(podcastID: podcastID, guid: guid)
         if self.active[key] != nil || self.pending.contains(key) {
             return
@@ -139,7 +144,7 @@ public actor EpisodeDownloadManager {
                     "guid": guid,
                     "error": String(reflecting: error),
                 ])
-                return
+                throw error
             }
         }
 
@@ -328,7 +333,13 @@ public actor EpisodeDownloadManager {
         }
         self.log.debug("download.resumeInterrupted", ["count": rows.count])
         for row in rows {
-            await self.download(podcastID: row.podcastID, guid: row.guid)
+            do {
+                try await self.download(podcastID: row.podcastID, guid: row.guid)
+            } catch {
+                // Already logged with its context by `download`. The row keeps
+                // its state, so the next launch tries it again.
+                continue
+            }
         }
     }
 

@@ -32,13 +32,89 @@ public extension PodcastsViewModel {
     func setPlayed(_ played: Bool, episodes items: [EpisodeListItem]) async {
         guard let actions, !items.isEmpty else { return }
         let byShow = Dictionary(grouping: items, by: \.episode.podcastID)
+        var failed = false
         for (podcastID, showItems) in byShow {
             let guids = showItems.map(\.episode.guid)
-            if played {
-                await actions.markPlayed(podcastID: podcastID, guids: guids)
-            } else {
-                await actions.markUnplayed(podcastID: podcastID, guids: guids)
+            do {
+                if played {
+                    try await actions.markPlayed(podcastID: podcastID, guids: guids)
+                } else {
+                    try await actions.markUnplayed(podcastID: podcastID, guids: guids)
+                }
+            } catch {
+                self.log.error("podcasts.setPlayed.failed", [
+                    "id": podcastID, "count": guids.count, "error": String(reflecting: error),
+                ])
+                failed = true
             }
         }
+        if failed {
+            self.reportPlayStateFailure(played: played)
+        }
+    }
+
+    /// Marks one episode played. The single-row menus call this, not the seam,
+    /// so a failed write reaches the listener (#640).
+    func markPlayed(podcastID: Int64, guid: String) async {
+        do {
+            try await self.actions?.markPlayed(podcastID: podcastID, guid: guid)
+        } catch {
+            self.log.error("podcasts.markPlayed.failed", ["id": podcastID, "error": String(reflecting: error)])
+            self.reportPlayStateFailure(played: true)
+        }
+    }
+
+    /// Marks one episode unplayed, reporting a failed write as `markPlayed` does.
+    func markUnplayed(podcastID: Int64, guid: String) async {
+        do {
+            try await self.actions?.markUnplayed(podcastID: podcastID, guid: guid)
+        } catch {
+            self.log.error("podcasts.markUnplayed.failed", ["id": podcastID, "error": String(reflecting: error)])
+            self.reportPlayStateFailure(played: false)
+        }
+    }
+
+    /// Marks every episode of the open show as played.
+    func markAllPlayed() async {
+        guard let id = currentShow?.id else { return }
+        await self.markAllPlayed(podcastID: id)
+    }
+
+    /// Marks every episode of one show as played (the grid's context menu).
+    func markAllPlayed(podcastID id: Int64) async {
+        if await !self.markAllPlayedQuietly(podcastID: id) {
+            self.reportPlayStateFailure(played: true)
+        }
+    }
+
+    /// Marks every episode of every subscribed show as played. Backs the
+    /// "Mark All as Played" toolbar action on the Podcasts home view. A show
+    /// that fails does not stop the others, and the listener is told once.
+    func markAllSubscribedPlayed() async {
+        var failed = false
+        for id in self.subscribed.compactMap(\.id) where await !self.markAllPlayedQuietly(podcastID: id) {
+            failed = true
+        }
+        if failed {
+            self.reportPlayStateFailure(played: true)
+        }
+    }
+
+    /// - Returns: `false` when the write failed. The failure is logged here;
+    ///   telling the listener is the caller's job, so a loop tells them once.
+    private func markAllPlayedQuietly(podcastID id: Int64) async -> Bool {
+        do {
+            try await self.actions?.markAllPlayed(podcastID: id)
+            return true
+        } catch {
+            self.log.error("podcasts.markAllPlayed.failed", ["id": id, "error": String(reflecting: error)])
+            return false
+        }
+    }
+
+    private func reportPlayStateFailure(played: Bool) {
+        self.onActionFailed?(
+            played ? L10n.string("Could not mark as played") : L10n.string("Could not mark as unplayed")
+        )
     }
 }

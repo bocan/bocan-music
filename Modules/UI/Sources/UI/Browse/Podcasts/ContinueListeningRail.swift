@@ -53,10 +53,10 @@ struct ContinueListeningRail: View {
     @ViewBuilder
     private func cardMenu(_ item: ContinueListeningItem) -> some View {
         Button(L10n.string("Mark as Played")) {
-            Task { await self.vm.actions?.markPlayed(podcastID: item.podcastID, guid: item.guid) }
+            Task { await self.vm.markPlayed(podcastID: item.podcastID, guid: item.guid) }
         }
         Button(L10n.string("Mark as Unplayed")) {
-            Task { await self.vm.actions?.markUnplayed(podcastID: item.podcastID, guid: item.guid) }
+            Task { await self.vm.markUnplayed(podcastID: item.podcastID, guid: item.guid) }
         }
         Divider()
         Button(L10n.string("Go to Show")) {
