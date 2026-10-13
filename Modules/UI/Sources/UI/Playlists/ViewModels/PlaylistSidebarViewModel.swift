@@ -347,8 +347,8 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     /// Opens a non-blocking `NSOpenPanel` for the user to pick a cover image,
     /// copies it into Application Support, and persists the path via the service.
     ///
-    /// Uses `NSOpenPanel.begin(completionHandler:)` (not `runModal`) so the
-    /// audio render callback is never starved — see ADR-007 audit issue #28.
+    /// Shows the panel through `PanelPresenter` (not `runModal`) so the audio
+    /// render callback is never starved (ADR-007 audit issue #28).
     public func setCoverArt(for node: PlaylistNode) async {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.jpeg, .png, .tiff, .heic, .webP]
@@ -357,7 +357,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         panel.message = L10n.string("Choose an image to use as the cover art for \"\(node.name)\".")
         panel.prompt = L10n.string("Set Cover Art")
 
-        let response = await Self.openPanelAsync(panel)
+        let response = await PanelPresenter.present(panel)
         guard response == .OK, let url = panel.url else { return }
 
         self.log.debug("playlist.setCoverArt.begin", ["id": node.id])

@@ -132,8 +132,7 @@ public struct PlaylistImportSheet: View {
     // MARK: - Actions
 
     private func pickFiles() {
-        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from ADR-007.
+        // Non-blocking and one at a time: see `PanelPresenter`.
         Task { @MainActor in
             let panel = NSOpenPanel()
             panel.allowsMultipleSelection = true
@@ -141,9 +140,7 @@ public struct PlaylistImportSheet: View {
             panel.canChooseFiles = true
             let exts = ["m3u", "m3u8", "pls", "xspf", "cue"]
             panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
-            let result = await withCheckedContinuation { cont in
-                panel.begin { cont.resume(returning: $0) }
-            }
+            let result = await PanelPresenter.present(panel)
             guard result == .OK else { return }
             self.pickedURLs = panel.urls
             await self.requestCueAudioAccessIfNeeded()
@@ -181,9 +178,7 @@ public struct PlaylistImportSheet: View {
         panel.message = L10n.string(
             "Bòcan needs permission to read the audio files this CUE sheet refers to. Select the folder that contains them."
         )
-        let result = await withCheckedContinuation { cont in
-            panel.begin { cont.resume(returning: $0) }
-        }
+        let result = await PanelPresenter.present(panel)
         guard result == .OK, let folder = panel.url else { return }
         self.grantedFolders.append(folder)
     }

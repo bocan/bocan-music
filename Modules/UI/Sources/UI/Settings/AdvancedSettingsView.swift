@@ -205,7 +205,8 @@ public struct AdvancedSettingsView: View {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "BocanDiagnostics.zip"
         panel.allowedContentTypes = [.zip]
-        panel.begin { response in
+        Task { @MainActor in
+            let response = await PanelPresenter.present(panel)
             guard response == .OK, let destination = panel.url else { return }
             let info = Bundle.main.infoDictionary
             let version = info?["CFBundleShortVersionString"] as? String ?? "unknown"
