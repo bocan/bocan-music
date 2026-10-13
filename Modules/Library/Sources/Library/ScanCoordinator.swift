@@ -183,7 +183,8 @@ actor ScanCoordinator {
             guard !track.disabled else { return false }
             guard let trackURL = URL(string: track.fileURL) else { return false }
             let trackPath = Self.canonicalPath(trackURL.path) ?? trackURL.path
-            return rootPaths.contains { LibraryRoot.directory($0, contains: trackPath) }
+            // Equality is the single-file root: a directory does not contain itself (#646).
+            return rootPaths.contains { $0 == trackPath || LibraryRoot.directory($0, contains: trackPath) }
         }
         await self.changeDetector.seed(scopedEnabledTracks.map {
             ChangeDetector.KnownFile(url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
