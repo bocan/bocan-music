@@ -246,6 +246,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Library/Sources/Library/CoverArtCache.swift`; the tests are `Modules/Library/Tests/LibraryTests/CoverArtSweepInUseTests.swift` and `CoverArtSweepProvenanceTests.swift`
 
+### A track is stored as a `file://` URL and a root as a plain path
+
+**Problem:** a write meant for "every track in this folder" changes no rows and reports success. Removing a music source left all its tracks in the library, so a library moved to a new drive showed every song twice, and no rescan cleared it (#643).
+
+**Rule:** never compare `tracks.file_url` with `library_roots.path` as strings, in SQL or in Swift. Ask `RootCoverage` which tracks a set of roots holds; it decodes the URL, compares whole path components, matches a single-file root by equality and tries each path with symlinks resolved. Pass it the bookmark's resolved path as well as the stored one. For the one hot path that stays in SQL (a folder deleted on disk), give `TrackRepository.disableAll(underDirectoryURL:)` a `file://` string from `URL.absoluteString`. Hide, never delete: a hidden row keeps its ratings, play counts and playlist entries (ADR-003).
+
+**Why:** `file_url` is `URL.absoluteString`, so it starts with `file://` and a space is `%20`, while `LibraryRoot.path` is `url.path`. A `LIKE '/Volumes/x/Music/%'` therefore matched nothing, on every library, since the feature was written. The scan and the watcher also follow the root's bookmark, which still resolves after the folder is renamed, so the tracks of one root can sit under a path its row does not show. A scan only compares disk with the tracks inside its roots, so a track outside every root is never looked at again; `LibraryScanner.hideTracksOutsideRoots` is what clears those, and it treats an unreachable root (an unplugged drive) as still holding its tracks.
+
+**Canonical file:** `Modules/Library/Sources/Library/RootCoverage.swift`, used from `Modules/Library/Sources/Library/LibraryScanner+Roots.swift`
+
 ---
 
 ## Persistence and keychain
