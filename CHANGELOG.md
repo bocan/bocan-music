@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.22.0](https://github.com/bocan/bocan-music/compare/v2.21.0...v2.22.0) (2026-10-14)
+
 - Removing a folder under Settings → Library now takes its songs out of the library. Before, they stayed behind, so after you moved your music to a new drive and added the new folder, every song appeared twice and no rescan cleared it. If your library already has these doubles, they go away on the next launch. Songs from a folder you removed also no longer come back while the app stays open. Thanks for reporting this one @go1968.
 
 - Moving your music to a new drive or folder no longer costs you your history with it. Remove the old folder under Settings → Library, add the new one, and Bòcan recognises each file in its new place: ratings, play counts, loved songs, playlists and listening history all stay.
@@ -18,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A song you added by itself is no longer read again on every launch, and when you delete its file, the song leaves the library.
 
 - A scrobble that the service asked Bòcan to send again later is now sent again at that time. Before, it could wait until you played the next song or the network came back.
+
+### For developers
+
+**Added**
+- library: keep history when music moves, and take in only what a source holds ([#648](https://github.com/bocan/bocan-music/pull/648))
+
+**Fixed**
+- library: hide a removed folder's tracks, and open one file dialog at a time ([#644](https://github.com/bocan/bocan-music/pull/644))
+- podcasts: report a failed play-state action or download start ([#649](https://github.com/bocan/bocan-music/pull/649))
 
 ## [2.21.0](https://github.com/bocan/bocan-music/compare/v2.20.0...v2.21.0) (2026-10-06)
 
