@@ -7,21 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- A scrobble that the service asked Bòcan to send again later is now sent again at that time. Before, it could wait until you played the next song or the network came back.
-
-- When Mark as Played, Mark as Unplayed, Mark All as Played or a podcast download cannot be done, Bòcan now tells you. Before, nothing happened and the list stayed as it was.
-
 - Removing a folder under Settings → Library now takes its songs out of the library. Before, they stayed behind, so after you moved your music to a new drive and added the new folder, every song appeared twice and no rescan cleared it. If your library already has these doubles, they go away on the next launch. Songs from a folder you removed also no longer come back while the app stays open. Thanks for reporting this one @go1968.
 
 - Moving your music to a new drive or folder no longer costs you your history with it. Remove the old folder under Settings → Library, add the new one, and Bòcan recognises each file in its new place: ratings, play counts, loved songs, playlists and listening history all stay.
+
+- Clicking Add Folder or Add Files again while the dialog is open no longer opens a second dialog beside the first. The one that is open comes to the front. The same goes for every other file dialog in the app: playlist import and export, podcast subscription import and export, playlist cover art, and the log and diagnostics exports.
 
 - Bòcan no longer takes in music from folders you did not add. While a music folder was missing (for example, the app started before its drive was connected), any song that changed elsewhere on that drive could be imported. The same happened to the files beside a song you added by itself. Now only what is inside your folders comes in, and songs that came in this way before are taken out on the next launch.
 
 - A song you added by itself is no longer read again on every launch, and when you delete its file, the song leaves the library.
 
-- When a folder cannot be removed under Settings → Library, Bòcan now tells you. Before, nothing happened.
-
-- Clicking Add Folder or Add Files again while the dialog is open no longer opens a second dialog beside the first. The one that is open comes to the front. The same goes for every other file dialog in the app: playlist import and export, podcast subscription import and export, playlist cover art, and the log and diagnostics exports.
+- A scrobble that the service asked Bòcan to send again later is now sent again at that time. Before, it could wait until you played the next song or the network came back.
 
 ## [2.21.0](https://github.com/bocan/bocan-music/compare/v2.20.0...v2.21.0) (2026-10-06)
 
