@@ -40,11 +40,16 @@ enum SmokePlayback {
     /// it. Returns at once otherwise.
     static func runIfRequested(_ lvm: LibraryViewModel) async {
         guard let directory, let reportPath else { return }
-        let code = await Self.run(lvm, directory: directory, reportPath: reportPath)
-        exit(code)
+        do {
+            let code = try await Self.run(lvm, directory: directory, reportPath: reportPath)
+            exit(code)
+        } catch {
+            self.log.error("smoke.play.cancelled", ["error": String(reflecting: error)])
+            exit(2)
+        }
     }
 
-    private static func run(_ lvm: LibraryViewModel, directory: URL, reportPath: String) async -> Int32 {
+    private static func run(_ lvm: LibraryViewModel, directory: URL, reportPath: String) async throws -> Int32 {
         let names: [String]
         do {
             names = try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted()
@@ -59,14 +64,14 @@ enum SmokePlayback {
             if !lvm.isScanning, lvm.tracks.tracks.count >= names.count {
                 break
             }
-            try? await Task.sleep(for: .seconds(1))
+            try await Task.sleep(for: .seconds(1))
         }
         let library = lvm.tracks.tracks
 
         var lines: [String] = []
         var allPassed = !names.isEmpty
         for name in names {
-            let line = await self.playOne(name, in: library, lvm: lvm)
+            let line = try await self.playOne(name, in: library, lvm: lvm)
             allPassed = allPassed && line.hasPrefix("PASS")
             lines.append(line)
         }
@@ -81,7 +86,7 @@ enum SmokePlayback {
         return allPassed ? 0 : 1
     }
 
-    private static func playOne(_ name: String, in library: [Track], lvm: LibraryViewModel) async -> String {
+    private static func playOne(_ name: String, in library: [Track], lvm: LibraryViewModel) async throws -> String {
         func fail(_ reason: String) -> String {
             ["FAIL", "-", "0", name, reason].joined(separator: "\t")
         }
@@ -122,13 +127,13 @@ enum SmokePlayback {
             if let message = lvm.playbackErrorMessage {
                 return fail("playback error: \(message)")
             }
-            try? await Task.sleep(for: .milliseconds(40))
+            try await Task.sleep(for: .milliseconds(40))
         }
         guard sawPlaying else { return fail("never seen playing in \(Int(self.startTimeout)) s") }
         guard sawFacts else { return fail("no source facts, so no badges") }
 
         // The badge row lays out once the facts are in; give it a moment.
-        try? await Task.sleep(for: .seconds(self.dwell))
+        try await Task.sleep(for: .seconds(self.dwell))
         let position = String(format: "%.1f", furthest)
         return ["PASS", codec ?? "-", position, name, ""].joined(separator: "\t")
     }
