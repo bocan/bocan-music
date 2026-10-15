@@ -202,14 +202,21 @@ fi
 # lazily bound symbol would otherwise stay unresolved until its first call,
 # which is a crash in the middle of playback and not at launch (#627).
 # Python's own signature matters: a hardened Python refuses an ad hoc signed
-# library with a team ID message, which is not a missing symbol.
+# library with a team ID message, which is not a missing symbol. An Apple
+# Python under SIP also drops DYLD_* variables, so the siblings would not be
+# found; the runners use Homebrew's Python.
 echo "=== load each bundled library ==="
 if ! command -v python3 > /dev/null; then
     fail "python3 is not available for the library load check"
 else
     while IFS= read -r dylib; do
         [[ -n "$dylib" ]] || continue
-        if load_out="$(python3 -I -c 'import ctypes, sys; ctypes.CDLL(sys.argv[1])' "$dylib" 2>&1)"; then
+        # The libraries name their siblings as @rpath/<name>, which the app
+        # resolves through its own rpath. Python has none, so the bundle's
+        # directories go in as the fallback path: dyld then finds each
+        # sibling by its leaf name, and what is left to fail is a symbol.
+        if load_out="$(DYLD_FALLBACK_LIBRARY_PATH="$APP/Contents/Frameworks:$APP/Contents/Resources" \
+            python3 -I -c 'import ctypes, sys; ctypes.CDLL(sys.argv[1])' "$dylib" 2>&1)"; then
             echo "✓ loads: ${dylib#"$APP"/}"
         else
             fail "does not load: ${dylib#"$APP"/}: ${load_out##*$'\n'}"
