@@ -25,6 +25,10 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    # SwiftUI on macOS 15 runs some view closures off the main thread, and the
+    # Swift 6 runtime isolation check traps there. Drop that runtime check
+    # (compile-time checking stays). Mirrors Modules/UI/Package.swift.
+    OTHER_SWIFT_FLAGS: "$(inherited) -Xfrontend -disable-dynamic-actor-isolation"
     MACOSX_DEPLOYMENT_TARGET: "15.0"
     CURRENT_PROJECT_VERSION: 1
     ARCHS: arm64

@@ -221,12 +221,29 @@ struct SourceBadgesRow: View {
         }
     }
 
+    /// One slot per `SourceBadgeModel.Kind`, written out rather than drawn by
+    /// a `ForEach`. A `ForEach` keeps its content closure and SwiftUI calls it
+    /// later, from `ViewThatFits`'s layout pass. On macOS 15 that pass runs on
+    /// SwiftUI's display-link queue, and a closure that is main-actor isolated
+    /// traps there on its first call: the app died the moment a track played
+    /// and the badges first appeared. A builder block runs at once, on
+    /// the thread that builds this view.
     private func row(_ badges: some Collection<SourceBadgeModel>) -> some View {
-        HStack(spacing: 6) {
-            ForEach(Array(badges)) { badge in
-                SourceBadge(model: badge)
-            }
+        let items = Array(badges)
+        return HStack(spacing: 6) {
+            self.slot(items, 0)
+            self.slot(items, 1)
+            self.slot(items, 2)
+            self.slot(items, 3)
+            self.slot(items, 4)
         }
         .fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder
+    private func slot(_ items: [SourceBadgeModel], _ index: Int) -> some View {
+        if index < items.count {
+            SourceBadge(model: items[index])
+        }
     }
 }
