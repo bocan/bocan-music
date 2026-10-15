@@ -553,9 +553,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
-		"TEMP_F7760501-7EAE-43D8-9DE8-0CEC3F2960C6" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
-		"TEMP_9C26BAB9-8856-4174-AFF1-32FDF8F9B89A" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_6E3CC2CF-86A8-420B-8E81-B3000F960F21" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1076,15 +1074,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_7DB521CF-A754-4D3F-9E9A-714B2C0F0A4E" /* bocan-music */ = {
+		"TEMP_1888AD37-FEBA-4E57-B09E-8996D1098C49" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */,
-		"TEMP_FFE4F8A5-AA07-46A4-BBF3-B8EBEB579CC6" /* bocan-music */ = {
-		"TEMP_4F35A60E-4D78-4080-9169-8E29BFCB1BDD" /* bocan-music */ = {
-			isa = PBXGroup;
-			children = (
-				"TEMP_9C26BAB9-8856-4174-AFF1-32FDF8F9B89A" /* Secrets.xcconfig */,
+				"TEMP_6E3CC2CF-86A8-420B-8E81-B3000F960F21" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1539,9 +1532,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */;
-			baseConfigurationReference = "TEMP_F7760501-7EAE-43D8-9DE8-0CEC3F2960C6" /* Secrets.xcconfig */;
-			baseConfigurationReference = "TEMP_9C26BAB9-8856-4174-AFF1-32FDF8F9B89A" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6E3CC2CF-86A8-420B-8E81-B3000F960F21" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1678,9 +1669,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */;
-			baseConfigurationReference = "TEMP_F7760501-7EAE-43D8-9DE8-0CEC3F2960C6" /* Secrets.xcconfig */;
-			baseConfigurationReference = "TEMP_9C26BAB9-8856-4174-AFF1-32FDF8F9B89A" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6E3CC2CF-86A8-420B-8E81-B3000F960F21" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
