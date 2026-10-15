@@ -137,6 +137,14 @@ struct SourceBadgesRowConventionTests {
         #expect(row.contains("lineWidth: self.highContrast ? 1.5 : 1"))
     }
 
+    @Test("the row has a slot for every badge and no ForEach (it traps on macOS 15)")
+    func rowHasNoForEach() throws {
+        let row = try self.source("AppRoot/SourceBadgesRow.swift")
+        #expect(!row.contains("ForEach("), "a ForEach closure runs on SwiftUI's display-link queue on macOS 15")
+        let slots = row.components(separatedBy: "self.slot(items, ").count - 1
+        #expect(slots == SourceBadgeModel.Kind.allCases.count)
+    }
+
     @Test("the strip's info block hosts the row, centred, with room for it")
     func stripHostsTheRow() throws {
         let strip = try self.source("AppRoot/NowPlayingStrip.swift")
