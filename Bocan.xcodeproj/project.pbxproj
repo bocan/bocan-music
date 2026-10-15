@@ -549,7 +549,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_8BB3115C-E7EC-44B6-86A2-E92B6344991F" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1068,10 +1068,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_9D99E9B1-1994-4D84-B535-C5D7FCFCEB15" /* bocan-music */ = {
+		"TEMP_7DB521CF-A754-4D3F-9E9A-714B2C0F0A4E" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_8BB3115C-E7EC-44B6-86A2-E92B6344991F" /* Secrets.xcconfig */,
+				"TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1524,7 +1524,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8BB3115C-E7EC-44B6-86A2-E92B6344991F" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1587,6 +1587,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xfrontend -disable-dynamic-actor-isolation";
 				PRODUCT_BUNDLE_IDENTIFIER = io.cloudcauldron.bocan;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -1660,7 +1661,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8BB3115C-E7EC-44B6-86A2-E92B6344991F" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A6FF87BC-978D-4C13-B55E-E7BD4CEB30CE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1717,6 +1718,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xfrontend -disable-dynamic-actor-isolation";
 				PRODUCT_BUNDLE_IDENTIFIER = io.cloudcauldron.bocan;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

@@ -64,6 +64,11 @@ let package = Package(
                 .copy("Resources/Shaders"),
             ],
             swiftSettings: [
+                // SwiftUI on macOS 15 runs some view closures (layout and
+                // container content) off the main thread, and the Swift 6
+                // runtime isolation check traps on a main-actor closure there.
+                // Drop that one runtime check. Compile-time checking stays.
+                .unsafeFlags(["-Xfrontend", "-disable-dynamic-actor-isolation"]),
                 .enableExperimentalFeature("StrictConcurrency"),
                 .unsafeFlags(["-Xcc", "-I\(ffmpegPrefix)/include"]),
             ],

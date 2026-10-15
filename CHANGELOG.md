@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Bòcan no longer closes the moment you play a song on macOS 15. The row of small boxes under the title that names the format, bitrate and sample rate stopped the app on that macOS version as soon as a song started.
+- Bòcan no longer closes the moment you play a song on macOS 15. The row of small boxes under the title that names the format, bitrate and sample rate stopped the app on that macOS version as soon as a song started. The same kind of stop is now switched off across the whole window, so a screen you have not opened yet cannot close the app that way on macOS 15 either.
 
 ## [2.22.0](https://github.com/bocan/bocan-music/compare/v2.21.0...v2.22.0) (2026-10-14)
 
