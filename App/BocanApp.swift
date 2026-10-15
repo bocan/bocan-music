@@ -49,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
         UNUserNotificationCenter.current().delegate = self
+        SmokeCheck.startIfRequested()
     }
 
     /// Intercepts ⌘Q when a scan or ReplayGain analysis is active.
@@ -686,6 +687,10 @@ final class AppModel {
             self.graph = BocanApp.buildGraph(database: db, appDelegate: appDelegate)
             await self.seedE2EFixturesIfRequested()
             self.log.info("app.bootstrap.ready", ["ms": -start.timeIntervalSinceNow * 1000])
+            if let graph = self.graph {
+                // Runs the smoke playback check when asked, and exits.
+                Task { await SmokePlayback.runIfRequested(graph.libraryViewModel) }
+            }
         } catch {
             self.log.error("app.bootstrap.dbOpenFailed", ["error": String(reflecting: error)])
             self.failed = true
