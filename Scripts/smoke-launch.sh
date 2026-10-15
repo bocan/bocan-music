@@ -19,6 +19,10 @@
 #   3. The bundled fpcalc starts, and (when an audio file is given) prints a
 #      fingerprint for it. fpcalc is a separate program with its own copies
 #      of the libraries, so check 1 does not cover it.
+#   6. With a fixture directory, on a runner: the app adds the files to its
+#      library and plays each through the queue player with its window up,
+#      and the play bar gets the track's facts. A crash while a track starts
+#      is caught here. Checks 4 and 5 never reach the UI.
 #   5. Every bundled .dylib loads on its own with all symbols bound, so a
 #      missing system symbol is named in the failure (runs before check 4).
 #   4. With a fixture directory: the app decodes one file of each format to
@@ -230,7 +234,7 @@ if [[ -n "$FIXTURE_DIR" ]] && ! grep -aq BOCAN_SMOKE_DECODE_LIST "$BINARY"; then
     # A release from before the check existed has no hook to call.
     echo "- decode check skipped: this build predates it"
 elif [[ -n "$FIXTURE_DIR" ]]; then
-    echo "=== decode each format with the bundled libraries ==="
+    echo "=== decode each format with the bundled libraries (no playback) ==="
     LIST="$WORK/decode-list.txt"
     REPORT="$WORK/decode-report.tsv"
     : > "$LIST"
@@ -300,6 +304,82 @@ elif [[ -n "$FIXTURE_DIR" ]]; then
         while IFS= read -r report; do
             [[ -n "$report" ]] || continue
             fail "a crash report was written while decoding: $report"
+            echo "--- $(basename "$report") (first 60 lines) ---" >&2
+            head -60 "$report" >&2 || true
+        done <<< "$reports"
+    fi
+fi
+
+# ── check 6: play each format through the app, with the window up ────────────
+
+# The decode check above proves the libraries and nothing past them. This one
+# is what a listener does: the app adds the folder to its library, plays each
+# file through the queue player and the engine, and waits for the play bar to
+# have the track's facts. A view that traps when a track starts (#627) ends
+# the app here and writes no report. The app does it in-process
+# (App/SmokePlayback.swift); the script adds the folder, the wait and the
+# verdict.
+#
+# It adds a library folder to the app's own library, so it runs only on a
+# runner (CI is set) or when SMOKE_ALLOW_LOCAL=1 says the library is
+# disposable. PLAY_TIMEOUT covers the scan, the nine tracks and their pauses.
+PLAY_TIMEOUT="${SMOKE_PLAY_TIMEOUT_SECONDS:-300}"
+if [[ -z "$FIXTURE_DIR" ]]; then
+    :
+elif ! grep -aq BOCAN_SMOKE_PLAY_DIR "$BINARY"; then
+    echo "- playback check skipped: this build predates it"
+elif [[ -z "${CI:-}" && "${SMOKE_ALLOW_LOCAL:-}" != "1" ]]; then
+    echo "- playback check skipped: it changes the app's library (set SMOKE_ALLOW_LOCAL=1 to run it here)"
+else
+    echo "=== play each format through the app ==="
+    PLAY_DIR="$WORK/play"
+    PLAY_REPORT="$WORK/play-report.tsv"
+    mkdir -p "$PLAY_DIR"
+    for name in "${DECODE_FILES[@]}"; do
+        [[ -f "$FIXTURE_DIR/$name" ]] && cp "$FIXTURE_DIR/$name" "$PLAY_DIR/"
+    done
+    play_mark="$WORK/play-started"
+    touch "$play_mark"
+
+    BOCAN_SMOKE_PLAY_DIR="$PLAY_DIR" BOCAN_SMOKE_PLAY_REPORT="$PLAY_REPORT" \
+        "$BINARY" -ApplePersistenceIgnoreState YES -sync.enabled NO \
+        -ui.windowMode.miniPlayerOpen NO > "$WORK/play.log" 2>&1 &
+    APP_PID=$!
+    waited=0
+    while kill -0 "$APP_PID" 2>/dev/null && [[ "$waited" -lt "$PLAY_TIMEOUT" ]]; do
+        sleep 1
+        waited=$((waited + 1))
+    done
+    if kill -0 "$APP_PID" 2>/dev/null; then
+        fail "the playback check did not finish in ${PLAY_TIMEOUT} s"
+        kill -9 "$APP_PID" 2>/dev/null || true
+    fi
+    play_exit=0
+    wait "$APP_PID" 2>/dev/null || play_exit=$?
+    APP_PID=""
+
+    if [[ ! -f "$PLAY_REPORT" ]]; then
+        fail "the playback check wrote no report: the app stopped (exit code ${play_exit})"
+        echo "--- what the app printed (last 40 lines) ---" >&2
+        tail -40 "$WORK/play.log" >&2 || true
+    else
+        while IFS=$'\t' read -r verdict codec position name reason; do
+            case "$verdict" in
+                PASS) printf '✓ played %-8s to %5s s  %s\n' "$codec" "$position" "$name" ;;
+                FAIL) fail "did not play: $name: $reason" ;;
+            esac
+        done < "$PLAY_REPORT"
+        if ! grep -q '^RESULT'$'\t''ok$' "$PLAY_REPORT"; then
+            fail "the playback check did not report ok (app exit code ${play_exit})"
+        fi
+    fi
+
+    sleep "$SETTLE"
+    if [[ -d "$CRASH_REPORT_DIR" ]]; then
+        reports="$(find "$CRASH_REPORT_DIR" -type f -name 'Bocan*' -newer "$play_mark" 2>/dev/null | sort || true)"
+        while IFS= read -r report; do
+            [[ -n "$report" ]] || continue
+            fail "a crash report was written during playback: $report"
             echo "--- $(basename "$report") (first 60 lines) ---" >&2
             head -60 "$report" >&2 || true
         done <<< "$reports"
