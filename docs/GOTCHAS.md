@@ -138,6 +138,20 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/UI/Sources/UI/AppRoot/SidebarHeaderAccessibility.swift`
 
+---
+
+### SwiftUI runs some view closures off the main thread on macOS 15, and Swift 6 traps on it
+
+**Problem:** 2.21.0 closed the moment a listener played a song on macOS 15. `EXC_BREAKPOINT` on `com.apple.SwiftUI.DisplayLink`, `dispatch_assert_queue_fail` under `swift_task_isCurrentExecutor`, inside the content closure of a `ForEach` in `SourceBadgesRow`. CI never saw it because every dev machine and every CI job except the smoketest runs macOS 26 or 27.
+
+**Rule:** the `UI` package and the app target build with `-Xfrontend -disable-dynamic-actor-isolation`, which drops the runtime isolation check (compile-time checking stays). Keep it in both `Modules/UI/Package.swift` and `project.yml` (`OTHER_SWIFT_FLAGS`). Do not remove it until the `smoketest` workflow passes its playback check on macOS 15 without it. Do not rely on `ForEach` content closures being main-actor safe on macOS 15; `SourceBadgesRow` also avoids `ForEach` outright.
+
+**Why:** on macOS 15 SwiftUI evaluates some container content closures (layout-time, `DynamicContainerInfo.updateItems`) off the main thread. The closure is inferred `@MainActor`, and the Swift 6 runtime asserts the executor on entry. The flag was proven on 2026-10-15: macOS 15 trapped in 3 of 3 runs without it and passed with it, and with the badge fix alone. Apple forum report FB20692404 describes the same class. The cost is that a real isolation bug becomes a silent data race instead of a trap.
+
+**Canonical file:** `Scripts/smoke-launch.sh` (the playback check that catches it) and `Modules/UI/Package.swift`
+
+---
+
 ## Audio engine and playback
 
 ### Transport operations stay behind the async-mutex gate
