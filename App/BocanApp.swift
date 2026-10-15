@@ -49,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
         UNUserNotificationCenter.current().delegate = self
+        SmokeCheck.startIfRequested()
     }
 
     /// Intercepts ⌘Q when a scan or ReplayGain analysis is active.

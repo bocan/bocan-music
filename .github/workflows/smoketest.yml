@@ -30,6 +30,8 @@ on:
     paths:
       - .github/workflows/smoketest.yml
       - Scripts/smoke-launch.sh
+      - App/SmokeCheck.swift
+      - Modules/AudioEngine/Sources/AudioEngine/Decoder/**
 
 permissions:
   contents: read
@@ -239,4 +241,5 @@ jobs:
       - name: Start the app
         run: |
           bash Scripts/smoke-launch.sh "$RUNNER_TEMP/app/Bocan.app" \
-            Modules/AudioEngine/Tests/AudioEngineTests/Fixtures/sample.mp3
+            Modules/AudioEngine/Tests/AudioEngineTests/Fixtures/sample.mp3 \
+            Modules/AudioEngine/Tests/AudioEngineTests/Fixtures
