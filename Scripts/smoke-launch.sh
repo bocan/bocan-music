@@ -19,6 +19,8 @@
 #   3. The bundled fpcalc starts, and (when an audio file is given) prints a
 #      fingerprint for it. fpcalc is a separate program with its own copies
 #      of the libraries, so check 1 does not cover it.
+#   5. Every bundled .dylib loads on its own with all symbols bound, so a
+#      missing system symbol is named in the failure (runs before check 4).
 #   4. With a fixture directory: the app decodes one file of each format to
 #      its end (MP3, FLAC, Ogg Vorbis, Opus, Opus in MP4, AAC, ALAC, WAV,
 #      WavPack) and one file over local HTTP, and every one yields audible
@@ -191,6 +193,28 @@ else
             fail "fpcalc made no fingerprint for $(basename "$FIXTURE"): $fpcalc_out"
         fi
     fi
+fi
+
+# ── check 5: every bundled library loads, with all symbols bound ────────────
+
+# `ctypes.CDLL` calls dlopen with RTLD_NOW, so a library that needs a system
+# symbol this macOS lacks fails here and the dyld error names the symbol. A
+# lazily bound symbol would otherwise stay unresolved until its first call,
+# which is a crash in the middle of playback and not at launch (#627).
+# Python's own signature matters: a hardened Python refuses an ad hoc signed
+# library with a team ID message, which is not a missing symbol.
+echo "=== load each bundled library ==="
+if ! command -v python3 > /dev/null; then
+    fail "python3 is not available for the library load check"
+else
+    while IFS= read -r dylib; do
+        [[ -n "$dylib" ]] || continue
+        if load_out="$(python3 -I -c 'import ctypes, sys; ctypes.CDLL(sys.argv[1])' "$dylib" 2>&1)"; then
+            echo "✓ loads: ${dylib#"$APP"/}"
+        else
+            fail "does not load: ${dylib#"$APP"/}: ${load_out##*$'\n'}"
+        fi
+    done < <(find "$APP/Contents/Frameworks" "$APP/Contents/Resources" -type f -name '*.dylib' 2>/dev/null | sort)
 fi
 
 # ── check 4: decode one file of each format ──────────────────────────────────
