@@ -89,7 +89,11 @@ enum SmokePlayback {
             return fail("the scan did not take the file in")
         }
         lvm.playbackErrorMessage = nil
-        await lvm.play(tracks: library, startingAt: index)
+        // One item per queue. With the whole library queued, a file that
+        // ends in a second hands over to the next one before this method
+        // moves on, so the next call found its file already played (or the
+        // queue already ended) and never saw it start.
+        await lvm.play(tracks: [library[index]], startingAt: 0)
 
         // The fixtures are a fraction of a second to a few seconds long and
         // the queue moves on by itself, so every observation is tied to this
