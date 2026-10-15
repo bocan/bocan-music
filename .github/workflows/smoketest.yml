@@ -243,3 +243,14 @@ jobs:
           bash Scripts/smoke-launch.sh "$RUNNER_TEMP/app/Bocan.app" \
             Modules/AudioEngine/Tests/AudioEngineTests/Fixtures/sample.mp3 \
             Modules/AudioEngine/Tests/AudioEngineTests/Fixtures
+
+      # A trap during playback leaves a crash report; keep it, so the frame
+      # that failed can be read without a second run.
+      - name: Keep the crash reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crash-reports-${{ matrix.os }}-${{ matrix.source }}
+          path: ~/Library/Logs/DiagnosticReports
+          retention-days: 7
+          if-no-files-found: ignore

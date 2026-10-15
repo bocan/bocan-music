@@ -25,7 +25,7 @@ enum SmokePlayback {
 
     private static let startTimeout: TimeInterval = 20
     private static let scanTimeout: TimeInterval = 90
-    private static let dwell: TimeInterval = 3
+    private static let dwell: TimeInterval = 1
 
     private static var directory: URL? {
         ProcessInfo.processInfo.environment["BOCAN_SMOKE_PLAY_DIR"]
@@ -91,24 +91,41 @@ enum SmokePlayback {
         lvm.playbackErrorMessage = nil
         await lvm.play(tracks: library, startingAt: index)
 
+        // The fixtures are a fraction of a second to a few seconds long and
+        // the queue moves on by itself, so every observation is tied to this
+        // file: the current track must be it, and the facts must be read
+        // while it is. A short poll, because a file can end in 250 ms.
         let np = lvm.nowPlaying
+        var sawPlaying = false
+        var sawFacts = false
+        var furthest: TimeInterval = 0
+        var codec: String?
         let deadline = Date().addingTimeInterval(self.startTimeout)
         while Date() < deadline {
-            if np.isPlaying, np.position > 0.3, np.sourceFacts != nil {
-                break
+            if np.currentTrack?.fileURL.hasSuffix(name) == true {
+                furthest = max(furthest, np.position)
+                if np.isPlaying || np.position > 0 {
+                    sawPlaying = true
+                }
+                if let facts = np.sourceFacts {
+                    sawFacts = true
+                    codec = facts.codec
+                }
+                if sawPlaying, sawFacts {
+                    break
+                }
             }
             if let message = lvm.playbackErrorMessage {
                 return fail("playback error: \(message)")
             }
-            try? await Task.sleep(for: .milliseconds(200))
+            try? await Task.sleep(for: .milliseconds(40))
         }
-        guard np.isPlaying else { return fail("not playing after \(Int(self.startTimeout)) s") }
-        guard np.position > 0.3 else { return fail("position did not move (\(np.position) s)") }
-        guard let facts = np.sourceFacts else { return fail("no source facts, so no badges") }
+        guard sawPlaying else { return fail("never seen playing in \(Int(self.startTimeout)) s") }
+        guard sawFacts else { return fail("no source facts, so no badges") }
 
-        // The badge row lays out once the facts are in; give it time to.
+        // The badge row lays out once the facts are in; give it a moment.
         try? await Task.sleep(for: .seconds(self.dwell))
-        let position = String(format: "%.1f", np.position)
-        return ["PASS", facts.codec ?? "-", position, name, ""].joined(separator: "\t")
+        let position = String(format: "%.1f", furthest)
+        return ["PASS", codec ?? "-", position, name, ""].joined(separator: "\t")
     }
 }
