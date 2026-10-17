@@ -159,9 +159,17 @@ public struct PodcastsHomeView: View {
         .toolbar {
             if !self.vm.subscribed.isEmpty {
                 ToolbarItem(placement: .principal) {
+                    // Each segment carries an icon: in a narrow window the
+                    // toolbar moves the switch into its overflow menu, which
+                    // draws a segmented picker as a palette of icons, so a
+                    // text-only segment shows there as a bare checkmark.
                     Picker(L10n.string("View"), selection: self.modeBinding) {
-                        Text(localized: "Shows").tag(PodcastsHomeMode.shows)
-                        Text(localized: "Downloaded").tag(PodcastsHomeMode.downloaded)
+                        Label(L10n.string("Shows"), systemImage: "square.grid.2x2")
+                            .labelStyle(.titleAndIcon)
+                            .tag(PodcastsHomeMode.shows)
+                        Label(L10n.string("Downloaded"), systemImage: "arrow.down.circle")
+                            .labelStyle(.titleAndIcon)
+                            .tag(PodcastsHomeMode.downloaded)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()

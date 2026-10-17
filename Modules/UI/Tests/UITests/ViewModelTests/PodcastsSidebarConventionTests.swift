@@ -74,6 +74,11 @@ struct PodcastsSidebarConventionTests {
 
         let home = try self.source("Browse/Podcasts/PodcastsHomeView.swift")
         #expect(home.contains(".pickerStyle(.segmented)"), "the switch is a segmented control")
+        #expect(
+            home.contains("Label(L10n.string(\"Shows\"), systemImage:")
+                && home.contains("Label(L10n.string(\"Downloaded\"), systemImage:"),
+            "each segment needs an icon, or the overflow menu's palette draws it blank"
+        )
         #expect(home.contains("ToolbarItem(placement: .principal)"), "it lives in the toolbar, costing no content space")
         #expect(
             home.contains("selectDestination(newMode == .shows ? .podcasts : .podcastDownloads)"),
