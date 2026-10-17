@@ -132,6 +132,18 @@ public struct EpisodeRepository: Sendable {
         }
     }
 
+    /// One episode's show notes, which the list reads leave out (see
+    /// `listItemColumns`). Nil when the episode has none or is gone.
+    public func fetchDescriptionHTML(podcastID: Int64, guid: String) async throws -> String? {
+        try await self.database.read { db in
+            try String.fetchOne(
+                db,
+                sql: "SELECT description_html FROM podcast_episodes WHERE podcast_id = ? AND guid = ?",
+                arguments: [podcastID, guid]
+            )
+        }
+    }
+
     /// Every downloaded episode across all shows, newest first (#651). The
     /// Downloaded view lists these; the Library Summary total counts the same
     /// rows, because both join the content and state tables.
@@ -230,8 +242,18 @@ public struct EpisodeRepository: Sendable {
 
     /// The columns ``EpisodeListRow`` decodes: the episode, plus its state
     /// under `st_` names so they cannot clash with the episode's own.
+    ///
+    /// Every episode column but the show notes, which read as nil: a list
+    /// observation re-runs on each position write during playback, and the
+    /// notes are most of a row's bytes (about 950 KB for 396 downloads). The
+    /// notes sheets fetch them one episode at a time with
+    /// ``fetchDescriptionHTML(podcastID:guid:)``. Spelled out, not `e.*`, so a
+    /// new column must be added here; the list round-trip test fails until it is.
     private static let listItemColumns = """
-    e.*,
+    e.id, e.podcast_id, e.guid, e.title, e.subtitle, NULL AS description_html,
+           e.audio_url, e.audio_mime, e.audio_byte_length, e.duration, e.published_at,
+           e.season, e.episode_number, e.episode_type, e.artwork_url, e.artwork_path,
+           e.chapters_url, e.transcript_url, e.link, e.explicit, e.persons_json, e.added_at,
            s.play_position  AS st_play_position,
            s.play_state     AS st_play_state,
            s.last_played_at AS st_last_played_at,

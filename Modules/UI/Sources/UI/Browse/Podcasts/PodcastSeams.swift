@@ -197,6 +197,10 @@ public protocol PodcastLibraryDataSource: Sendable {
     /// Live list of every downloaded episode across all shows, newest first
     /// (#651); re-emits when a download lands or goes, and on play-state changes.
     func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error>
+    /// One episode's show notes HTML, nil when it has none. Every list read
+    /// above leaves `descriptionHTML` nil, because a list re-reads on each
+    /// position write and the notes are most of a row's bytes.
+    func showNotesHTML(podcastID: Int64, guid: String) async throws -> String?
 }
 
 // MARK: - PodcastActions

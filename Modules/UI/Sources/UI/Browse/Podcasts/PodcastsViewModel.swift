@@ -173,7 +173,13 @@ public final class PodcastsViewModel: ObservableObject {
         do {
             async let episodes = library.episodes(podcastID: podcastID)
             async let shows = library.subscribedPodcasts()
-            self.nowPlayingEpisode = try await episodes.first { $0.episode.guid == guid }
+            // The list read leaves the notes out; read this one's in.
+            let playing = try await episodes.first { $0.episode.guid == guid }
+            self.nowPlayingEpisode = if let playing {
+                await self.withShowNotes(playing)
+            } else {
+                nil
+            }
             let show = try await shows.first { $0.id == podcastID }
             self.nowPlayingShowPersons = show?.persons ?? []
             self.nowPlayingPodroll = show?.podroll ?? []

@@ -70,6 +70,10 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
     func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error> {
         AsyncThrowingStream { _ in }
     }
+
+    func showNotesHTML(podcastID _: Int64, guid _: String) async throws -> String? {
+        nil
+    }
 }
 
 /// In-process stub for `PodcastActions`. Records calls; no-ops for everything.
@@ -288,6 +292,10 @@ struct PodcastsViewModelTests {
 
             func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error> {
                 AsyncThrowingStream { _ in }
+            }
+
+            func showNotesHTML(podcastID _: Int64, guid _: String) async throws -> String? {
+                nil
             }
         }
         let vm = PodcastsViewModel(library: ThrowingLibrary(), actions: nil)

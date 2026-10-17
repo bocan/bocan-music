@@ -14,8 +14,8 @@ private final class DownloadsLibrary: PodcastLibraryDataSource, @unchecked Senda
         self.podcasts
     }
 
-    func episodes(podcastID _: Int64) async throws -> [EpisodeListItem] {
-        []
+    func episodes(podcastID: Int64) async throws -> [EpisodeListItem] {
+        self.downloads.filter { $0.episode.podcastID == podcastID }
     }
 
     func episodes(podcastID _: Int64, order _: EpisodeSortOrder) async throws -> [EpisodeListItem] {
@@ -55,6 +55,13 @@ private final class DownloadsLibrary: PodcastLibraryDataSource, @unchecked Senda
 
     func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
         AsyncThrowingStream { _ in }
+    }
+
+    /// Show notes by guid, served one at a time as the real read does.
+    var notes: [String: String] = [:]
+
+    func showNotesHTML(podcastID _: Int64, guid: String) async throws -> String? {
+        self.notes[guid]
     }
 
     /// One emission, then the stream finishes, so `observeDownloaded()` returns.
@@ -252,6 +259,22 @@ struct PodcastsDownloadedTests {
 
         #expect(vm.downloaded.map(\.id) == [4, 3, 2, 1])
         #expect(vm.showsWithDownloads.map(\.title) == ["Apple News", "Zebra Talk"])
+    }
+
+    @Test("Show notes the list rows leave out are read in for the notes sheets")
+    func showNotesReadOnDemand() async {
+        let library = DownloadsLibrary()
+        library.podcasts = [show(1, "Zebra Talk"), show(2, "Apple News")]
+        library.downloads = self.items
+        library.notes = ["g3": "<p>Notes</p>"]
+        let vm = PodcastsViewModel(library: library, actions: nil)
+
+        let filled = await vm.withShowNotes(self.items[1])
+        #expect(filled.episode.descriptionHTML == "<p>Notes</p>", "the show page's sheet gets the notes")
+        #expect(await vm.showNotesHTML(for: self.items[0]) == nil, "an episode with no notes stays nil")
+
+        await vm.loadNowPlayingShowNotes(podcastID: 1, guid: "g3")
+        #expect(vm.nowPlayingEpisode?.episode.descriptionHTML == "<p>Notes</p>", "the player bar's sheet too")
     }
 
     @Test("Go to Show from the Downloaded list backs out to that list")

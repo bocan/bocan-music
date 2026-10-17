@@ -136,6 +136,54 @@ struct EpisodeRepositoryTests {
         let podcastID = try await insertPodcast(in: db)
         let repo = EpisodeRepository(database: db)
 
+        let full = self.fullEpisode(podcastID: podcastID)
+        try await repo.upsert(full)
+
+        let stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.subtitle == full.subtitle)
+        #expect(stored.descriptionHTML == full.descriptionHTML)
+        #expect(stored.audioMIME == full.audioMIME)
+        #expect(stored.audioByteLength == full.audioByteLength)
+        #expect(stored.duration == full.duration)
+        #expect(stored.publishedAt == full.publishedAt)
+        #expect(stored.season == full.season)
+        #expect(stored.episodeNumber == full.episodeNumber)
+        #expect(stored.episodeType == full.episodeType)
+        #expect(stored.artworkURL == full.artworkURL)
+        #expect(stored.artworkPath == full.artworkPath)
+        #expect(stored.chaptersURL == full.chaptersURL)
+        #expect(stored.transcriptURL == full.transcriptURL)
+        #expect(stored.link == full.link)
+        #expect(stored.explicit == full.explicit)
+        #expect(stored.persons.map(\.name) == ["Carol"])
+        #expect(stored.addedAt == full.addedAt)
+    }
+
+    /// The list reads spell their columns out and leave the show notes behind;
+    /// this fails when a new column is missed or the notes come back.
+    @Test("list reads carry every column but the show notes, which load one at a time")
+    func listReadsLeaveNotesBehind() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeRepository(database: db)
+        let full = self.fullEpisode(podcastID: podcastID)
+        try await repo.upsert(full)
+        try await EpisodeStateRepository(database: db).setDownloadState(
+            podcastID: podcastID, guid: full.guid, state: .downloaded, path: "/tmp/full.mp3", bytes: 1
+        )
+        var expected = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        expected.descriptionHTML = nil
+
+        let listed = try #require(try await repo.fetchListItems(podcastID: podcastID).first)
+        let downloaded = try #require(try await repo.fetchDownloadedListItems().first)
+        #expect(listed.episode == expected)
+        #expect(downloaded.episode == expected)
+        #expect(try await repo.fetchDescriptionHTML(podcastID: podcastID, guid: full.guid) == "<p>Body</p>")
+        #expect(try await repo.fetchDescriptionHTML(podcastID: podcastID, guid: "missing") == nil)
+    }
+
+    /// An episode with every content property set.
+    private func fullEpisode(podcastID: Int64) -> PodcastEpisode {
         var full = PodcastEpisode(
             podcastID: podcastID,
             guid: "ep-full",
@@ -159,26 +207,7 @@ struct EpisodeRepositoryTests {
         full.link = "https://example.test/full"
         full.explicit = true
         full.personsJSON = PodcastPerson.encodeList([PodcastPerson(name: "Carol")])
-        try await repo.upsert(full)
-
-        let stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
-        #expect(stored.subtitle == full.subtitle)
-        #expect(stored.descriptionHTML == full.descriptionHTML)
-        #expect(stored.audioMIME == full.audioMIME)
-        #expect(stored.audioByteLength == full.audioByteLength)
-        #expect(stored.duration == full.duration)
-        #expect(stored.publishedAt == full.publishedAt)
-        #expect(stored.season == full.season)
-        #expect(stored.episodeNumber == full.episodeNumber)
-        #expect(stored.episodeType == full.episodeType)
-        #expect(stored.artworkURL == full.artworkURL)
-        #expect(stored.artworkPath == full.artworkPath)
-        #expect(stored.chaptersURL == full.chaptersURL)
-        #expect(stored.transcriptURL == full.transcriptURL)
-        #expect(stored.link == full.link)
-        #expect(stored.explicit == full.explicit)
-        #expect(stored.persons.map(\.name) == ["Carol"])
-        #expect(stored.addedAt == full.addedAt)
+        return full
     }
 
     @Test("a refresh upsert keeps a cached artwork_path; an explicit path replaces it (#410)")

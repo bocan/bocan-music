@@ -15,6 +15,9 @@ struct EpisodeList: View {
     @State private var selection = Set<EpisodeListItem.ID>()
     @State private var filterText = ""
     @State private var showingNotes = false
+    /// The Show Notes sheet's episode, with its notes read in (list rows
+    /// leave them out).
+    @State private var notesItem: EpisodeListItem?
     @State private var showingTranscript = false
 
     private var filtered: [EpisodeListItem] {
@@ -95,7 +98,7 @@ struct EpisodeList: View {
         }
         .sheet(isPresented: self.$showingNotes) {
             ShowNotesView(
-                episode: self.selectedItem,
+                episode: self.notesItem,
                 showPersons: self.vm.currentShow?.persons ?? [],
                 podrollContext: PodrollContext(
                     items: self.vm.currentShow?.podroll ?? [],
@@ -103,7 +106,7 @@ struct EpisodeList: View {
                     onSelect: { self.library.openPodcastRecommendation($0) }
                 )
             ) {
-                guard let item = self.selectedItem, let actions = self.vm.actions else { return [] }
+                guard let item = self.notesItem, let actions = self.vm.actions else { return [] }
                 return await recoveredRead("podcasts.chapters.failed") {
                     try await actions.chapters(podcastID: item.episode.podcastID, guid: item.episode.guid)
                 } ?? []
@@ -261,7 +264,11 @@ struct EpisodeList: View {
     private func notesMenuItems(item: EpisodeListItem, ids: Set<EpisodeListItem.ID>) -> some View {
         Button(L10n.string("Show Notes")) {
             self.selection = ids
-            self.showingNotes = true
+            // The list rows carry no notes; read this episode's in first.
+            Task {
+                self.notesItem = await self.vm.withShowNotes(item)
+                self.showingNotes = true
+            }
         }
         if item.episode.transcriptURL != nil {
             Button(L10n.string("Transcript")) {
