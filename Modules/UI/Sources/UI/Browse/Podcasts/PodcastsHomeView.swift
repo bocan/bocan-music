@@ -157,25 +157,26 @@ public struct PodcastsHomeView: View {
             Task { await self.library.selectDestination(.podcastShow(id)) }
         }
         .toolbar {
-            if !self.vm.subscribed.isEmpty {
-                ToolbarItem(placement: .principal) {
-                    // Each segment carries an icon: in a narrow window the
-                    // toolbar moves the switch into its overflow menu, which
-                    // draws a segmented picker as a palette of icons, so a
-                    // text-only segment shows there as a bare checkmark.
-                    Picker(L10n.string("View"), selection: self.modeBinding) {
-                        Label(L10n.string("Shows"), systemImage: "square.grid.2x2")
-                            .labelStyle(.titleAndIcon)
-                            .tag(PodcastsHomeMode.shows)
-                        Label(L10n.string("Downloaded"), systemImage: "arrow.down.circle")
-                            .labelStyle(.titleAndIcon)
-                            .tag(PodcastsHomeMode.downloaded)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                    .help(L10n.string("Switch between your shows and every episode you have downloaded"))
+            // Always present, disabled with no subscriptions: a toolbar item
+            // that comes and goes is one an overflowed toolbar can lose.
+            ToolbarItem(placement: .principal) {
+                // Each segment carries an icon: in a narrow window the
+                // toolbar moves the switch into its overflow menu, which
+                // draws a segmented picker as a palette of icons, so a
+                // text-only segment shows there as a bare checkmark.
+                Picker(L10n.string("View"), selection: self.modeBinding) {
+                    Label(L10n.string("Shows"), systemImage: "square.grid.2x2")
+                        .labelStyle(.titleAndIcon)
+                        .tag(PodcastsHomeMode.shows)
+                    Label(L10n.string("Downloaded"), systemImage: "arrow.down.circle")
+                        .labelStyle(.titleAndIcon)
+                        .tag(PodcastsHomeMode.downloaded)
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .help(L10n.string("Switch between your shows and every episode you have downloaded"))
+                .disabled(self.vm.subscribed.isEmpty)
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {

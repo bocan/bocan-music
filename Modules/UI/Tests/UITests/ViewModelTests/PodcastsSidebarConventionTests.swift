@@ -44,7 +44,7 @@ struct PodcastsSidebarConventionTests {
     func contentPaneRoutesPodcasts() throws {
         let pane = try self.source("AppRoot/ContentPane.swift")
         #expect(
-            pane.contains("case .podcasts:"),
+            pane.contains("case .podcasts, .podcastDownloads:"),
             "ContentPane must handle the .podcasts destination"
         )
         #expect(
@@ -69,8 +69,14 @@ struct PodcastsSidebarConventionTests {
     @Test("Downloaded is the other side of a Podcasts toolbar switch, not a sidebar row (#651)")
     func downloadedSwitchWiring() throws {
         let pane = try self.source("AppRoot/ContentPane.swift")
-        #expect(pane.contains("case .podcastDownloads:"), "ContentPane must route .podcastDownloads")
-        #expect(pane.contains("mode: .downloaded"), "it must open the home view on its Downloaded side")
+        #expect(
+            pane.contains("case .podcasts, .podcastDownloads:"),
+            "both sides share one arm, so a switch keeps the view and its toolbar instead of rebuilding them"
+        )
+        #expect(
+            pane.contains("== .podcastDownloads ? .downloaded : .shows"),
+            "the shared view takes its side from the destination"
+        )
 
         let home = try self.source("Browse/Podcasts/PodcastsHomeView.swift")
         #expect(home.contains(".pickerStyle(.segmented)"), "the switch is a segmented control")
