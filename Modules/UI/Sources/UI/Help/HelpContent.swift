@@ -148,7 +148,7 @@ enum HelpContent {
             title: "Playing your downloads",
             body: "Choose Downloaded in the switch at the top of the Podcasts page to see every"
                 + " episode you have downloaded, from all your shows. Pick one show from the Show menu,"
-                + " sort newest or oldest first, or turn on Group by Show. Play All puts every listed"
+                + " click a column heading to sort by it, or turn on Group by Show. Play All puts every listed"
                 + " episode you have not finished into Up Next, in the order shown. Right-click an"
                 + " episode, or a selection, to choose Play Next or Add to Queue; these work on a show's"
                 + " own episode list too."

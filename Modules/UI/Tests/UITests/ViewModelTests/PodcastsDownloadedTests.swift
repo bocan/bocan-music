@@ -165,32 +165,47 @@ struct PodcastsDownloadedTests {
     ]
     private let titles: [Int64: String] = [1: "Zebra Talk", 2: "Apple News"]
 
-    @Test("The show filter keeps one show, and the query matches show titles too")
-    func filtersByShowAndQuery() {
-        let oneShow = PodcastsViewModel.visibleDownloads(
-            self.items, showFilter: 1, query: "", order: .newest, showTitles: self.titles
+    private func visible(
+        showFilter: Int64? = nil,
+        query: String = "",
+        sort: [KeyPathComparator<DownloadedRow>] = DownloadedSort.defaultOrder
+    ) -> [DownloadedRow] {
+        PodcastsViewModel.visibleDownloads(
+            self.items, showFilter: showFilter, query: query, sortOrder: sort, showTitles: self.titles
         )
-        #expect(oneShow.map(\.id) == [3, 1])
-
-        let byShowTitle = PodcastsViewModel.visibleDownloads(
-            self.items, showFilter: nil, query: " apple ", order: .newest, showTitles: self.titles
-        )
-        #expect(byShowTitle.map(\.id) == [4, 2])
     }
 
-    @Test("Oldest first reverses the newest-first list")
-    func oldestFirstReverses() {
-        let oldest = PodcastsViewModel.visibleDownloads(
-            self.items, showFilter: nil, query: "", order: .oldest, showTitles: self.titles
-        )
-        #expect(oldest.map(\.id) == [1, 2, 3, 4])
+    @Test("The show filter keeps one show, and the query matches show titles too")
+    func filtersByShowAndQuery() {
+        #expect(self.visible(showFilter: 1).map(\.id) == [3, 1])
+        #expect(self.visible(query: " apple ").map(\.id) == [4, 2])
+    }
+
+    @Test("Each column heading sorts; a show sort keeps each show's episodes newest first")
+    func columnsSort() {
+        #expect(self.visible().map(\.id) == [4, 3, 2, 1], "newest first before any click")
+        let oldest = DownloadedSort.order(from: "published.forward")
+        #expect(self.visible(sort: oldest).map(\.id) == [1, 2, 3, 4])
+        let byShow = DownloadedSort.order(from: "show.forward")
+        #expect(self.visible(sort: byShow).map(\.id) == [4, 2, 3, 1], "ties keep the newest-first input order")
+        let byTitleDown = DownloadedSort.order(from: "episode.reverse")
+        #expect(self.visible(sort: byTitleDown).map(\.id) == [4, 3, 2, 1])
+    }
+
+    @Test("The stored sort string round-trips, and junk falls back to newest first")
+    func sortRoundTrips() {
+        for raw in ["episode.forward", "show.reverse", "published.forward", "length.reverse"] {
+            #expect(DownloadedSort.rawValue(for: DownloadedSort.order(from: raw)) == raw)
+        }
+        #expect(DownloadedSort.rawValue(for: DownloadedSort.order(from: "")) == "published.reverse")
+        #expect(DownloadedSort.rawValue(for: DownloadedSort.order(from: "tempo.up")) == "published.reverse")
     }
 
     @Test("Grouping puts shows in title order and keeps each show's list order")
     func groupsByShowTitle() {
-        let groups = PodcastsViewModel.groupedDownloads(self.items, showTitles: self.titles)
+        let groups = PodcastsViewModel.groupedDownloads(self.visible())
         #expect(groups.map(\.title) == ["Apple News", "Zebra Talk"])
-        #expect(groups.map { $0.items.map(\.id) } == [[4, 2], [3, 1]])
+        #expect(groups.map { $0.rows.map(\.id) } == [[4, 2], [3, 1]])
     }
 
     @Test("Play All replaces Up Next with the unfinished episodes, in list order")

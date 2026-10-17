@@ -92,6 +92,10 @@ struct PodcastsSidebarConventionTests {
             list.contains(".task { await self.vm.observeDownloaded() }"),
             "the downloads observation must end when the list leaves the screen"
         )
+        #expect(
+            list.contains("sortOrder: self.sortOrder"),
+            "the column headings sort the list, and the stored sort survives a relaunch"
+        )
     }
 
     // MARK: - SidebarDestination

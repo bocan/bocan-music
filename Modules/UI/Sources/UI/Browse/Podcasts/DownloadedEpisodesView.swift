@@ -16,22 +16,27 @@ struct DownloadedEpisodesView: View {
     /// The toolbar search query, matched on episode and show title.
     var searchQuery: String
 
-    /// String-backed, not an enum: a `RawRepresentable` `@AppStorage` does
-    /// not propagate between instances.
-    @AppStorage("podcasts.downloads.order") private var orderRaw = EpisodeSortOrder.newest.rawValue
+    /// The clicked column heading, stored as a string (see `DownloadedSort`):
+    /// `KeyPathComparator` cannot go into `@AppStorage` itself.
+    @AppStorage("podcasts.downloads.sort") private var sortRaw = ""
     @AppStorage("podcasts.downloads.groupByShow") private var groupByShow = false
     @State private var selection = Set<EpisodeListItem.ID>()
 
-    private var order: EpisodeSortOrder {
-        EpisodeSortOrder(rawValue: self.orderRaw) ?? .newest
+    /// The Table's sort, read from and written to the stored string, so the
+    /// heading the listener clicked survives a relaunch.
+    private var sortOrder: Binding<[KeyPathComparator<DownloadedRow>]> {
+        Binding(
+            get: { DownloadedSort.order(from: self.sortRaw) },
+            set: { self.sortRaw = DownloadedSort.rawValue(for: $0) }
+        )
     }
 
-    private var visible: [EpisodeListItem] {
+    private var visible: [DownloadedRow] {
         PodcastsViewModel.visibleDownloads(
             self.vm.downloaded,
             showFilter: self.vm.downloadedShowFilter,
             query: self.searchQuery,
-            order: self.order,
+            sortOrder: DownloadedSort.order(from: self.sortRaw),
             showTitles: self.vm.showTitles
         )
     }
@@ -39,13 +44,11 @@ struct DownloadedEpisodesView: View {
     var body: some View {
         // Computed once per render: the table, the bar and the menus all read it.
         let visible = self.visible
-        let groups = self.groupByShow
-            ? PodcastsViewModel.groupedDownloads(visible, showTitles: self.vm.showTitles)
-            : []
+        let groups = self.groupByShow ? PodcastsViewModel.groupedDownloads(visible) : []
         // What Play All and the menus act on, in the order the rows appear.
-        let listed = self.groupByShow ? groups.flatMap(\.items) : visible
+        let listed = self.groupByShow ? groups.flatMap(\.rows) : visible
         VStack(spacing: 0) {
-            self.controlBar(listed)
+            self.controlBar(listed.map(\.item))
             Divider()
             if self.vm.downloaded.isEmpty {
                 EmptyState(
@@ -94,7 +97,8 @@ struct DownloadedEpisodesView: View {
         .padding(.vertical, 6)
     }
 
-    /// Show filter, order and grouping: what the list holds and how it runs.
+    /// Show filter and grouping: what the list holds. The column headings
+    /// sort it.
     @ViewBuilder
     private var listControls: some View {
         Picker(L10n.string("Show"), selection: self.$vm.downloadedShowFilter) {
@@ -107,14 +111,6 @@ struct DownloadedEpisodesView: View {
         .pickerStyle(.menu)
         .fixedSize()
         .help(L10n.string("List the downloads of one show, or of every show"))
-
-        Picker(L10n.string("Order"), selection: self.$orderRaw) {
-            Text(localized: "Newest First").tag(EpisodeSortOrder.newest.rawValue)
-            Text(localized: "Oldest First").tag(EpisodeSortOrder.oldest.rawValue)
-        }
-        .pickerStyle(.menu)
-        .fixedSize()
-        .help(L10n.string("Sort the downloads by publish date; Play All follows this order"))
 
         Toggle(L10n.string("Group by Show"), isOn: self.$groupByShow)
             .toggleStyle(.checkbox)
@@ -129,32 +125,34 @@ struct DownloadedEpisodesView: View {
 
     // MARK: - Table
 
+    /// Every column but the status badge sorts on a click of its heading;
+    /// grouped, the sort applies inside each show.
     private func table(
-        flat: [EpisodeListItem],
+        flat: [DownloadedRow],
         groups: [DownloadedShowGroup],
-        listed: [EpisodeListItem]
+        listed: [DownloadedRow]
     ) -> some View {
-        Table(of: EpisodeListItem.self, selection: self.$selection) {
-            TableColumn("") { (item: EpisodeListItem) in
-                EpisodeStatusIndicator(item: item, downloadFraction: nil)
+        Table(of: DownloadedRow.self, selection: self.$selection, sortOrder: self.sortOrder) {
+            TableColumn("") { (row: DownloadedRow) in
+                EpisodeStatusIndicator(item: row.item, downloadFraction: nil)
                     .frame(width: 16, alignment: .center)
             }
             .width(28)
 
-            TableColumn(L10n.string("Episode")) { (item: EpisodeListItem) in
-                Text(verbatim: item.episode.title)
+            TableColumn(L10n.string("Episode"), value: \DownloadedRow.title, comparator: .localizedStandard) { row in
+                Text(verbatim: row.title)
                     .lineLimit(1)
             }
 
-            TableColumn(L10n.string("Show")) { (item: EpisodeListItem) in
-                Text(verbatim: self.vm.showTitles[item.episode.podcastID] ?? "")
+            TableColumn(L10n.string("Show"), value: \DownloadedRow.showTitle, comparator: .localizedStandard) { row in
+                Text(verbatim: row.showTitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             .width(min: 90, ideal: 150, max: 260)
 
-            TableColumn(L10n.string("Published")) { (item: EpisodeListItem) in
-                if let ts = item.episode.publishedAt {
+            TableColumn(L10n.string("Published"), value: \DownloadedRow.published) { row in
+                if let ts = row.item.episode.publishedAt {
                     Text(Date(timeIntervalSince1970: ts), style: .date)
                         .foregroundStyle(.secondary)
                 } else {
@@ -163,8 +161,8 @@ struct DownloadedEpisodesView: View {
             }
             .width(min: 95, ideal: 115, max: 170)
 
-            TableColumn(L10n.string("Length")) { (item: EpisodeListItem) in
-                Text(verbatim: durationLabel(item))
+            TableColumn(L10n.string("Length"), value: \DownloadedRow.length) { row in
+                Text(verbatim: durationLabel(row.item))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
@@ -174,21 +172,21 @@ struct DownloadedEpisodesView: View {
         }
         .contextMenu(
             forSelectionType: EpisodeListItem.ID.self,
-            menu: { ids in self.contextMenuItems(listed.filter { ids.contains($0.id) }) },
+            menu: { ids in self.contextMenuItems(listed.map(\.item).filter { ids.contains($0.id) }) },
             primaryAction: { ids in
-                guard let item = listed.first(where: { ids.contains($0.id) }) else { return }
-                Task { await self.vm.play(item) }
+                guard let row = listed.first(where: { ids.contains($0.id) }) else { return }
+                Task { await self.vm.play(row.item) }
             }
         )
     }
 
     /// One flat run of rows, or one section per show under its title.
-    @TableRowBuilder<EpisodeListItem>
-    private func rows(flat: [EpisodeListItem], groups: [DownloadedShowGroup]) -> some TableRowContent<EpisodeListItem> {
+    @TableRowBuilder<DownloadedRow>
+    private func rows(flat: [DownloadedRow], groups: [DownloadedShowGroup]) -> some TableRowContent<DownloadedRow> {
         if self.groupByShow {
             ForEach(groups) { group in
                 Section {
-                    ForEach(group.items) { TableRow($0) }
+                    ForEach(group.rows) { TableRow($0) }
                 } header: {
                     Text(verbatim: group.title)
                 }

@@ -5277,13 +5277,13 @@
         }
       }
     },
-    "Choose Downloaded in the switch at the top of the Podcasts page to see every episode you have downloaded, from all your shows. Pick one show from the Show menu, sort newest or oldest first, or turn on Group by Show. Play All puts every listed episode you have not finished into Up Next, in the order shown. Right-click an episode, or a selection, to choose Play Next or Add to Queue; these work on a show's own episode list too." : {
+    "Choose Downloaded in the switch at the top of the Podcasts page to see every episode you have downloaded, from all your shows. Pick one show from the Show menu, click a column heading to sort by it, or turn on Group by Show. Play All puts every listed episode you have not finished into Up Next, in the order shown. Right-click an episode, or a selection, to choose Play Next or Add to Queue; these work on a show's own episode list too." : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Çĥóóšé Đóŵñĺóáđéđ íñ ţĥé šŵíţçĥ áţ ţĥé ţóƥ óƒ ţĥé Ƥóđçášţš ƥáĝé ţó šéé évéŕý éƥíšóđé ýóú ĥávé đóŵñĺóáđéđ, ƒŕóḿ áĺĺ ýóúŕ šĥóŵš. Ƥíçķ óñé šĥóŵ ƒŕóḿ ţĥé Šĥóŵ ḿéñú, šóŕţ ñéŵéšţ óŕ óĺđéšţ ƒíŕšţ, óŕ ţúŕñ óñ Ĝŕóúƥ ƀý Šĥóŵ. Ƥĺáý Áĺĺ ƥúţš évéŕý ĺíšţéđ éƥíšóđé ýóú ĥávé ñóţ ƒíñíšĥéđ íñţó Úƥ Ñéxţ, íñ ţĥé óŕđéŕ šĥóŵñ. Ŕíĝĥţ-çĺíçķ áñ éƥíšóđé, óŕ á šéĺéçţíóñ, ţó çĥóóšé Ƥĺáý Ñéxţ óŕ Áđđ ţó Qúéúé; ţĥéšé ŵóŕķ óñ á šĥóŵ'š óŵñ éƥíšóđé ĺíšţ ţóó. one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three four five six seven"
+            "value" : "Çĥóóšé Đóŵñĺóáđéđ íñ ţĥé šŵíţçĥ áţ ţĥé ţóƥ óƒ ţĥé Ƥóđçášţš ƥáĝé ţó šéé évéŕý éƥíšóđé ýóú ĥávé đóŵñĺóáđéđ, ƒŕóḿ áĺĺ ýóúŕ šĥóŵš. Ƥíçķ óñé šĥóŵ ƒŕóḿ ţĥé Šĥóŵ ḿéñú, çĺíçķ á çóĺúḿñ ĥéáđíñĝ ţó šóŕţ ƀý íţ, óŕ ţúŕñ óñ Ĝŕóúƥ ƀý Šĥóŵ. Ƥĺáý Áĺĺ ƥúţš évéŕý ĺíšţéđ éƥíšóđé ýóú ĥávé ñóţ ƒíñíšĥéđ íñţó Úƥ Ñéxţ, íñ ţĥé óŕđéŕ šĥóŵñ. Ŕíĝĥţ-çĺíçķ áñ éƥíšóđé, óŕ á šéĺéçţíóñ, ţó çĥóóšé Ƥĺáý Ñéxţ óŕ Áđđ ţó Qúéúé; ţĥéšé ŵóŕķ óñ á šĥóŵ'š óŵñ éƥíšóđé ĺíšţ ţóó. one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three four five six seven"
           }
         }
       }
@@ -23234,16 +23234,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šóŕţ óŕđéŕ one"
-          }
-        }
-      }
-    },
-    "Sort the downloads by publish date; Play All follows this order" : {
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Šóŕţ ţĥé đóŵñĺóáđš ƀý ƥúƀĺíšĥ đáţé; Ƥĺáý Áĺĺ ƒóĺĺóŵš ţĥíš óŕđéŕ one two three four"
           }
         }
       }
