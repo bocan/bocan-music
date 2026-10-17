@@ -344,6 +344,14 @@ public struct ContentPane: View {
         case .podcasts:
             PodcastsHomeView(vm: self.vm.podcasts, library: self.vm, searchQuery: self.vm.searchQuery)
 
+        case .podcastDownloads:
+            PodcastsHomeView(
+                vm: self.vm.podcasts,
+                library: self.vm,
+                searchQuery: self.vm.searchQuery,
+                mode: .downloaded
+            )
+
         case let .podcastShow(id):
             PodcastShowView(
                 vm: self.vm.podcasts,

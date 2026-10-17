@@ -66,6 +66,34 @@ struct PodcastsSidebarConventionTests {
         )
     }
 
+    @Test("Downloaded is the other side of a Podcasts toolbar switch, not a sidebar row (#651)")
+    func downloadedSwitchWiring() throws {
+        let pane = try self.source("AppRoot/ContentPane.swift")
+        #expect(pane.contains("case .podcastDownloads:"), "ContentPane must route .podcastDownloads")
+        #expect(pane.contains("mode: .downloaded"), "it must open the home view on its Downloaded side")
+
+        let home = try self.source("Browse/Podcasts/PodcastsHomeView.swift")
+        #expect(home.contains(".pickerStyle(.segmented)"), "the switch is a segmented control")
+        #expect(home.contains("ToolbarItem(placement: .principal)"), "it lives in the toolbar, costing no content space")
+        #expect(
+            home.contains("selectDestination(newMode == .shows ? .podcasts : .podcastDownloads)"),
+            "each side is a destination, so Back undoes a switch"
+        )
+        #expect(home.contains("DownloadedEpisodesView("), "the Downloaded side shows the downloads list")
+
+        let sidebar = try self.source("AppRoot/Sidebar.swift")
+        #expect(
+            sidebar.contains("self.vm.selectedDestination == .podcastDownloads ? .podcasts"),
+            "the Podcasts sidebar row stays lit on the Downloaded side"
+        )
+
+        let list = try self.source("Browse/Podcasts/DownloadedEpisodesView.swift")
+        #expect(
+            list.contains(".task { await self.vm.observeDownloaded() }"),
+            "the downloads observation must end when the list leaves the screen"
+        )
+    }
+
     // MARK: - SidebarDestination
 
     @Test("SidebarDestination declares .podcasts and .podcastShow cases")

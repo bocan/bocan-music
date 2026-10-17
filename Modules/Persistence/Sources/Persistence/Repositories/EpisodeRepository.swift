@@ -132,6 +132,24 @@ public struct EpisodeRepository: Sendable {
         }
     }
 
+    /// Every downloaded episode across all shows, newest first (#651). The
+    /// Downloaded view lists these; the Library Summary total counts the same
+    /// rows, because both join the content and state tables.
+    public func fetchDownloadedListItems() async throws -> [EpisodeListItem] {
+        try await self.database.read { db in
+            try Self.downloadedRequest().fetchAll(db).map(\.item)
+        }
+    }
+
+    /// A live stream of ``fetchDownloadedListItems()``: emits at once and again
+    /// when a download lands or goes, and when a play state changes, so the
+    /// view's status badges follow playback.
+    public func observeDownloadedListItems() async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+        await self.database.observe { db in
+            try Self.downloadedRequest().fetchAll(db).map(\.item)
+        }
+    }
+
     /// Returns episode counts keyed by podcast ID, in a single GROUP BY query.
     public func fetchAllPodcastCounts() async throws -> [Int64: Int] {
         try await self.database.read { db in
@@ -201,14 +219,7 @@ public struct EpisodeRepository: Sendable {
     private static func joinedSQL(order: EpisodeSortOrder) -> String {
         let direction = order == .oldest ? "ASC" : "DESC"
         return """
-        SELECT e.*,
-               s.play_position  AS st_play_position,
-               s.play_state     AS st_play_state,
-               s.last_played_at AS st_last_played_at,
-               s.completed_at   AS st_completed_at,
-               s.download_state AS st_download_state,
-               s.download_path  AS st_download_path,
-               s.download_bytes AS st_download_bytes
+        SELECT \(self.listItemColumns)
         FROM podcast_episodes e
         LEFT JOIN podcast_episode_state s
             ON s.podcast_id = e.podcast_id AND s.guid = e.guid
@@ -217,8 +228,37 @@ public struct EpisodeRepository: Sendable {
         """
     }
 
+    /// The columns ``EpisodeListRow`` decodes: the episode, plus its state
+    /// under `st_` names so they cannot clash with the episode's own.
+    private static let listItemColumns = """
+    e.*,
+           s.play_position  AS st_play_position,
+           s.play_state     AS st_play_state,
+           s.last_played_at AS st_last_played_at,
+           s.completed_at   AS st_completed_at,
+           s.download_state AS st_download_state,
+           s.download_path  AS st_download_path,
+           s.download_bytes AS st_download_bytes
+    """
+
+    /// An INNER JOIN to state, as only a state row can say "downloaded"; the
+    /// join to `podcasts` keeps a removed show's leftovers out.
+    private static let downloadedSQL = """
+    SELECT \(listItemColumns)
+    FROM podcast_episodes e
+    JOIN podcast_episode_state s
+        ON s.podcast_id = e.podcast_id AND s.guid = e.guid
+    JOIN podcasts p ON p.id = e.podcast_id
+    WHERE s.download_state = 'downloaded'
+    ORDER BY e.published_at DESC, e.id DESC
+    """
+
     private static func listItemRequest(podcastID: Int64, order: EpisodeSortOrder) -> SQLRequest<EpisodeListRow> {
         SQLRequest<EpisodeListRow>(sql: self.joinedSQL(order: order), arguments: [podcastID])
+    }
+
+    private static func downloadedRequest() -> SQLRequest<EpisodeListRow> {
+        SQLRequest<EpisodeListRow>(sql: self.downloadedSQL)
     }
 }
 

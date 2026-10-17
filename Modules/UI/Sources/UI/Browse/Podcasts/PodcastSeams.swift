@@ -194,6 +194,9 @@ public protocol PodcastLibraryDataSource: Sendable {
     func continueListening() async throws -> [ContinueListeningItem]
     /// Live Continue Listening rail; re-emits on any state/content/show change.
     func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error>
+    /// Live list of every downloaded episode across all shows, newest first
+    /// (#651); re-emits when a download lands or goes, and on play-state changes.
+    func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error>
 }
 
 // MARK: - PodcastActions
@@ -224,6 +227,11 @@ public protocol PodcastActions: Sendable {
     func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws
     /// Builds and enqueues a podcast `QueueItem`, then begins playback.
     func play(episode: EpisodeListItem, podcast: Podcast) async
+    /// Puts a run of episodes, from any shows, into Up Next in the order given
+    /// (#651). `shows` maps each episode's `podcastID` to its show; an episode
+    /// whose show is missing is left out. `.now` replaces the queue and starts
+    /// the first one.
+    func enqueue(_ episodes: [EpisodeListItem], shows: [Int64: Podcast], placement: PodcastQueuePlacement) async
     /// The play-state writes throw so the caller can tell the listener: a
     /// failed write leaves the list as it was, which looks like the click did
     /// nothing (#640). Views go through `PodcastsViewModel`, which reports it.
@@ -350,6 +358,23 @@ public extension PodcastActions {
     func downloadProgress() async -> AsyncStream<UIEpisodeDownloadProgress> {
         AsyncStream { $0.finish() }
     }
+
+    /// Nothing to queue into: test doubles that do not play. `AppPodcastActions`
+    /// implements the real one, and its adapter test calls it through the
+    /// protocol so this default cannot stand in for it unnoticed.
+    func enqueue(_: [EpisodeListItem], shows _: [Int64: Podcast], placement _: PodcastQueuePlacement) async {}
+}
+
+// MARK: - PodcastQueuePlacement
+
+/// Where ``PodcastActions/enqueue(_:shows:placement:)`` puts the episodes.
+public enum PodcastQueuePlacement: Sendable, Equatable {
+    /// Replace Up Next and start playing the first episode.
+    case now
+    /// Right after what is playing.
+    case next
+    /// At the end of Up Next.
+    case last
 }
 
 // MARK: - UIEpisodeDownloadProgress

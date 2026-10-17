@@ -131,6 +131,7 @@ struct EpisodeList: View {
             Button(L10n.string("Play")) {
                 Task { await self.vm.actions?.play(episode: item, podcast: podcast) }
             }
+            self.queueMenuItems([item])
             Divider()
             let isPlayed = item.state?.playState == .played
             if isPlayed {
@@ -210,6 +211,8 @@ struct EpisodeList: View {
         let items = self.vm.selectedEpisodes(ids)
         let toPlay = PodcastsViewModel.episodesToMarkPlayed(items)
         let toUnplay = PodcastsViewModel.episodesToMarkUnplayed(items)
+        self.queueMenuItems(items)
+        Divider()
         if !toPlay.isEmpty {
             Button(L10n.string("Mark Selected as Played")) {
                 Task { await self.vm.setPlayed(true, episodes: toPlay) }
@@ -238,6 +241,18 @@ struct EpisodeList: View {
                     }
                 }
             }
+        }
+    }
+
+    /// Play Next / Add to Queue for one row or a selection, in list order
+    /// (#651). Context-menu-only, so no hover text (see `downloadMenuItem`).
+    @ViewBuilder
+    private func queueMenuItems(_ items: [EpisodeListItem]) -> some View {
+        Button(L10n.string("Play Next")) {
+            Task { await self.vm.enqueue(items, placement: .next) }
+        }
+        Button(L10n.string("Add to Queue")) {
+            Task { await self.vm.enqueue(items, placement: .last) }
         }
     }
 

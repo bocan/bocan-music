@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Every episode you have downloaded now has a home of its own. Choose Downloaded in the new switch at the top of the Podcasts page to see them all in one list, from every show. Pick one show, sort oldest or newest first, or group them by show, and Play All puts every one you have not finished into Up Next in that order. Right-click any episode, here or on a show's page, to choose Play Next or Add to Queue. Thanks for the idea @GitMyAccount.
+
 - The Podcasts page of Library Summary now shows how many episodes you have downloaded in all, beside the ones you have not started yet. Before, it gave only the unstarted count, so a show's number looked lower than the downloads on its page.
 
 ## [2.22.1](https://github.com/bocan/bocan-music/compare/v2.22.0...v2.22.1) (2026-10-15)

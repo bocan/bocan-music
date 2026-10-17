@@ -91,6 +91,9 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case podcasts
     /// A subscribed show's episode list. Associated value is `podcasts.id`.
     case podcastShow(Int64)
+    /// Every downloaded episode across all shows (#651): the Downloaded side
+    /// of the Podcasts toolbar switch. The Podcasts sidebar row stays lit.
+    case podcastDownloads
 
     // MARK: - ADR-078 (Radio)
 
