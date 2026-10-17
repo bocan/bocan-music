@@ -79,9 +79,13 @@ struct LibrarySummaryTests {
             source.contains("treat it as an estimate"),
             "the listening-rate footnote must own the approximation"
         )
-        for section in ["Dead Feeds (", "Downloaded, Never Played", "Reapable Storage"] {
+        for section in ["Dead Feeds (", "Text(localized: \"Downloads\")", "Reapable Storage"] {
             #expect(source.contains(section), "the \(section) section must exist")
         }
+        #expect(
+            source.contains("L10n.string(\"All downloads\")"),
+            "the total must sit beside its unheard subset, or a per-show count reads as every download (#653)"
+        )
     }
 
     @Test("The Podcasts pane serves the 26-2 behaviour analytics")

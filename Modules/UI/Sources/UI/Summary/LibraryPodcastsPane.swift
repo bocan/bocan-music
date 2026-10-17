@@ -98,7 +98,7 @@ struct LibraryPodcastsPane: View {
             if !report.deadFeeds.isEmpty {
                 self.deadFeedsSection(report)
             }
-            if report.unplayedDownloadEpisodeCount > 0 {
+            if report.downloadedEpisodeCount > 0 {
                 self.hoardSection(report)
             }
             if report.reapableEpisodeCount > 0 {
@@ -232,26 +232,34 @@ struct LibraryPodcastsPane: View {
 
     private func hoardSection(_ report: LibraryPodcastReport) -> some View {
         Section {
+            // The total sits above its unheard subset, so a per-show figure
+            // below cannot be read as every download of that show (#653).
+            LabeledContent(
+                L10n.string("All downloads"),
+                value: Self.countAndBytes(report.downloadedEpisodeCount, report.downloadedBytes)
+            )
             LabeledContent(
                 L10n.string("Sitting unheard"),
                 value: Self.countAndBytes(report.unplayedDownloadEpisodeCount, report.unplayedDownloadBytes)
             )
-            DisclosureGroup(
-                L10n.string("By show (\(report.unplayedDownloadShowCount))"),
-                isExpanded: self.$hoardExpanded
-            ) {
-                ForEach(report.unplayedDownloads) { show in
-                    PodcastShowRow(
-                        title: show.title,
-                        detail: Self.countAndBytes(show.episodeCount, show.bytes),
-                        podcastID: show.id,
-                        library: self.library
-                    )
+            if report.unplayedDownloadShowCount > 0 {
+                DisclosureGroup(
+                    L10n.string("Unheard by show (\(report.unplayedDownloadShowCount))"),
+                    isExpanded: self.$hoardExpanded
+                ) {
+                    ForEach(report.unplayedDownloads) { show in
+                        PodcastShowRow(
+                            title: show.title,
+                            detail: Self.countAndBytes(show.episodeCount, show.bytes),
+                            podcastID: show.id,
+                            library: self.library
+                        )
+                    }
+                    SummaryMoreRow(total: report.unplayedDownloadShowCount, shown: report.unplayedDownloads.count)
                 }
-                SummaryMoreRow(total: report.unplayedDownloadShowCount, shown: report.unplayedDownloads.count)
             }
         } header: {
-            Text(localized: "Downloaded, Never Played")
+            Text(localized: "Downloads")
         } footer: {
             Text(localized: "The show you think you love versus the show you actually start.")
                 .font(Typography.caption)

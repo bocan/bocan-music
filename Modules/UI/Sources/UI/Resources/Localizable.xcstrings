@@ -3623,6 +3623,16 @@
         }
       }
     },
+    "All downloads" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺĺ đóŵñĺóáđš one"
+          }
+        }
+      }
+    },
     "All songs prepared" : {
       "localizations" : {
         "en-XA" : {
@@ -4800,16 +4810,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ɓý Ţíţĺé one"
-          }
-        }
-      }
-    },
-    "By show (%lld)" : {
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ɓý šĥóŵ (%lld) one two"
           }
         }
       }
@@ -9013,16 +9013,6 @@
         }
       }
     },
-    "Downloaded, Never Played" : {
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đóŵñĺóáđéđ, Ñévéŕ Ƥĺáýéđ one two"
-          }
-        }
-      }
-    },
     "Downloading" : {
       "localizations" : {
         "en-XA" : {
@@ -9060,6 +9050,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đóŵñĺóáđíñĝ… one"
+          }
+        }
+      }
+    },
+    "Downloads" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđš one"
           }
         }
       }
@@ -25698,6 +25698,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Úñĥéáŕđ ƀáçķĺóĝ one two"
+          }
+        }
+      }
+    },
+    "Unheard by show (%lld)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úñĥéáŕđ ƀý šĥóŵ (%lld) one two"
           }
         }
       }
