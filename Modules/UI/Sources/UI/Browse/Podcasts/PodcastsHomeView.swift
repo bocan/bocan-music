@@ -209,6 +209,9 @@ public struct PodcastsHomeView: View {
             get: { self.mode },
             set: { newMode in
                 guard newMode != self.mode else { return }
+                // The switch opens every download; only Library Summary opens
+                // the list kept to one show (#654). Back keeps the filter.
+                self.vm.downloadedShowFilter = nil
                 Task { await self.library.selectDestination(newMode == .shows ? .podcasts : .podcastDownloads) }
             }
         )

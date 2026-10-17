@@ -252,7 +252,8 @@ struct LibraryPodcastsPane: View {
                             title: show.title,
                             detail: Self.countAndBytes(show.episodeCount, show.bytes),
                             podcastID: show.id,
-                            library: self.library
+                            library: self.library,
+                            opensDownloads: true
                         )
                     }
                     SummaryMoreRow(total: report.unplayedDownloadShowCount, shown: report.unplayedDownloads.count)
@@ -444,46 +445,5 @@ struct LibraryPodcastsPane: View {
                 ["error": String(reflecting: error)]
             )
         }
-    }
-}
-
-// MARK: - PodcastShowRow
-
-/// A summary row that jumps the main window to a podcast show and brings it
-/// forward, mirroring `SummaryOffenderRow`'s album navigation.
-private struct PodcastShowRow: View {
-    let title: String
-    let detail: String
-    let podcastID: Int64
-    /// Held as a plain `let`: only used to navigate, never observed.
-    let library: LibraryViewModel
-
-    var body: some View {
-        Button {
-            Task { await self.library.selectDestination(.podcastShow(self.podcastID)) }
-            MainWindowTracker.shared.resolveWindow()?.makeKeyAndOrderFront(nil)
-        } label: {
-            HStack(spacing: 6) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(self.title)
-                        .font(Typography.body)
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-                    Text(self.detail)
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textSecondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.textTertiary)
-                    .accessibilityHidden(true)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(L10n.string("Double-tap to open the show"))
-        .help(L10n.string("Opens this show in the main window."))
     }
 }
