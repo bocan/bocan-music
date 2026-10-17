@@ -150,6 +150,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Scripts/smoke-launch.sh` (the playback check that catches it) and `Modules/UI/Package.swift`
 
+### A toolbar control must survive the overflow menu
+
+**Problem:** in a narrow window a segmented picker in the toolbar moves into the » overflow menu and shows there as bare checkmarks with no labels. Or it works once from the menu, and then the menu comes back without it.
+
+**Rule:** give every segment of a toolbar `Picker` a `Label` with an icon (`.labelStyle(.titleAndIcon)` keeps the words in the full toolbar). Keep a toolbar item in the toolbar always and disable it, never wrap it in `if`. When two destinations are the two sides of one toolbar switch, route both through one `ContentPane` arm and pass the side as a parameter.
+
+**Why:** the overflow menu draws a segmented picker as a palette, and a palette draws only images, so a text-only segment is blank. Two `ContentPane` arms are two view identities, so a switch builds a new view and a new toolbar, and the rebuilt overflow menu dropped the switch. Found on the Podcasts Shows | Downloaded switch (#651), 2026-10-17. Neither fault shows at normal window widths, so shrink the window when you test a toolbar change.
+
+**Canonical file:** `Modules/UI/Sources/UI/Browse/Podcasts/PodcastsHomeView.swift` (the switch) and `Modules/UI/Sources/UI/AppRoot/ContentPane.swift` (the shared arm)
+
 ---
 
 ## Audio engine and playback

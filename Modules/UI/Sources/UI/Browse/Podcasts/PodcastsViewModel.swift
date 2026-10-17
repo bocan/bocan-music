@@ -15,6 +15,12 @@ public final class PodcastsViewModel: ObservableObject {
     /// episodes across all shows, newest activity first. Empty hides the rail.
     /// `internal(set)` so the extension file can assign from its observation.
     @Published public internal(set) var continueListening: [ContinueListeningItem] = []
+    /// Every downloaded episode, newest first (#651). Live only while the
+    /// Downloaded list is on screen; see `observeDownloaded()`.
+    @Published public internal(set) var downloaded: [EpisodeListItem] = []
+    /// The Downloaded list's show filter; nil lists every show. Held here, not
+    /// in the view, so Library Summary can set it before it opens the list.
+    @Published public var downloadedShowFilter: Int64?
     @Published public private(set) var podcastEpisodeCounts: [Int64: Int] = [:]
     /// Unread (not-yet-played) counts keyed by podcast ID; absent/zero means no badge.
     /// Kept live by `unplayedCountsTask` so a mark-played write clears the badge.
@@ -73,7 +79,7 @@ public final class PodcastsViewModel: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let library: (any PodcastLibraryDataSource)?
+    let library: (any PodcastLibraryDataSource)?
     let actions: (any PodcastActions)?
     let searchProvider: (any PodcastSearchProviding)?
     let transcriptProvider: (any PodcastTranscriptProviding)?
@@ -167,7 +173,13 @@ public final class PodcastsViewModel: ObservableObject {
         do {
             async let episodes = library.episodes(podcastID: podcastID)
             async let shows = library.subscribedPodcasts()
-            self.nowPlayingEpisode = try await episodes.first { $0.episode.guid == guid }
+            // The list read leaves the notes out; read this one's in.
+            let playing = try await episodes.first { $0.episode.guid == guid }
+            self.nowPlayingEpisode = if let playing {
+                await self.withShowNotes(playing)
+            } else {
+                nil
+            }
             let show = try await shows.first { $0.id == podcastID }
             self.nowPlayingShowPersons = show?.persons ?? []
             self.nowPlayingPodroll = show?.podroll ?? []

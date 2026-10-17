@@ -40,6 +40,38 @@ struct QueuePlayerTests {
         #expect(queueItems[1].trackID == ids[2])
     }
 
+    @Test("playNext(items:) inserts built items after current, in order (#651)")
+    func playNextItemsEnqueues() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        let repo = TrackRepository(database: db)
+        let ids = try await insertTestTracks(repo: repo, count: 2)
+        try await player.addToQueue(ids)
+        let initial = await player.queue.items
+        await player.queue.replace(with: initial, startAt: 0)
+
+        let episodes = ["a", "b"].map { guid in
+            QueueItem(
+                trackID: -1,
+                bookmark: nil,
+                fileURL: "",
+                duration: 60,
+                sourceFormat: AudioSourceFormat(
+                    sampleRate: 44100, bitDepth: 16, channelCount: 2, isInterleaved: false, codec: "mp3"
+                ),
+                title: guid,
+                playableSource: .podcast(feedURL: URL(string: "https://example.test/feed.rss")!, episodeGUID: guid)
+            )
+        }
+        await player.playNext(items: episodes)
+
+        let titles = await player.queue.items.map(\.title)
+        #expect(titles.count == 4)
+        #expect(Array(titles[1 ... 2]) == ["a", "b"])
+    }
+
     @Test("addToQueue appends to end")
     func addToQueueAppends() async throws {
         let engine = AudioEngine()

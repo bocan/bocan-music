@@ -169,6 +169,35 @@ struct LibraryStatsPodcastTests {
         #expect(report.unplayedDownloadBytes == 120_000_000)
         #expect(report.unplayedDownloads.first?.id == hoarder)
         #expect(report.unplayedDownloads.first?.bytes == 110_000_000)
+        // The total counts every download, played ones too (#653).
+        #expect(report.downloadedEpisodeCount == 4)
+        #expect(report.downloadedBytes == 190_000_000)
+    }
+
+    @Test("A downloaded state row whose episode left the feed is in no download count")
+    func orphanDownloadNotCounted() async throws {
+        let db = try await makeDB()
+        let show = try await seedShow(db, title: "Pruned")
+        try await self.seedEpisode(db, showID: show, guid: "kept", spec: .init(
+            downloadState: "downloaded",
+            downloadPath: "/tmp/kept.mp3",
+            downloadBytes: 10_000_000
+        ))
+        try await self.seedEpisode(db, showID: show, guid: "gone", spec: .init(
+            downloadState: "downloaded",
+            downloadPath: "/tmp/gone.mp3",
+            downloadBytes: 20_000_000
+        ))
+        // State survives its content row: the feed prune leaves it behind.
+        try await db.write { db in
+            try db.execute(sql: "DELETE FROM podcast_episodes WHERE guid = 'gone'")
+        }
+
+        let report = try await LibraryStatsRepository(database: db).fetchPodcastReport()
+        #expect(report.downloadedEpisodeCount == 1)
+        #expect(report.downloadedBytes == 10_000_000)
+        #expect(report.unplayedDownloadEpisodeCount == 1)
+        #expect(report.unplayedDownloads.first?.episodeCount == 1)
     }
 
     @Test("Reapable storage is played, aged past 90 days, and still on disk")

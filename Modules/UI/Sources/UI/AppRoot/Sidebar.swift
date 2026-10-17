@@ -18,7 +18,9 @@ public struct Sidebar: View {
 
     public var body: some View {
         List(selection: Binding(
-            get: { self.vm.selectedDestination },
+            // Downloaded is the other side of the Podcasts toolbar switch,
+            // not a sidebar row of its own, so Podcasts stays lit (#651).
+            get: { self.vm.selectedDestination == .podcastDownloads ? .podcasts : self.vm.selectedDestination },
             set: { newValue in
                 if let dest = newValue {
                     Task { await self.vm.selectDestination(dest) }

@@ -98,7 +98,7 @@ struct LibraryPodcastsPane: View {
             if !report.deadFeeds.isEmpty {
                 self.deadFeedsSection(report)
             }
-            if report.unplayedDownloadEpisodeCount > 0 {
+            if report.downloadedEpisodeCount > 0 {
                 self.hoardSection(report)
             }
             if report.reapableEpisodeCount > 0 {
@@ -232,26 +232,35 @@ struct LibraryPodcastsPane: View {
 
     private func hoardSection(_ report: LibraryPodcastReport) -> some View {
         Section {
+            // The total sits above its unheard subset, so a per-show figure
+            // below cannot be read as every download of that show (#653).
+            LabeledContent(
+                L10n.string("All downloads"),
+                value: Self.countAndBytes(report.downloadedEpisodeCount, report.downloadedBytes)
+            )
             LabeledContent(
                 L10n.string("Sitting unheard"),
                 value: Self.countAndBytes(report.unplayedDownloadEpisodeCount, report.unplayedDownloadBytes)
             )
-            DisclosureGroup(
-                L10n.string("By show (\(report.unplayedDownloadShowCount))"),
-                isExpanded: self.$hoardExpanded
-            ) {
-                ForEach(report.unplayedDownloads) { show in
-                    PodcastShowRow(
-                        title: show.title,
-                        detail: Self.countAndBytes(show.episodeCount, show.bytes),
-                        podcastID: show.id,
-                        library: self.library
-                    )
+            if report.unplayedDownloadShowCount > 0 {
+                DisclosureGroup(
+                    L10n.string("Unheard by show (\(report.unplayedDownloadShowCount))"),
+                    isExpanded: self.$hoardExpanded
+                ) {
+                    ForEach(report.unplayedDownloads) { show in
+                        PodcastShowRow(
+                            title: show.title,
+                            detail: Self.countAndBytes(show.episodeCount, show.bytes),
+                            podcastID: show.id,
+                            library: self.library,
+                            opensDownloads: true
+                        )
+                    }
+                    SummaryMoreRow(total: report.unplayedDownloadShowCount, shown: report.unplayedDownloads.count)
                 }
-                SummaryMoreRow(total: report.unplayedDownloadShowCount, shown: report.unplayedDownloads.count)
             }
         } header: {
-            Text(localized: "Downloaded, Never Played")
+            Text(localized: "Downloads")
         } footer: {
             Text(localized: "The show you think you love versus the show you actually start.")
                 .font(Typography.caption)
@@ -436,46 +445,5 @@ struct LibraryPodcastsPane: View {
                 ["error": String(reflecting: error)]
             )
         }
-    }
-}
-
-// MARK: - PodcastShowRow
-
-/// A summary row that jumps the main window to a podcast show and brings it
-/// forward, mirroring `SummaryOffenderRow`'s album navigation.
-private struct PodcastShowRow: View {
-    let title: String
-    let detail: String
-    let podcastID: Int64
-    /// Held as a plain `let`: only used to navigate, never observed.
-    let library: LibraryViewModel
-
-    var body: some View {
-        Button {
-            Task { await self.library.selectDestination(.podcastShow(self.podcastID)) }
-            MainWindowTracker.shared.resolveWindow()?.makeKeyAndOrderFront(nil)
-        } label: {
-            HStack(spacing: 6) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(self.title)
-                        .font(Typography.body)
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-                    Text(self.detail)
-                        .font(Typography.caption)
-                        .foregroundStyle(Color.textSecondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.textTertiary)
-                    .accessibilityHidden(true)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(L10n.string("Double-tap to open the show"))
-        .help(L10n.string("Opens this show in the main window."))
     }
 }

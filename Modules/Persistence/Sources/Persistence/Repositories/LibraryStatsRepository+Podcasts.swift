@@ -40,6 +40,11 @@ public struct LibraryPodcastReport: Equatable, Sendable {
     /// Longest-dead first, capped at ``LibraryHygieneReport/maxExamples``.
     public let deadFeeds: [DeadFeed]
 
+    /// Every downloaded episode, whatever its play state: the figure the
+    /// Downloaded view lists (#653). The unplayed figures below are a subset.
+    public let downloadedEpisodeCount: Int
+    public let downloadedBytes: Int64
+
     public let unplayedDownloadShowCount: Int
     public let unplayedDownloadEpisodeCount: Int
     public let unplayedDownloadBytes: Int64
@@ -105,6 +110,7 @@ public extension LibraryStatsRepository {
         return try await self.database.read { db in
             let dead = try Self.deadFeeds(db, cutoff: deadCutoff)
             let unplayed = try Self.unplayedDownloads(db)
+            let downloaded = try Self.downloaded(db)
             let reapable = try Self.reapable(db, cutoff: reapCutoff)
             return try LibraryPodcastReport(
                 subscribedShowCount: Self.subscribedShowCount(db),
@@ -113,6 +119,8 @@ public extension LibraryStatsRepository {
                     / Double(Self.podcastRateWindowWeeks),
                 deadFeedCount: dead.total,
                 deadFeeds: dead.examples,
+                downloadedEpisodeCount: downloaded.count,
+                downloadedBytes: downloaded.bytes,
                 unplayedDownloadShowCount: unplayed.count,
                 unplayedDownloadEpisodeCount: unplayed.reduce(0) { $0 + $1.episodeCount },
                 unplayedDownloadBytes: unplayed.reduce(0) { $0 + $1.bytes },
@@ -198,6 +206,21 @@ private extension LibraryStatsRepository {
         return (rows.count, examples)
     }
 
+    /// Every download the Downloaded view can list. The join to
+    /// `podcast_episodes` drops a state row whose episode left the feed: no
+    /// list can show it, so no count may include it (#653).
+    static func downloaded(_ db: GRDB.Database) throws -> (count: Int, bytes: Int64) {
+        let row = try Row.fetchOne(db, sql: """
+            SELECT COUNT(*) AS cnt, COALESCE(SUM(state.download_bytes), 0) AS bytes
+            FROM podcast_episode_state AS state
+            JOIN podcasts ON podcasts.id = state.podcast_id
+            JOIN podcast_episodes AS episodes
+                ON episodes.podcast_id = state.podcast_id AND episodes.guid = state.guid
+            WHERE state.download_state = 'downloaded'
+        """)
+        return (row?["cnt"] ?? 0, row?["bytes"] ?? 0)
+    }
+
     static func unplayedDownloads(_ db: GRDB.Database) throws -> [LibraryPodcastReport.UnplayedDownloads] {
         let rows = try Row.fetchAll(db, sql: """
             SELECT podcasts.id AS id,
@@ -206,6 +229,8 @@ private extension LibraryStatsRepository {
                    COALESCE(SUM(state.download_bytes), 0) AS bytes
             FROM podcast_episode_state AS state
             JOIN podcasts ON podcasts.id = state.podcast_id
+            JOIN podcast_episodes AS episodes
+                ON episodes.podcast_id = state.podcast_id AND episodes.guid = state.guid
             WHERE state.download_state = 'downloaded' AND state.play_state = 'unplayed'
             GROUP BY podcasts.id
             ORDER BY bytes DESC, podcasts.title ASC

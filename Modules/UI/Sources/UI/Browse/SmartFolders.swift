@@ -161,6 +161,9 @@ extension SidebarDestination {
         case .podcastShow:
             L10n.string("Podcast")
 
+        case .podcastDownloads:
+            L10n.string("Downloaded Episodes")
+
         case .radio:
             L10n.string("Radio")
         }

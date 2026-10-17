@@ -341,8 +341,17 @@ public struct ContentPane: View {
                 self.subsonicUnavailable
             }
 
-        case .podcasts:
-            PodcastsHomeView(vm: self.vm.podcasts, library: self.vm, searchQuery: self.vm.searchQuery)
+        // One arm for both sides of the toolbar switch, so a switch changes
+        // the mode of one view rather than building a second one: rebuilding
+        // the view rebuilt its toolbar, and an overflowed toolbar dropped the
+        // switch itself (#651).
+        case .podcasts, .podcastDownloads:
+            PodcastsHomeView(
+                vm: self.vm.podcasts,
+                library: self.vm,
+                searchQuery: self.vm.searchQuery,
+                mode: self.vm.selectedDestination == .podcastDownloads ? .downloaded : .shows
+            )
 
         case let .podcastShow(id):
             PodcastShowView(

@@ -44,7 +44,7 @@ struct PodcastsSidebarConventionTests {
     func contentPaneRoutesPodcasts() throws {
         let pane = try self.source("AppRoot/ContentPane.swift")
         #expect(
-            pane.contains("case .podcasts:"),
+            pane.contains("case .podcasts, .podcastDownloads:"),
             "ContentPane must handle the .podcasts destination"
         )
         #expect(
@@ -63,6 +63,49 @@ struct PodcastsSidebarConventionTests {
         #expect(
             pane.contains("PodcastShowView"),
             "ContentPane must route .podcastShow to PodcastShowView"
+        )
+    }
+
+    @Test("Downloaded is the other side of a Podcasts toolbar switch, not a sidebar row (#651)")
+    func downloadedSwitchWiring() throws {
+        let pane = try self.source("AppRoot/ContentPane.swift")
+        #expect(
+            pane.contains("case .podcasts, .podcastDownloads:"),
+            "both sides share one arm, so a switch keeps the view and its toolbar instead of rebuilding them"
+        )
+        #expect(
+            pane.contains("== .podcastDownloads ? .downloaded : .shows"),
+            "the shared view takes its side from the destination"
+        )
+
+        let home = try self.source("Browse/Podcasts/PodcastsHomeView.swift")
+        #expect(home.contains(".pickerStyle(.segmented)"), "the switch is a segmented control")
+        #expect(
+            home.contains("Label(L10n.string(\"Shows\"), systemImage:")
+                && home.contains("Label(L10n.string(\"Downloaded\"), systemImage:"),
+            "each segment needs an icon, or the overflow menu's palette draws it blank"
+        )
+        #expect(home.contains("ToolbarItem(placement: .principal)"), "it lives in the toolbar, costing no content space")
+        #expect(
+            home.contains("selectDestination(newMode == .shows ? .podcasts : .podcastDownloads)"),
+            "each side is a destination, so Back undoes a switch"
+        )
+        #expect(home.contains("DownloadedEpisodesView("), "the Downloaded side shows the downloads list")
+
+        let sidebar = try self.source("AppRoot/Sidebar.swift")
+        #expect(
+            sidebar.contains("self.vm.selectedDestination == .podcastDownloads ? .podcasts"),
+            "the Podcasts sidebar row stays lit on the Downloaded side"
+        )
+
+        let list = try self.source("Browse/Podcasts/DownloadedEpisodesView.swift")
+        #expect(
+            list.contains(".task { await self.vm.observeDownloaded() }"),
+            "the downloads observation must end when the list leaves the screen"
+        )
+        #expect(
+            list.contains("sortOrder: self.sortOrder"),
+            "the column headings sort the list, and the stored sort survives a relaunch"
         )
     }
 

@@ -114,6 +114,14 @@ struct PodcastDownloadProgressTests {
         func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
             AsyncThrowingStream { $0.finish() }
         }
+
+        func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+            AsyncThrowingStream { $0.finish() }
+        }
+
+        func showNotesHTML(podcastID _: Int64, guid _: String) async throws -> String? {
+            nil
+        }
     }
 
     private func makeViewModel(_ actions: ProgressActions) async -> PodcastsViewModel {

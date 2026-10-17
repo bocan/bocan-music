@@ -145,6 +145,15 @@ enum HelpContent {
                 + " Settings → Podcasts."
         ),
         HelpTopic(
+            title: "Playing your downloads",
+            body: "Choose Downloaded in the switch at the top of the Podcasts page to see every"
+                + " episode you have downloaded, from all your shows. Pick one show from the Show menu,"
+                + " click a column heading to sort by it, or turn on Group by Show. Play All puts every listed"
+                + " episode you have not finished into Up Next, in the order shown. Right-click an"
+                + " episode, or a selection, to choose Play Next or Add to Queue; these work on a show's"
+                + " own episode list too."
+        ),
+        HelpTopic(
             title: "Marking episodes played",
             body: "Right-click an episode to mark it played or unplayed. To change several at once,"
                 + " select them with Shift-click or Command-click, then right-click and choose Mark"
