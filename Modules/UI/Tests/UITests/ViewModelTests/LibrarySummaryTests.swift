@@ -71,17 +71,30 @@ struct LibrarySummaryTests {
             source.contains("At your current rate: never"),
             "a zero listening rate must project never, not divide by zero"
         )
+        let row = try String(contentsOf: Self.uiSource("Summary/PodcastShowRow.swift"), encoding: .utf8)
         #expect(
-            source.contains("selectDestination(.podcastShow(self.podcastID))"),
+            row.contains("selectDestination(.podcastShow(self.podcastID))"),
             "show rows must navigate the main window to the show"
         )
         #expect(
             source.contains("treat it as an estimate"),
             "the listening-rate footnote must own the approximation"
         )
-        for section in ["Dead Feeds (", "Downloaded, Never Played", "Reapable Storage"] {
+        for section in ["Dead Feeds (", "Text(localized: \"Downloads\")", "Reapable Storage"] {
             #expect(source.contains(section), "the \(section) section must exist")
         }
+        #expect(
+            source.contains("L10n.string(\"All downloads\")"),
+            "the total must sit beside its unheard subset, or a per-show count reads as every download (#653)"
+        )
+        #expect(
+            source.contains("library: self.library,\n                            opensDownloads: true"),
+            "an unheard-downloads row must open the downloads it counted, not the show's newest episodes (#654)"
+        )
+        #expect(
+            row.contains("self.library.podcasts.downloadedShowFilter = self.podcastID"),
+            "the Downloaded list must open kept to the row's show (#654)"
+        )
     }
 
     @Test("The Podcasts pane serves the 26-2 behaviour analytics")

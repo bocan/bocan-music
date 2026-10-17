@@ -26,14 +26,18 @@ struct GlobalSearchFilterConventionTests {
         for call in [
             "GenresView(library: self.vm, searchQuery: self.vm.searchQuery)",
             "ComposersView(library: self.vm, searchQuery: self.vm.searchQuery)",
-            "PodcastsHomeView(vm: self.vm.podcasts, library: self.vm, searchQuery: self.vm.searchQuery)",
             " RadioView(library: self.vm, searchQuery: self.vm.searchQuery)",
         ] {
             #expect(source.contains(call), "\(call) must receive the live query")
         }
-        // Multi-line call; the parameter is enough to pin the wiring.
-        let show = try #require(source.range(of: "PodcastShowView("))
-        #expect(source[show.lowerBound...].prefix(220).contains("searchQuery: self.vm.searchQuery"))
+        // Multi-line calls; the parameter is enough to pin the wiring.
+        for view in ["PodcastsHomeView(", "PodcastShowView("] {
+            let call = try #require(source.range(of: view))
+            #expect(
+                source[call.lowerBound...].prefix(220).contains("searchQuery: self.vm.searchQuery"),
+                "\(view) must receive the live query"
+            )
+        }
     }
 
     @Test("genre and composer listings render the filtered arrays in both modes")

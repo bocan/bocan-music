@@ -163,6 +163,32 @@ struct AppPodcastActionsTests {
         #expect(current?.artistName == "Seam Show")
         #expect(current?.playableSource == .podcast(feedURL: feedURL, episodeGUID: "seam-ep1"))
     }
+
+    @Test("enqueue places a run of episodes next and last, through the protocol (#651)")
+    func enqueuePlacesEpisodes() async throws {
+        let bed = try await makeBed()
+        let concrete = AppPodcastActions(service: bed.service, player: bed.player, downloads: nil)
+        // Through the existential: a witness that drifted from the seam would
+        // fall back to the protocol's no-op default and leave the queue empty.
+        let actions: any PodcastActions = concrete
+        let id = try await concrete.subscribe(feedURL: feedURL)
+        let podcast = try await PodcastRepository(database: bed.db).fetch(id: id)
+        let episode = try #require(try await bed.service.episodes(podcastID: id).first)
+        let orphan = EpisodeListItem(
+            episode: PodcastEpisode(podcastID: 999, guid: "orphan", title: "Orphan", audioURL: "", addedAt: 0),
+            state: nil
+        )
+
+        await actions.enqueue([episode, orphan], shows: [id: podcast], placement: .last)
+        await actions.enqueue([episode], shows: [id: podcast], placement: .next)
+
+        let items = await bed.player.queue.items
+        #expect(items.count == 2, "the episode with no show is left out")
+        #expect(items.map(\.playableSource) == Array(
+            repeating: .podcast(feedURL: feedURL, episodeGUID: "seam-ep1"),
+            count: 2
+        ))
+    }
 }
 
 // MARK: - AppPodcastSearch

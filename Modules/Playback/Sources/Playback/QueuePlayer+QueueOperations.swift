@@ -79,6 +79,13 @@ public extension QueuePlayer {
         await queue.appendNext(items)
     }
 
+    /// Insert already-built items (e.g. podcast episodes) immediately after the
+    /// current item, in order (#651).
+    func playNext(items: [QueueItem]) async {
+        guard !items.isEmpty else { return }
+        await self.queue.appendNext(items)
+    }
+
     /// Jump to and start playing the queue item at `index` in the existing queue.
     /// No-op when the index is out of range.  Preserves shuffle / repeat state —
     /// only the current cursor moves.  Used by the "Play From Here" Up Next

@@ -64,7 +64,9 @@ extension LibraryViewModel {
             // dedicated view models. Nothing to fan out here.
             break
 
-        case .podcasts:
+        case .podcasts, .podcastDownloads:
+            // The Downloaded list observes its own rows while it is on screen;
+            // it needs the shows (titles, play targets) and the rail from here.
             await self.podcasts.loadSubscribed()
 
         case let .podcastShow(id):
@@ -132,7 +134,8 @@ extension LibraryViewModel {
             candidate == .composers
 
         case .podcastShow:
-            candidate == .podcasts
+            // Go to Show from the Downloaded list backs out to that list.
+            candidate == .podcasts || candidate == .podcastDownloads
 
         case let .subsonicAlbum(server, _):
             self.isSubsonicAlbumContainer(candidate, server: server)

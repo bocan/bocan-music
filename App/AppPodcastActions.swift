@@ -66,14 +66,57 @@ struct AppPodcastActions: PodcastActions {
 
     /// Builds a podcast `QueueItem` and hands it to `QueuePlayer.play(items:)`.
     ///
+    /// Source format fields are intentionally generic (see `queueItem`).
+    func play(episode: EpisodeListItem, podcast: Podcast) async {
+        guard let item = Self.queueItem(for: episode, podcast: podcast) else { return }
+        do {
+            try await self.player.play(items: [item], startingAt: 0)
+        } catch {
+            // Keeping PodcastActions non-throwing is right, but dropping the
+            // error is not: the player's own log line cannot say which episode
+            // the person pressed play on. Same fault as a `try?` and invisible
+            // to a search for one (#493).
+            AppLogger.make(.podcasts).warning("podcast.play.failed", [
+                "guid": episode.episode.guid,
+                "error": String(reflecting: error),
+            ])
+        }
+    }
+
+    /// Builds one queue item per episode, in order, and places the run (#651).
+    func enqueue(_ episodes: [EpisodeListItem], shows: [Int64: Podcast], placement: PodcastQueuePlacement) async {
+        let items = episodes.compactMap { episode in
+            shows[episode.episode.podcastID].flatMap { Self.queueItem(for: episode, podcast: $0) }
+        }
+        guard !items.isEmpty else { return }
+        switch placement {
+        case .now:
+            do {
+                try await self.player.play(items: items, startingAt: 0)
+            } catch {
+                AppLogger.make(.podcasts).warning("podcast.playAll.failed", [
+                    "count": items.count,
+                    "error": String(reflecting: error),
+                ])
+            }
+
+        case .next:
+            await self.player.playNext(items: items)
+
+        case .last:
+            await self.player.addToQueue(items: items)
+        }
+    }
+
+    /// A podcast `QueueItem`, or nil when the show's feed URL does not parse.
+    ///
     /// Source format fields are intentionally generic: the real format is
     /// sniffed when `QueuePlayer` resolves the `.podcast` source via
     /// `AppPodcastResolver`; the values here only gate gapless compatibility
     /// checks, which don't apply to podcast episodes.
-    func play(episode: EpisodeListItem, podcast: Podcast) async {
-        guard let feedURL = URL(string: podcast.feedURL) else { return }
-        let source = PlayableSource.podcast(feedURL: feedURL, episodeGUID: episode.episode.guid)
-        let item = QueueItem(
+    private static func queueItem(for episode: EpisodeListItem, podcast: Podcast) -> QueueItem? {
+        guard let feedURL = URL(string: podcast.feedURL) else { return nil }
+        return QueueItem(
             trackID: -1,
             bookmark: nil,
             fileURL: "",
@@ -88,20 +131,8 @@ struct AppPodcastActions: PodcastActions {
             title: episode.episode.title,
             artistName: podcast.title,
             albumName: podcast.title,
-            playableSource: source
+            playableSource: .podcast(feedURL: feedURL, episodeGUID: episode.episode.guid)
         )
-        do {
-            try await self.player.play(items: [item], startingAt: 0)
-        } catch {
-            // Keeping PodcastActions non-throwing is right, but dropping the
-            // error is not: the player's own log line cannot say which episode
-            // the person pressed play on. Same fault as a `try?` and invisible
-            // to a search for one (#493).
-            AppLogger.make(.podcasts).warning("podcast.play.failed", [
-                "guid": episode.episode.guid,
-                "error": String(reflecting: error),
-            ])
-        }
     }
 
     func markPlayed(podcastID: Int64, guid: String) async throws {

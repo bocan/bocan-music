@@ -3,21 +3,35 @@ import Persistence
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - PodcastsHomeMode
+
+/// The two sides of the Podcasts toolbar switch (#651).
+public enum PodcastsHomeMode: Hashable, Sendable {
+    /// The subscribed-shows grid (`.podcasts`).
+    case shows
+    /// Every downloaded episode (`.podcastDownloads`).
+    case downloaded
+}
+
 // MARK: - PodcastsHomeView
 
 /// Main Podcasts window: a persistent Add bar docked at the top, followed by
-/// either the search results list (when the user has typed) or the subscribed-
-/// shows grid (or empty state) when the search is idle.
+/// either the search results list (when the user has typed) or, when the
+/// search is idle, the Continue Listening rail over the subscribed-shows grid
+/// or the Downloaded list, picked by the toolbar switch.
 ///
-/// Routed from `ContentPane` for `.podcasts`.
+/// Routed from `ContentPane` for `.podcasts` and `.podcastDownloads`. Each
+/// side is its own destination, so Back returns to the other and Library
+/// Summary can open the Downloaded list directly.
 public struct PodcastsHomeView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel
     /// The toolbar search query, passed as a value so a keystroke re-renders
     /// this view without it observing the whole library view model. Filters
-    /// what the user already has (shows and the Continue Listening rail);
-    /// the Add bar below searches the directories for new shows.
+    /// what the user already has (shows, downloads and the Continue Listening
+    /// rail); the Add bar below searches the directories for new shows.
     public var searchQuery: String
+    public var mode: PodcastsHomeMode
 
     /// Identifiable wrapper so the import sheet is driven by `.sheet(item:)`: the
     /// content is built with the URL present from the first frame, so the sheet
@@ -34,10 +48,16 @@ public struct PodcastsHomeView: View {
     @State private var importFile: OPMLImportFile?
     @State private var showingMarkAllConfirm = false
 
-    public init(vm: PodcastsViewModel, library: LibraryViewModel, searchQuery: String) {
+    public init(
+        vm: PodcastsViewModel,
+        library: LibraryViewModel,
+        searchQuery: String,
+        mode: PodcastsHomeMode = .shows
+    ) {
         self.vm = vm
         self.library = library
         self.searchQuery = searchQuery
+        self.mode = mode
     }
 
     private var trimmedQuery: String {
@@ -72,6 +92,14 @@ public struct PodcastsHomeView: View {
                 if self.vm.searchState == .idle {
                     if self.vm.subscribed.isEmpty {
                         PodcastsEmptyState()
+                    } else if self.mode == .downloaded {
+                        VStack(spacing: 0) {
+                            if !self.visibleContinueListening.isEmpty {
+                                ContinueListeningRail(vm: self.vm, items: self.visibleContinueListening)
+                                Divider()
+                            }
+                            DownloadedEpisodesView(vm: self.vm, library: self.library, searchQuery: self.searchQuery)
+                        }
                     } else if self.visibleShows.isEmpty, self.visibleContinueListening.isEmpty {
                         EmptyState(
                             symbol: "magnifyingglass",
@@ -121,7 +149,35 @@ public struct PodcastsHomeView: View {
         .sheet(item: self.$importFile) { file in
             PodcastOPMLImportSheet(fileURL: file.url, vm: self.vm, library: self.library)
         }
+        // The grid turns `openShow` into navigation; in Downloaded mode there
+        // is no grid, so the rail's and the list's Go to Show land here.
+        .onChange(of: self.vm.selectedShowID) { _, newID in
+            guard self.mode == .downloaded, let id = newID else { return }
+            self.vm.selectedShowID = nil
+            Task { await self.library.selectDestination(.podcastShow(id)) }
+        }
         .toolbar {
+            // Always present, disabled with no subscriptions: a toolbar item
+            // that comes and goes is one an overflowed toolbar can lose.
+            ToolbarItem(placement: .principal) {
+                // Each segment carries an icon: in a narrow window the
+                // toolbar moves the switch into its overflow menu, which
+                // draws a segmented picker as a palette of icons, so a
+                // text-only segment shows there as a bare checkmark.
+                Picker(L10n.string("View"), selection: self.modeBinding) {
+                    Label(L10n.string("Shows"), systemImage: "square.grid.2x2")
+                        .labelStyle(.titleAndIcon)
+                        .tag(PodcastsHomeMode.shows)
+                    Label(L10n.string("Downloaded"), systemImage: "arrow.down.circle")
+                        .labelStyle(.titleAndIcon)
+                        .tag(PodcastsHomeMode.downloaded)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .help(L10n.string("Switch between your shows and every episode you have downloaded"))
+                .disabled(self.vm.subscribed.isEmpty)
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button(L10n.string("Import Subscriptions…")) { self.importSubscriptions() }
@@ -153,6 +209,21 @@ public struct PodcastsHomeView: View {
         } message: {
             Text(localized: "This marks every episode of all your subscribed shows as played. It cannot be undone in bulk.")
         }
+    }
+
+    /// Each side of the switch is a destination, so a switch is a navigation:
+    /// Back undoes it like any other.
+    private var modeBinding: Binding<PodcastsHomeMode> {
+        Binding(
+            get: { self.mode },
+            set: { newMode in
+                guard newMode != self.mode else { return }
+                // The switch opens every download; only Library Summary opens
+                // the list kept to one show (#654). Back keeps the filter.
+                self.vm.downloadedShowFilter = nil
+                Task { await self.library.selectDestination(newMode == .shows ? .podcasts : .podcastDownloads) }
+            }
+        )
     }
 
     // MARK: - OPML import / export

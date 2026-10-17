@@ -299,6 +299,23 @@ public actor PodcastService {
         await self.episodeRepo.observeListItems(podcastID: podcastID, order: order)
     }
 
+    /// One episode's show notes HTML. The episode lists leave the notes out,
+    /// so the notes sheets read them here; nil when there are none.
+    public func showNotesHTML(podcastID: Int64, guid: String) async throws -> String? {
+        try await self.episodeRepo.fetchDescriptionHTML(podcastID: podcastID, guid: guid)
+    }
+
+    /// Every downloaded episode across all shows, newest first (#651).
+    public func downloadedEpisodes() async throws -> [EpisodeListItem] {
+        try await self.episodeRepo.fetchDownloadedListItems()
+    }
+
+    /// Live downloads list; re-emits when a download lands or goes, and on
+    /// any play-state change.
+    public func observeDownloadedEpisodes() async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+        await self.episodeRepo.observeDownloadedListItems()
+    }
+
     /// Total episode counts keyed by podcast ID. A show with no episode rows
     /// is absent.
     public func episodeCounts() async throws -> [Int64: Int] {
