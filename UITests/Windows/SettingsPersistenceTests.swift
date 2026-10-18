@@ -68,7 +68,7 @@ final class SettingsPersistenceTests: XCTestCase {
     /// Flips every toggle in `Self.toggles` (sidebar order, so the crawl
     /// never needs to scroll backward) then, last, picks a non-default
     /// accent — deliberately jumping back up to Appearance so
-    /// `selectSidebarRow`'s scroll-until-hittable path is proven in both
+    /// `selectSidebarRow`'s keyboard-walk path is proven in both
     /// directions, not just forward. Returns each toggle's resulting value,
     /// for the relaunch assertion.
     private func flipEveryToggleAndAccent(

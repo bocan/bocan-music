@@ -117,10 +117,10 @@ final class SettingsCrawlTests: XCTestCase {
     /// be hittable (typically whichever was selected last), toward the
     /// target's reported position relative to the window (the crawl is not
     /// always forward: the persistence suite deliberately jumps back up to
-    /// Appearance after Diagnostics) until the target is genuinely
-    /// hittable, then fall back to the coordinate tap the un-clipped case
-    /// still needs (List rows report not-hittable even when fully visible;
-    /// the cell is the hit target).
+    /// Appearance after Diagnostics) until the target's row is selected,
+    /// then fall back to the coordinate tap the un-clipped case still needs
+    /// (List rows report not-hittable even when fully visible; the cell is
+    /// the hit target).
     static func selectSidebarRow(_ row: XCUIElement, anchor: XCUIElement, app: XCUIApplication) {
         guard !row.isHittable else {
             row.click()
@@ -138,8 +138,19 @@ final class SettingsCrawlTests: XCTestCase {
         let sidebar = app.outlines
             .containing(NSPredicate(format: "identifier == %@", row.identifier))
             .firstMatch
-        for (down, steps) in [(guessDown, 16), (!guessDown, 32)] where !row.isHittable {
-            self.walkSelection(toward: row, sidebar: sidebar, app: app, down: down, steps: steps)
+        // The walk stops when the target's own row is selected: the key that
+        // selects it has already opened its pane. Stopping when the target
+        // became hittable parked the walk short of it: a half-visible row
+        // below the window's edge read hittable, then not, so nothing was
+        // clicked and the pane never opened (2026-10-14).
+        let target = sidebar.outlineRows
+            .containing(NSPredicate(format: "identifier == %@", row.identifier))
+            .firstMatch
+        for (down, steps) in [(guessDown, 16), (!guessDown, 32)] where !target.isSelected {
+            self.walkSelection(to: target, sidebar: sidebar, app: app, down: down, steps: steps)
+        }
+        if target.isSelected {
+            return
         }
         if row.isHittable {
             row.click()
@@ -151,12 +162,13 @@ final class SettingsCrawlTests: XCTestCase {
         }
     }
 
-    /// Arrow-walks the sidebar selection until `row` is hittable or `steps`
-    /// keys have been sent. A newly selected pane can steal keyboard focus
-    /// from the sidebar (Advanced does), so the selected row is re-clicked
-    /// before each key to hand focus back without moving the selection.
+    /// Arrow-walks the sidebar selection until `target` (an outline row) is
+    /// selected or `steps` keys have been sent. A newly selected pane can
+    /// steal keyboard focus from the sidebar (Advanced does), so the
+    /// selected row is re-clicked before each key to hand focus back without
+    /// moving the selection.
     private static func walkSelection(
-        toward row: XCUIElement,
+        to target: XCUIElement,
         sidebar: XCUIElement,
         app: XCUIApplication,
         down: Bool,
@@ -164,7 +176,7 @@ final class SettingsCrawlTests: XCTestCase {
     ) {
         let key: XCUIKeyboardKey = down ? .downArrow : .upArrow
         var sent = 0
-        while !row.isHittable, sent < steps {
+        while !target.isSelected, sent < steps {
             let selected = sidebar.outlineRows
                 .matching(NSPredicate(format: "selected == 1")).firstMatch
             // Only when hittable: a selected row scrolled out of view has a
