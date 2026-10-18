@@ -49,12 +49,12 @@ with a pull request.
 
 Run `make format` before committing. The pre-commit hook (installed by `make bootstrap`) runs `swiftformat --lint` and `swiftlint` automatically.
 
-## AI-assisted contributions
+## AI/LLM assisted contributions
 
-Contributions written with AI assistance are entirely welcome, on the same
-terms as any other: the existing coding standards apply in full, and every PR
+We welcome contributions of any kind, whether they are written without LLMs, assisted by LLMs, or even completely written using LLMs. The deciding factor for all contributions has never been who proposed or who has written them.  The existing coding standards apply in full, and every PR
 gets a thorough human review regardless of who or what typed it.
 
+Everyone has to meet the quality standard laid out earlier, whether you use an LLM or not. If maintainers have reason to believe a contributor acted without enough care or in bad faith, whether that is with or without LLMs, maintainers will take appropriate action.
 If you point a coding assistant at this repo, give it the same context a
 human contributor reads: `DEVELOPMENT.md` for environment setup and the
 binding standards in `docs/design-spec/_standards.md`. The repo also carries
