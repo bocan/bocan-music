@@ -33,11 +33,11 @@ let package = Package(
         .package(path: "../Subsonic"),
         .package(
             url: "https://github.com/MathieuDubart/swiftsonic.git",
-            from: "0.9.0"
+            from: "0.9.1"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
-            from: "1.19.6"
+            from: "1.19.7"
         ),
     ],
     targets: [

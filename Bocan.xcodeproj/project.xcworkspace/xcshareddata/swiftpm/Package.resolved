@@ -1,5 +1,5 @@
 {
-  "originHash" : "3196efae568ad4c1280a8b0997d73887e43485aea2d3ad633d54bf92e61b65d7",
+  "originHash" : "84faf8b4155201830f3e86fd70db5307fb430adb9bb0bdd4ef142dc36fbe58ff",
   "pins" : [
     {
       "identity" : "feedkit",
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "a9d1d5ab8951ada40cafff8c8e2b551dfde4f390",
-        "version" : "5.0.0"
+        "revision" : "c2cbadd7263439d8015189668f96ff5b5be565ce",
+        "version" : "5.0.3"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-issue-reporting",
       "state" : {
-        "revision" : "75b000cea2ca6d7527a57e1b9cc0bdf21a9abe9f",
-        "version" : "2.1.1"
+        "revision" : "b23bb4493c439d3e05152bc167014235ba3d47fc",
+        "version" : "2.1.2"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
       "state" : {
-        "revision" : "28e5de025e3fd98991791bfbf83023ab3708da03",
-        "version" : "1.19.6"
+        "revision" : "1488390b0735e726564b948bf08b384398bdab5c",
+        "version" : "1.19.7"
       }
     },
     {
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/MathieuDubart/swiftsonic.git",
       "state" : {
-        "revision" : "9ba4b2eb7fcc841a6a6887c96929565b66f8fa90",
-        "version" : "0.9.0"
+        "revision" : "ab64756ba41ea68522f9fcb7a4b2045884737004",
+        "version" : "0.9.1"
       }
     }
   ],
