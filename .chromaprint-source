@@ -6,6 +6,6 @@
 # To bump: change all three values, run `make bundle-fpcalc`, then compare a
 # fingerprint of one track before and after. The SHA-256 is of the tarball at
 # CHROMAPRINT_URL; confirm it against a second source before you commit it.
-CHROMAPRINT_VERSION=1.6.1
-CHROMAPRINT_URL=https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz
-CHROMAPRINT_SHA256=3368805af0ee47b9df74df10b5001a44569e01df2844dab520031720dde9ad23
+CHROMAPRINT_VERSION=1.6.2
+CHROMAPRINT_URL=https://github.com/acoustid/chromaprint/releases/download/v1.6.2/chromaprint-1.6.2.tar.gz
+CHROMAPRINT_SHA256=d54ada62c16b2db396d3251ec54fc7a58909c163131a1cfcf7fa6407dbc14360

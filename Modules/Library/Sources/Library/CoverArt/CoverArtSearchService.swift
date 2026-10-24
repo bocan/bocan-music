@@ -1,4 +1,5 @@
 import Acoustics
+import CryptoKit
 import Foundation
 import Observability
 import Persistence
@@ -164,8 +165,6 @@ private actor FetchThumbnailCache {
 }
 
 // MARK: - String sha256 helper
-
-import CryptoKit
 
 private extension String {
     var sha256Hex: String {

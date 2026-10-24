@@ -1,3 +1,4 @@
+import AppKit
 import Library
 import SwiftUI
 
@@ -154,5 +155,3 @@ private struct CandidateCell: View {
         .accessibilityLabel(L10n.string("\(self.candidate.title) by \(self.candidate.artist)"))
     }
 }
-
-import AppKit
