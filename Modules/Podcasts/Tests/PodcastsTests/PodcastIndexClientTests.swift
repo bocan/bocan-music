@@ -34,11 +34,11 @@ struct PodcastIndexClientTests {
     @Test("search decodes podcastindex-search.json into PodcastSearchResults sourced .podcastIndex")
     func searchDecodesFixture() async throws {
         guard let url = Bundle.module.url(
-            forResource: "podcastindex-search.json",
-            withExtension: nil,
-            subdirectory: "Fixtures"
-        ),
-            let data = try? Data(contentsOf: url) else {
+                  forResource: "podcastindex-search.json",
+                  withExtension: nil,
+                  subdirectory: "Fixtures"
+              ),
+              let data = try? Data(contentsOf: url) else {
             Issue.record("podcastindex-search.json fixture not found")
             return
         }
@@ -72,11 +72,11 @@ struct PodcastIndexClientTests {
     @Test("podcast(byFeedURL:) decodes podcastindex-byfeedurl.json correctly")
     func byFeedURLDecodes() async throws {
         guard let url = Bundle.module.url(
-            forResource: "podcastindex-byfeedurl.json",
-            withExtension: nil,
-            subdirectory: "Fixtures"
-        ),
-            let data = try? Data(contentsOf: url) else {
+                  forResource: "podcastindex-byfeedurl.json",
+                  withExtension: nil,
+                  subdirectory: "Fixtures"
+              ),
+              let data = try? Data(contentsOf: url) else {
             Issue.record("podcastindex-byfeedurl.json fixture not found")
             return
         }
