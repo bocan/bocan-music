@@ -1,4 +1,4 @@
-.PHONY: help bootstrap ffmpeg-lgpl bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
+.PHONY: help bootstrap ffmpeg-lgpl bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale website-check format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -376,6 +376,10 @@ release-preview:
 ## test-scripts: Run the shell script tests under Scripts/tests (CI runs them on Linux)
 test-scripts:
 	@for t in Scripts/tests/*.sh; do bash "$$t" || exit 1; done
+
+## website-check: Build the website and check its internal links (CI runs it on website PRs)
+website-check:
+	cd website && npm ci --no-audit --no-fund && npm run build && npm run check
 
 ## format-check: Run SwiftFormat in lint mode (CI)
 format-check: check-swiftformat-version

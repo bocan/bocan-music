@@ -56,6 +56,7 @@ make doctor
 | `make release-preview` | Show the version the next release would get and the `CHANGELOG.md` section it would write. Nothing is changed. Release notes are not added by a command: each `feat`, `fix` or `perf` PR writes its own under `## [Unreleased]` (see "Releasing" below) |
 | `make audit-db` | Data-level schema audit against a library database (a `.backup` copy, never the live file). The default is the Debug build's library in the sandbox container; pass `DB=/path/to/library.sqlite` for another one, such as the release library in `~/Library/Application Support/Bocan/`. `Scripts/audit-db-schema.py` reports columns that are 100% NULL, stuck at their DDL default, or over 90% NULL; `Scripts/audit-db-xref.py` reports columns no Swift source outside migrations and tests references. See issue #414 for why this exists |
 | `make data-dictionary` | Regenerate `docs/data-dictionary.md` from a freshly migrated schema (`swift run bocan-schema` in `Modules/Persistence`), merging the curated `docs/data-dictionary-notes.json`; `DB=/path/to/library.sqlite` documents a real library instead. Edit the notes file, never the generated tables |
+| `make website-check` | Build the website and check every internal link, image, stylesheet reference and `#fragment` in the output (`website/scripts/check-links.mjs`). External links are not fetched. The PR workflow runs it when `website/` or `CHANGELOG.md` changes |
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
