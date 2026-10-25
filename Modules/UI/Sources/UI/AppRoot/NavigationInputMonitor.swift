@@ -133,11 +133,11 @@ struct NavigationInputMonitor: NSViewRepresentable {
                     }
                     // keyDown: Esc drill-out, last in its precedence ladder.
                     guard NavigationInputMonitor.isBareEscape(
-                        keyCode: event.keyCode,
-                        modifiers: event.modifierFlags
-                    ),
-                        !(window.firstResponder is NSText),
-                        !window.styleMask.contains(.fullScreen) else {
+                              keyCode: event.keyCode,
+                              modifiers: event.modifierFlags
+                          ),
+                          !(window.firstResponder is NSText),
+                          !window.styleMask.contains(.fullScreen) else {
                         return false
                     }
                     return onDrillOut()

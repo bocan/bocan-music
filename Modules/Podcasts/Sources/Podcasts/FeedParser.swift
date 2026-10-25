@@ -335,12 +335,12 @@ public struct FeedParser: Sendable {
     private static func parseAtomEntry(_ entry: AtomFeedEntry) -> ParsedEpisode? {
         // Find the enclosure link: rel="enclosure" with an audio MIME type.
         guard let enclosureLink = entry.links?.first(where: {
-            $0.attributes?.rel == "enclosure"
-                && ($0.attributes?.type?.hasPrefix("audio/") == true
-                    || $0.attributes?.type == nil)
-        }),
-            let hrefString = enclosureLink.attributes?.href,
-            let audioURL = URL(string: hrefString) else {
+                  $0.attributes?.rel == "enclosure"
+                      && ($0.attributes?.type?.hasPrefix("audio/") == true
+                          || $0.attributes?.type == nil)
+              }),
+              let hrefString = enclosureLink.attributes?.href,
+              let audioURL = URL(string: hrefString) else {
             return nil
         }
 

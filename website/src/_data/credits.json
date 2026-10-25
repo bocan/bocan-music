@@ -16,7 +16,7 @@
     "name": "Chromaprint / fpcalc",
     "url": "https://acoustid.org/chromaprint",
     "license": "LGPL 2.1 (built by the project from source)",
-    "source": "https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz",
+    "source": "https://github.com/acoustid/chromaprint/releases/download/v1.6.2/chromaprint-1.6.2.tar.gz",
     "purpose": "Acoustic fingerprinting for AcoustID lookups."
   },
   {

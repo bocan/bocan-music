@@ -64,12 +64,12 @@ public extension PodcastService {
                 return 0
             }
             if let episode = try await episodeRepo.fetchByGUID(
-                podcastID: podcastID,
-                guid: episodeGUID
-            ),
-                let duration = episode.duration,
-                duration > 0,
-                state.playPosition >= duration - PodcastPlayback.completionTailSeconds {
+                   podcastID: podcastID,
+                   guid: episodeGUID
+               ),
+               let duration = episode.duration,
+               duration > 0,
+               state.playPosition >= duration - PodcastPlayback.completionTailSeconds {
                 return 0
             }
             return state.playPosition

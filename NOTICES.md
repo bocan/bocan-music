@@ -168,7 +168,7 @@ Broadcom Corporation:
 
 ---
 
-## OpenSSL 3.6.5
+## OpenSSL 3.5.9
 
 <https://openssl-library.org>
 
@@ -207,7 +207,7 @@ TagLib source code is available at <https://github.com/taglib/taglib>.
 
 ---
 
-## Chromaprint / fpcalc 1.6.1
+## Chromaprint / fpcalc 1.6.2
 
 <https://acoustid.org/chromaprint>
 
@@ -226,8 +226,8 @@ The LGPL 2.1 full text is available at:
 
 ### Source and build recipe
 
-- Source: <https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-1.6.1.tar.gz>
-- SHA-256 of that file: `3368805af0ee47b9df74df10b5001a44569e01df2844dab520031720dde9ad23`
+- Source: <https://github.com/acoustid/chromaprint/releases/download/v1.6.2/chromaprint-1.6.2.tar.gz>
+- SHA-256 of that file: `d54ada62c16b2db396d3251ec54fc7a58909c163131a1cfcf7fa6407dbc14360`
 - Build recipe: `Scripts/build-fpcalc.sh` in the Bòcan source
   (<https://github.com/bocan/bocan-music>), run as `make bundle-fpcalc`.
   The version, the address and the checksum are pinned in
@@ -263,7 +263,7 @@ SOFTWARE.
 
 ---
 
-## swift-snapshot-testing 1.19.6
+## swift-snapshot-testing 1.19.7
 
 <https://github.com/pointfreeco/swift-snapshot-testing>
 
@@ -319,7 +319,7 @@ SOFTWARE.
 
 ---
 
-## swift-issue-reporting 2.1.1
+## swift-issue-reporting 2.1.2
 
 (formerly xctest-dynamic-overlay)
 
@@ -379,7 +379,7 @@ SOFTWARE.
 
 ---
 
-## SwiftSonic 0.9.0
+## SwiftSonic 0.9.1
 
 <https://github.com/MathieuDubart/swiftsonic>
 
@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.0.0
+## swift-crypto 5.0.3
 
 <https://github.com/apple/swift-crypto>
 
@@ -485,6 +485,6 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.19.0. The FFmpeg and Chromaprint
+*This file was generated for Bòcan 2.23.0. The FFmpeg and Chromaprint
 versions are pinned in `.ffmpeg-source` and `.chromaprint-source`; the Swift
 package versions are pinned in the workspace `Package.resolved`.*
