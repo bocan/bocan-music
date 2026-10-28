@@ -557,7 +557,7 @@ Small polish. While a radio station or podcast plays, the title line in the play
 Under the hood, a full dependency spring-clean. Every library Bòcan builds on is now at its latest release, including a Sparkle security patch and a major-version move of the cryptography package behind Phone Sync (verified byte-for-byte against the pairing test vectors, so paired phones notice nothing). The third-party notices file now reports true versions and credits three Apache-licensed components it had missed, and a weekly automated check now files an issue the moment any dependency falls behind, so none of this drifts quietly again.
 
 
-### ### Fixed
+### Fixed
 
 * **release:** appcast minimum system version must match the app's real floor ([feed4d3](https://github.com/bocan/bocan-music/commit/feed4d3f97d075ec2ef1696e52605f4bb7133c74))
 * **scripts:** make gen-notices read real pins and cover the Apache packages ([654f2d2](https://github.com/bocan/bocan-music/commit/654f2d288876d6f756428112f812c8c4d3843d8c))
@@ -572,7 +572,7 @@ Getting around is quicker. The back and forward side buttons on your mouse shoul
 
 And one small fix that felt bigger than it was: pressing Cmd+A while typing in the search field now selects your typed text, like every Mac app should, instead of quietly selecting every track in a list you weren't looking at (#379). Both this and the navigation work were suggested by @go1968, so thanks Guy!
 
-### ### Added
+### Added
 
 * **audio:** capture stream details and ICY now-playing titles in FFmpegDecoder (phase 27-5) ([bffc1b4](https://github.com/bocan/bocan-music/commit/bffc1b4caddbd59e7bc69d5e8b7e2dbd5c129454))
 * **library:** import playlist stream entries as radio stations (phase 27-4) ([1baf399](https://github.com/bocan/bocan-music/commit/1baf399ce35b12eed67655ba5a73adcea9e39b38)), closes [#376](https://github.com/bocan/bocan-music/issues/376)
@@ -586,7 +586,7 @@ And one small fix that felt bigger than it was: pressing Cmd+A while typing in t
 * **ui:** shared internet radio queue-item factory and play path (phase 27-2) ([82eb7d5](https://github.com/bocan/bocan-music/commit/82eb7d5205d3b2071b1d03183a7b061a749f04ca))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** detect ICY title support from evidence, not the consumed icy-metaint header ([a7546b4](https://github.com/bocan/bocan-music/commit/a7546b4acb8092ae24ffd0672457096cba9874be))
 * **playback:** never seek a live radio stream on queue restore ([d41044f](https://github.com/bocan/bocan-music/commit/d41044ff4346d671897f4713c958c100a18fb1fb))
@@ -610,7 +610,7 @@ Open Tools → Library Summary (⌘⇧Y) for six tabs that tell you the truth ab
 Also in this release: fixed a bug where certain FLAC files (ones missing a length header) would fail analysis and could end playback instantly.
 
 
-### ### Added
+### Added
 
 * **audio:** ProvenanceAnalyzer spectral-shelf transcode detection (phase 24-1) ([a78fe26](https://github.com/bocan/bocan-music/commit/a78fe2612e5c5120fbc9e66926a5ceb0144f1c0f))
 * **library:** Last.fm listening-history import (phase 25-1) ([40c5d1d](https://github.com/bocan/bocan-music/commit/40c5d1d2fdf2abd005073fbbfc7ff77ee12e0806))
@@ -631,7 +631,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 * **ui:** Suspected Transcodes report in the Audio Quality tab (phase 24-4) ([e1d3b40](https://github.com/bocan/bocan-music/commit/e1d3b40f21b60e481236f96ecb7a8be3d1cf3e52))
 
 
-### ### Fixed
+### Fixed
 
 * **app:** merge Library Summary into the existing Tools menu ([26c15ac](https://github.com/bocan/bocan-music/commit/26c15acaf4b4dda3e628943422fb9fec1a61ebce))
 * **app:** stop the Tools menu appearing twice ([95a4655](https://github.com/bocan/bocan-music/commit/95a465595a9ce71dad60ea0dcfc785b34727ecd1))
@@ -643,7 +643,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 ## [2.4.0](https://github.com/bocan/bocan-music/compare/v2.3.1...v2.4.0) (2026-07-30)
 
 
-### ### Added
+### Added
 
 * **ui:** double-click an album cover to play it in place ([#369](https://github.com/bocan/bocan-music/issues/369)) ([cb5f892](https://github.com/bocan/bocan-music/commit/cb5f892a29f78e776e049859fd4b183f5bfe5e74))
 * **ui:** filter the Artists list to album artists only ([#369](https://github.com/bocan/bocan-music/issues/369)) ([e373f4b](https://github.com/bocan/bocan-music/commit/e373f4b7219a821491c3d56f740a4bb89a22d56b))
@@ -651,7 +651,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 * **website:** send GNU Terry Pratchett on every page ([5d806af](https://github.com/bocan/bocan-music/commit/5d806affcfbf52190154e22cd42b7021a9667427))
 
 
-### ### Fixed
+### Fixed
 
 * **playback:** invalidate in-flight artwork loads on podcast updates ([544b1c2](https://github.com/bocan/bocan-music/commit/544b1c2b550b0949182dcc873647812bb9868f12))
 * **playback:** show album artwork without Now Playing crashes ([#372](https://github.com/bocan/bocan-music/issues/372)) ([37f68d1](https://github.com/bocan/bocan-music/commit/37f68d17519c84868aecded4f2db701dc75b60b5))
@@ -659,7 +659,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 * **ui:** make View-menu List/Grid switch reliably redraw listings ([#363](https://github.com/bocan/bocan-music/issues/363)) ([3c09047](https://github.com/bocan/bocan-music/commit/3c09047f3b0f8608142b63fbcd15e501bdd5296c))
 
 
-### ### Changed
+### Changed
 
 * **persistence:** fold fetch-by-id-or-throw into a Database helper ([083de5a](https://github.com/bocan/bocan-music/commit/083de5a980db35925049a143767ecb6a8a773e46))
 * **scrobble:** share a ListenBrainz-compatible transport ([889d78d](https://github.com/bocan/bocan-music/commit/889d78db80281117d77cd2c63a99c6f4d1dba034))
@@ -670,7 +670,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 ## [2.3.1](https://github.com/bocan/bocan-music/compare/v2.3.0...v2.3.1) (2026-07-19)
 
 
-### ### Fixed
+### Fixed
 
 * **release:** point the 2.3.0 appcast at the canonical v2.3.0 release ([770871b](https://github.com/bocan/bocan-music/commit/770871b244c8f4302737cab90198f0485f6092c3))
 * **release:** point the 2.3.0 appcast entry at the real DMG ([0340175](https://github.com/bocan/bocan-music/commit/03401752bca869ddbed6cb336f9169c7201bff2c))
@@ -680,7 +680,7 @@ Also in this release: fixed a bug where certain FLAC files (ones missing a lengt
 
 This one adds a new card-grid view mode to Artists, Genres, and Composers, and adds a new "View" menu to switch between the list and card-grid modes.  The card-grid mode shows album art for each artist, genre, or composer, and lets you browse their details by clicking on the album art.
 
-### ### Added
+### Added
 
 * **app:** mirror collection view modes in the View menu ([#363](https://github.com/bocan/bocan-music/issues/363)) ([aa88b52](https://github.com/bocan/bocan-music/commit/aa88b52acb55afae94c428066952b713ac3f3a05))
 * **ui:** add card-grid view mode to Artists ([#363](https://github.com/bocan/bocan-music/issues/363)) ([33284bf](https://github.com/bocan/bocan-music/commit/33284bfd7584e5d3fac59f8cbae56f3066fbf76d))
@@ -688,12 +688,12 @@ This one adds a new card-grid view mode to Artists, Genres, and Composers, and a
 * **ui:** browse genre and composer destinations by album ([#363](https://github.com/bocan/bocan-music/issues/363)) ([f0a1820](https://github.com/bocan/bocan-music/commit/f0a1820ec548acdd578a1f1a496d57a7a2683a0d))
 
 
-### ### Fixed
+### Fixed
 
 * **app:** never start the Sparkle updater in debug builds ([7ae9571](https://github.com/bocan/bocan-music/commit/7ae9571506ee15fe42262757612aaf27e0f868ec))
 
 
-### ### Changed
+### Changed
 
 * **app:** extract the Tools menu into BocanCommands+Tools.swift ([105d408](https://github.com/bocan/bocan-music/commit/105d40871e977739cdd9c2349296f3613b5c5d1a))
 * **ui:** extract the shared collection mode toggles ([#363](https://github.com/bocan/bocan-music/issues/363)) ([742b8db](https://github.com/bocan/bocan-music/commit/742b8db6c70018f521ca49320569d959503eccec))
@@ -739,13 +739,13 @@ And a peek ahead: @lukesutton's idea to browse Artists, Genres, and
 Composers as album-art card grids (#363) is fully specced and on the list for
 2.3.0.
 
-### ### Added
+### Added
 
 * **library:** multi-key smart playlist sort with working headers ([3ed00f2](https://github.com/bocan/bocan-music/commit/3ed00f2f93557dc54a41f88f38f4c702fa61e879))
 * **ui:** sortable manual playlists with preserved order ([44262f6](https://github.com/bocan/bocan-music/commit/44262f64ae9d341ea41e77f7020fb3159be3beff))
 
 
-### ### Fixed
+### Fixed
 
 * **library:** group compilations without an album artist ([#362](https://github.com/bocan/bocan-music/issues/362)) ([cfd1ee2](https://github.com/bocan/bocan-music/commit/cfd1ee22b08b2147530775f1445a9d9314e4c846))
 * **ui:** restore artist row navigation ([42f42e8](https://github.com/bocan/bocan-music/commit/42f42e81bfd1250cbdc7125fb63fa18d87a2d2f2))
@@ -754,7 +754,7 @@ Composers as album-art card grids (#363) is fully specced and on the list for
 ## [2.1.0](https://github.com/bocan/bocan-music/compare/v2.0.0...v2.1.0) (2026-07-13)
 
 
-### ### Added
+### Added
 
 * **persistence:** add podcasts.artwork_hash for Phone Sync artwork (22-10 step 1) ([9b7cbfe](https://github.com/bocan/bocan-music/commit/9b7cbfe27d8f9750a2d7aa465c7047a1caadfcfa))
 * **podcasts:** hash show artwork at cache time and backfill (22-10 step 2) ([6f62ecd](https://github.com/bocan/bocan-music/commit/6f62ecdb6d497df3eb5f061ea27ff45460a07e68))
@@ -764,7 +764,7 @@ Composers as album-art card grids (#363) is fully specced and on the list for
 * **ui:** make the empty Paired Phones state a pairing call to action ([71d35b6](https://github.com/bocan/bocan-music/commit/71d35b6051a7a743dc01e2021550f4bfe4da7c0c))
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** move Paired Phones above Sync Profile in Phone Sync settings ([a994953](https://github.com/bocan/bocan-music/commit/a9949531899b11ea22611a45ad2de975b4309a99))
 
@@ -779,7 +779,7 @@ This isn't really breaking changes, but I'm building a free, open source [Androi
 
 Bòcan music will let you sync some or all of your music to you phone, let you play it in your car via Android Auto, and let you listen to your podcasts on the go.  The sync protocol is end-to-end encrypted, and uses mutual TLS with a self-signed certificate to authenticate the server to the client.  The Mac side generates a pairing code that you enter into the phone, and the Mac then  generates a permanent key that is stored in the Keychain.  The client can then use this permanent key to authenticate to the server without having to enter the pairing code again.
 
-### ### Added
+### Added
 
 * **library:** backfill track content hashes in the background ([76793d2](https://github.com/bocan/bocan-music/commit/76793d27a75db9784377ea9014d45b273f8331da))
 * **persistence:** add missing-content-hash queries and a single-column hash write ([606a0ce](https://github.com/bocan/bocan-music/commit/606a0ce1326e57bb3b415ea960b736960c2f1efd))
@@ -802,7 +802,7 @@ Bòcan music will let you sync some or all of your music to you phone, let you p
 * **ui:** add the Phone Sync settings pane and pairing sheet ([20b6946](https://github.com/bocan/bocan-music/commit/20b6946ca092ce214c4eb40b46620975b50372f7))
 
 
-### ### Fixed
+### Fixed
 
 * **sync:** serialize permanent key generation in the login Keychain ([c70b2a9](https://github.com/bocan/bocan-music/commit/c70b2a94b82076a0437f7999b134a061afffddb9))
 * **sync:** trigger the Local Network prompt so Bonjour advertising works ([f076ca8](https://github.com/bocan/bocan-music/commit/f076ca8016fcb7ec5c8934e0876a73241a618e1f))
@@ -811,7 +811,7 @@ Bòcan music will let you sync some or all of your music to you phone, let you p
 ## [1.17.1](https://github.com/bocan/bocan-music/compare/v1.17.0...v1.17.1) (2026-07-06)
 
 
-### ### Fixed
+### Fixed
 
 * **ci:** retry Pages deployment once on transient failure ([87c7f00](https://github.com/bocan/bocan-music/commit/87c7f00211ece1341fb7cea7bc38591ff7457fdd))
 * **ui:** hand the idle dock tile back to the Dock's native rendering ([341a96a](https://github.com/bocan/bocan-music/commit/341a96a4fa4b5ed5e13936c5594fd62ae457fc5d))
@@ -819,7 +819,7 @@ Bòcan music will let you sync some or all of your music to you phone, let you p
 ## [1.17.0](https://github.com/bocan/bocan-music/compare/v1.16.1...v1.17.0) (2026-07-06)
 
 
-### ### Added
+### Added
 
 * **app:** adopt Icon Composer app icon ([714ac12](https://github.com/bocan/bocan-music/commit/714ac1211a38f2aab62930b9a931bebac06cfa79))
 * **app:** give the app icon distinct light and dark appearances ([e6aa088](https://github.com/bocan/bocan-music/commit/e6aa088d5f630828fe9836ad2ff26abce84b84c0))
@@ -829,7 +829,7 @@ Bòcan music will let you sync some or all of your music to you phone, let you p
 ## [1.16.1](https://github.com/bocan/bocan-music/compare/v1.16.0...v1.16.1) (2026-07-05)
 
 
-### ### Fixed
+### Fixed
 
 * **library:** ignore metadata-only FSEvents and skip no-op conflict writes ([3e49b23](https://github.com/bocan/bocan-music/commit/3e49b230e0dc5bf2fa99c7bcc9e86d86fdaa9d17))
 * **metadata:** open files read-only when reading tags ([5a093ca](https://github.com/bocan/bocan-music/commit/5a093ca2b33966d2665b8cb5d8a5e6a08e7edee2))
@@ -838,14 +838,14 @@ Bòcan music will let you sync some or all of your music to you phone, let you p
 
 This release contains a lot of fixes for the metadata editor, including making sure that the cover art you apply to an album actually replaces the existing art, and that the track list shows the new art.  It also makes sure that lyrics are actually written to disk when you choose "Embed in file", and that stored lyrics are shown in the editor for non-playing tracks and in the Get Info lyrics tab.
 
-### ### Added
+### Added
 
 * **acoustics:** fetch and rank all MusicBrainz releases with ISRCs ([1e5b9b0](https://github.com/bocan/bocan-music/commit/1e5b9b05bd50bc84044c523de0693894f5056496))
 * **library:** thread MusicBrainz IDs through the tag-edit pipeline ([c77d6b2](https://github.com/bocan/bocan-music/commit/c77d6b23c5b271fcff1ced87fe98f5fa7ecad1e2))
 * **ui:** release picker and advanced identifier fields in Identify Track ([f93f863](https://github.com/bocan/bocan-music/commit/f93f863b83f1f7e207a1eca0c581fd83301ed1cb))
 
 
-### ### Fixed
+### Fixed
 
 * **library:** decode Cover Art Archive image ids so art search works ([b21a7f3](https://github.com/bocan/bocan-music/commit/b21a7f38bbc8bf96f1225707a212cb763312e950))
 * **library:** link saved cover art to the album so the track list shows it ([f8c67cd](https://github.com/bocan/bocan-music/commit/f8c67cd6219c8365893f8d7ae3814c9242f77174))
@@ -861,24 +861,24 @@ I've gone through the entire UI and made sure that all the browse lists (Albums,
 
 I've also added sort choosers to all grids and lists, so you can sort by name, date added, or other criteria. Finally, I've fixed a small UI issue where the visualizer toggle icon was too similar to the Identify Track icon.
 
-### ### Added
+### Added
 
 * **ui:** scroll-position restore and sort choosers across browse lists ([69a37ea](https://github.com/bocan/bocan-music/commit/69a37eafeb4fbe37ea376642ea91a5a566fb8fa8))
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** distinguish the visualizer toggle icon from Identify Track ([12f0a8f](https://github.com/bocan/bocan-music/commit/12f0a8fc50b65a80b2a1a20b8e01547caaf928de))
 
 ## [1.14.1](https://github.com/bocan/bocan-music/compare/v1.14.0...v1.14.1) (2026-06-28)
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** read the correct Info.plist key for PodcastIndex configured-state ([6bb8769](https://github.com/bocan/bocan-music/commit/6bb87694d9be09efcc12855e376617f8c5cf28f2))
 
 
-### ### Changed
+### Changed
 
 * **ui:** drop dead default arms in MetalVisualizerFactory switches ([a920402](https://github.com/bocan/bocan-music/commit/a9204021dd36512c3b14e46413e526f673bf23f4))
 
@@ -886,33 +886,33 @@ I've also added sort choosers to all grids and lists, so you can sort by name, d
 
 Many thanks to @go1968 and @rjp for their contributions to this release, which stops us loosing the existing song list, adds a sort-order chooser to the Albums grid, restores the album-grid scroll position on return from an album, and splits Play Album / View Album in the album grid.
 
-### ### Added
+### Added
 
 * **ui:** add a sort-order chooser to the Albums grid ([#349](https://github.com/bocan/bocan-music/issues/349)) ([476bee7](https://github.com/bocan/bocan-music/commit/476bee745b2f1342b6f7ff3ed9fb66759be24cc4))
 * **ui:** restore album-grid scroll position on return from an album ([#349](https://github.com/bocan/bocan-music/issues/349)) ([9bc3b0b](https://github.com/bocan/bocan-music/commit/9bc3b0b12a6ece0dfaa257182057a1fbdac7e1ab))
 * **ui:** split Play Album / View Album in the album grid ([#349](https://github.com/bocan/bocan-music/issues/349)) ([f9f1639](https://github.com/bocan/bocan-music/commit/f9f16395c559d2156783340e6a0dcf681ac3af5c))
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** keep the song list in place after re-scan / shuffle-toggle ([#343](https://github.com/bocan/bocan-music/issues/343)) ([f1c5272](https://github.com/bocan/bocan-music/commit/f1c5272d7952d3327810770f69b76e9fcf06ae62))
 
 ## [1.13.0](https://github.com/bocan/bocan-music/compare/v1.12.1...v1.13.0) (2026-06-28)
 
 
-### ### Added
+### Added
 
 * **ui:** add hover tooltips and VoiceOver labels to podcast episode status icons ([b18ad30](https://github.com/bocan/bocan-music/commit/b18ad30d9173dbd1596d009d32f7af29a3e62a96))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** recover from or surface a dropped stream instead of silent fake-playback ([0efb073](https://github.com/bocan/bocan-music/commit/0efb0738f1df34a98b48659ba32cc28f901d0663))
 * **ui:** give the Podcasts settings pane a visible sidebar icon ([2db73a9](https://github.com/bocan/bocan-music/commit/2db73a9da4e203cf3d4c4c55510d9f4cd4006fda))
 * **ui:** surface a terminal playback failure instead of pretending to play ([2f61db4](https://github.com/bocan/bocan-music/commit/2f61db4999979b5a5d7a9eed3e98036803de8fe1))
 
 
-### ### Changed
+### Changed
 
 * **library:** skip redundant post-scan reload when nothing changed ([214e3da](https://github.com/bocan/bocan-music/commit/214e3da1668b2449f3869543bd08f0bc67db6d4d))
 * **ui:** coalesce playlist-sidebar reloads at startup ([18dd40e](https://github.com/bocan/bocan-music/commit/18dd40ec1ae761a867720b26a385e8435b73354c))
@@ -923,7 +923,7 @@ Many thanks to @go1968 and @rjp for their contributions to this release, which s
 ## [1.12.1](https://github.com/bocan/bocan-music/compare/v1.12.0...v1.12.1) (2026-06-23)
 
 
-### ### Fixed
+### Fixed
 
 * **persistence:** force one re-parse of podcast feeds to backfill podroll and persons ([7c00087](https://github.com/bocan/bocan-music/commit/7c0008753510ca8198b6c53f098c8139545c37b2))
 
@@ -931,14 +931,14 @@ Many thanks to @go1968 and @rjp for their contributions to this release, which s
 
 Fixing a few podcast bugs, and importantly added a new Podcasting 2.0 feature `podcast:podroll` which shows a list of recommended podcasts at the top of a show's show notes. This is a new namespace in the podcasting spec, and Bòcan now parses and persists these recommendations.
 
-### ### Added
+### Added
 
 * **podcasts:** parse and persist podcast:podroll recommendations ([3f97a3c](https://github.com/bocan/bocan-music/commit/3f97a3cb0b8db294796c3c483ad291f53b041d97))
 * **ui:** add a Show Notes button to the podcast player bar ([b5771e3](https://github.com/bocan/bocan-music/commit/b5771e38e999023853d24a7e2c4769a8050b5c33))
 * **ui:** show a podroll recommendation shelf atop podcast show notes ([669b15e](https://github.com/bocan/bocan-music/commit/669b15e70c955fa1020e8f795724d6e2e9ac7787))
 
 
-### ### Fixed
+### Fixed
 
 * **podcasts:** accept legacy GitHub-docs podcast namespace URI ([33f8792](https://github.com/bocan/bocan-music/commit/33f87927d744e7bef9362f312da90f07973d5d26))
 * **ui:** move podcast Show Notes button to the left of the transport row ([818e69e](https://github.com/bocan/bocan-music/commit/818e69ef2a496aee8bf450cf4bba434f68ae013e))
@@ -949,7 +949,7 @@ Fixing a few podcast bugs, and importantly added a new Podcasting 2.0 feature `p
 
 Added podcast support to Bòcan, including subscriptions, episode downloads, transcripts, show notes, and playback. The Podcasts sidebar shows subscribed shows with unread counts and artwork, and the search sheet lets you find new shows via iTunes Search and Podcast Index. Each show has a detail sheet with a list of episodes, and you can download episodes for offline listening or stream them directly. The Now Playing view now supports podcasts with chapter markers and skip intervals.
 
-### ### Added
+### Added
 
 * **app:** wire AppPodcastActions, PodcastService conformance, FeedRefreshScheduler ([d676046](https://github.com/bocan/bocan-music/commit/d676046e2ea4dfe77063bbe18ef6bb811f79cdd0))
 * **app:** wire AppPodcastResolver into QueuePlayer ([4c5b3a8](https://github.com/bocan/bocan-music/commit/4c5b3a8d3b65d31af1b34904cca875f31f31c1f7))
@@ -999,7 +999,7 @@ Added podcast support to Bòcan, including subscriptions, episode downloads, tra
 * **ui:** replace PodcastShowView stub with header and episode list ([e6f4901](https://github.com/bocan/bocan-music/commit/e6f49015ef4e5c6846ad83c14fa05a750d66bff6))
 
 
-### ### Fixed
+### Fixed
 
 * **app:** suppress retroactive conformance warning with [@retroactive](https://github.com/retroactive) ([6ea05e0](https://github.com/bocan/bocan-music/commit/6ea05e0699def60a4943c40ab6c43e533d813aa5))
 * **audio:** send our User-Agent when FFmpeg opens HTTP streams ([444d074](https://github.com/bocan/bocan-music/commit/444d07414172cd53be673e2c02e10c361257c3af))
@@ -1023,7 +1023,7 @@ Added podcast support to Bòcan, including subscriptions, episode downloads, tra
 * **ui:** widen show notes sheet to 500pt min-width to reduce line wrapping ([abc3710](https://github.com/bocan/bocan-music/commit/abc371082e2615407b5bb3080d2131edc40d973b))
 
 
-### ### Changed
+### Changed
 
 * **observability:** unify HTTP User-Agent across modules ([86036b5](https://github.com/bocan/bocan-music/commit/86036b55a2eb3a840511ad974c51944c316b1ebb))
 * **ui:** make mini-player transport podcast-aware ([3ec2395](https://github.com/bocan/bocan-music/commit/3ec239595182daa1fa6d1af59d9fb21b6aa2cddd))
@@ -1032,7 +1032,7 @@ Added podcast support to Bòcan, including subscriptions, episode downloads, tra
 
 Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is drawn on the GPU and stays buttery smooth even on the busiest passages. Six visualizers now ship in the box: classic Spectrum Bars and Oscilloscope alongside four new ones, the scrolling Cascade spectrogram, the beat-rippling Halo, a frequency-warped Starfield, and the slow-burn Nebula. Cycle modes and color palettes right inside the visualizer, and let the music paint the window.
 
-### ### Added
+### Added
 
 * **ui:** add Cascade scrolling spectrogram visualizer ([5f82082](https://github.com/bocan/bocan-music/commit/5f82082538a2d96417641fb2995209df3c234cdf))
 * **ui:** add Halo radial spectrum visualizer with beat ripples ([90b1d55](https://github.com/bocan/bocan-music/commit/90b1d5567926be27c25098228198434dcf60e69c))
@@ -1056,7 +1056,7 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 * **ui:** visualizer Analysis v2, PaletteResolver, and Drift/Thermal palettes ([68dab85](https://github.com/bocan/bocan-music/commit/68dab85dda07b6433b49a9338adaea9ffbe5a614))
 
 
-### ### Fixed
+### Fixed
 
 * **app:** clear stale recent-scrobbles sheet flag at launch ([929ccea](https://github.com/bocan/bocan-music/commit/929ccea37fd2cc949e4597fd23b8a97fa962dedd))
 * **audio:** rebuild the pump when resuming after a paused seek ([6bb3b2f](https://github.com/bocan/bocan-music/commit/6bb3b2f9e7352cd7f5851c5cc833b7f8df195ed5))
@@ -1082,7 +1082,7 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 * **ui:** stop the Metal watchdog from auto-simplifying a fast renderer ([3c898ee](https://github.com/bocan/bocan-music/commit/3c898ee8c898ccf763eb8e794b3e11d3dfbfd6eb))
 
 
-### ### Changed
+### Changed
 
 * **ui:** drop Halo conic gradient that triggered FPS auto-simplify ([1ce0a11](https://github.com/bocan/bocan-music/commit/1ce0a11ffb5a34bb0cfee468f8eb5a1559762656))
 * **ui:** extract ColorPacking and PaletteRampLUT from Cascade ([fc4dc47](https://github.com/bocan/bocan-music/commit/fc4dc471ba6c8022da2d7de7078ce29d33646a18))
@@ -1090,7 +1090,7 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 ## [1.9.0](https://github.com/bocan/bocan-music/compare/v1.8.0...v1.9.0) (2026-06-09)
 
 
-### ### Added
+### Added
 
 * **ui:** add en-XA pseudolocale and expansion checks ([#314](https://github.com/bocan/bocan-music/issues/314)) ([1f87af6](https://github.com/bocan/bocan-music/commit/1f87af6502bb403dd563d46888075ad8e9e25895))
 * **ui:** localize always-visible chrome and first-run surfaces ([#314](https://github.com/bocan/bocan-music/issues/314)) ([994f867](https://github.com/bocan/bocan-music/commit/994f8679a55f1d067460e9d02de9464c0b6ba76b))
@@ -1110,7 +1110,7 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 * **ui:** localize view-model copy ([#314](https://github.com/bocan/bocan-music/issues/314)) ([19e2e4a](https://github.com/bocan/bocan-music/commit/19e2e4af20385b74c1fe29cd5d1f73f365c21008))
 
 
-### ### Fixed
+### Fixed
 
 * **playback:** drop stale sleep-timer ticks after fire or reschedule ([a6008a6](https://github.com/bocan/bocan-music/commit/a6008a6b1bfb8d8f4be14fa86775653353e96f59))
 * **ui:** regenerate en-XA pseudolocale after Xcode catalog re-sync ([bab6699](https://github.com/bocan/bocan-music/commit/bab66998d76a757960bdd7a0c6b2d4ac97aca851))
@@ -1119,12 +1119,12 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 ## [1.8.0](https://github.com/bocan/bocan-music/compare/v1.7.1...v1.8.0) (2026-06-08)
 
 
-### ### Added
+### Added
 
 * **ui:** pin now-playing track to top of Up Next ([a1557b4](https://github.com/bocan/bocan-music/commit/a1557b43728dbbbeaf936cb736b56c08a2d76366))
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** give the playlist-row track-drop highlight room to breathe ([7f903a1](https://github.com/bocan/bocan-music/commit/7f903a1afdc5311fb766a17d5c36ecc071344c2f))
 * **ui:** group Remove from Playlist under Add to Playlist ([9548b66](https://github.com/bocan/bocan-music/commit/9548b66c0d8ce2eeb3e84517fdfeeff166ace10b))
@@ -1133,7 +1133,7 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 ## [1.7.1](https://github.com/bocan/bocan-music/compare/v1.7.0...v1.7.1) (2026-06-02)
 
 
-### ### Fixed
+### Fixed
 
 * **scrobble:** store tokens in the login Keychain, not data-protection ([57505bc](https://github.com/bocan/bocan-music/commit/57505bceded765a2df40f3cef895e57b14aeb05e))
 
@@ -1142,13 +1142,13 @@ Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is dra
 This has been a hairy one.  I've removed the Airplay feature as it didn't work, and to **make** it work, I'd have had to entirely re-write the playback engine.  You'll have to just rely on Bluetooth I guess.  On a more positive note, I've added a Logging Console under Help if you'd like to see the internals of how the app runs.  Also fixed showing album art via the Dock for any Subsonic clients you may use.
 
 
-### ### Added
+### Added
 
 * **cast:** remove AirPlay / output-device routing entirely ([7678a86](https://github.com/bocan/bocan-music/commit/7678a86f214846659db24246fcdec426abac8f71))
 * **observability:** complete the in-app log console (phase 20) ([9a4c2d9](https://github.com/bocan/bocan-music/commit/9a4c2d9f141ec6909a632497f51032c3ef820498))
 
 
-### ### Fixed
+### Fixed
 
 * **subsonic:** store credentials in the data-protection keychain ([a30e876](https://github.com/bocan/bocan-music/commit/a30e8764dc963c54336fc084b24743a3cec29868))
 * **subsonic:** store credentials in the login Keychain, not data-protection ([508329e](https://github.com/bocan/bocan-music/commit/508329ec23b7e24aece6b3410512b32463b62407))
@@ -1158,7 +1158,7 @@ This has been a hairy one.  I've removed the Airplay feature as it didn't work, 
 
 This release is heavily laden with fixes and minor improvements after a running a complex audit against the codebase. Of note is a redesigned settings panel.
 
-### ### Added
+### Added
 
 * **ui:** add Will-o'-the-Wisp signature accent identity ([ac2f5c9](https://github.com/bocan/bocan-music/commit/ac2f5c941f47aee32edaa167a94963d583daff02)), closes [#333](https://github.com/bocan/bocan-music/issues/333)
 * **ui:** drag streamed Subsonic songs into the Up Next queue ([#332](https://github.com/bocan/bocan-music/issues/332)) ([a466ffd](https://github.com/bocan/bocan-music/commit/a466ffd6dbd58ec197f0bd804fa7fd3b78f3f4f3))
@@ -1168,7 +1168,7 @@ This release is heavily laden with fixes and minor improvements after a running 
 * **website:** add Homebrew install snippet to homepage Get it section ([14094a8](https://github.com/bocan/bocan-music/commit/14094a85238717a0df3e68db6b9aa4ea95ad8c8c))
 
 
-### ### Fixed
+### Fixed
 
 * **acoustics:** check cancellation after the rate-limiter wait ([2d7e685](https://github.com/bocan/bocan-music/commit/2d7e685eae1314b79671d848c0d90ab09a9ac36a)), closes [#273](https://github.com/bocan/bocan-music/issues/273)
 * **acoustics:** move AcoustID API key from URL to POST body ([85c6aef](https://github.com/bocan/bocan-music/commit/85c6aefa7fd0325cc3514b878d22e6965f4193b3)), closes [#282](https://github.com/bocan/bocan-music/issues/282)
@@ -1228,7 +1228,7 @@ This release is heavily laden with fixes and minor improvements after a running 
 * **ui:** use lovedTint token for love heart in strip and table cell ([906bd38](https://github.com/bocan/bocan-music/commit/906bd38c182888ce6e20ad00281621102dc7f529)), closes [#325](https://github.com/bocan/bocan-music/issues/325)
 
 
-### ### Changed
+### Changed
 
 * **app:** open the database off the launch path behind a loading shell ([899009a](https://github.com/bocan/bocan-music/commit/899009ac7bc8b874f3b2fecde66ad15628d2f12b)), closes [#276](https://github.com/bocan/bocan-music/issues/276)
 * **audio:** shrink BufferPump in-flight window back to 4 buffers ([bc16593](https://github.com/bocan/bocan-music/commit/bc16593be52d5eccd28a5c95187f2a87ad7b7dc4)), closes [#277](https://github.com/bocan/bocan-music/issues/277)
@@ -1240,7 +1240,7 @@ This release is heavily laden with fixes and minor improvements after a running 
 ## [1.5.0](https://github.com/bocan/bocan-music/compare/v1.4.0...v1.5.0) (2026-05-27)
 
 
-### ### Added
+### Added
 
 * **subsonic:** play internet radio stations + add info popover ([0ec5ad8](https://github.com/bocan/bocan-music/commit/0ec5ad87804e10ffaf5112ed9f166a4404fbdd57))
 * **subsonic:** probe legacy-core endpoints to detect Radio/Podcasts/Bookmarks ([12bc1b9](https://github.com/bocan/bocan-music/commit/12bc1b9963ed7979190e16b29f7f9ab52e2c269d))
@@ -1251,7 +1251,7 @@ This release is heavily laden with fixes and minor improvements after a running 
 * **website:** add Open Graph / Twitter Card preview image ([f477b70](https://github.com/bocan/bocan-music/commit/f477b7014dd430d61bcd816b68d555639a0268b4))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** wait for full Subsonic download + sniff format extension ([61b50b4](https://github.com/bocan/bocan-music/commit/61b50b4335a05e0d60066df92f596389d47de24a))
 * **persistence:** broaden local Album search to include track-title hits ([66c8c71](https://github.com/bocan/bocan-music/commit/66c8c71afd2606cbab506ff4adf38f8ee66210d8))
@@ -1262,7 +1262,7 @@ This release is heavily laden with fixes and minor improvements after a running 
 
 This release adds Subsonic / Navidrome / Airsonic servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and ⌘⇧1–⌘⇧9 to jump straight to a server.
 
-### ### Added
+### Added
 
 * **audio-engine:** add SubsonicStreamCache and RemoteTrackLoader ([7820de2](https://github.com/bocan/bocan-music/commit/7820de23eb7cd1a85f09d4fbbe915fa64dd9502a))
 * **playback:** introduce PlayableSource on QueueItem with v1-&gt;v2 migration ([74934d6](https://github.com/bocan/bocan-music/commit/74934d69c3d9d6e1fd1d1b2462f41d7351d34ac1))
@@ -1287,7 +1287,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** Subsonic star/rating annotation write-through ([82aa01c](https://github.com/bocan/bocan-music/commit/82aa01c6ac5488a98cc9381d78a73d204df7a434))
 
 
-### ### Fixed
+### Fixed
 
 * **library:** populate Album.year from track tags during import ([e53362e](https://github.com/bocan/bocan-music/commit/e53362e993a085de89440d787db38c7399cd516c))
 * **playback:** add version field to QueuePayloadV2 for forward-compatibility ([1c9ded7](https://github.com/bocan/bocan-music/commit/1c9ded73b001fe39187e490e23ecdb2700f33ded))
@@ -1303,7 +1303,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** use spec wording for self-signed TLS warning ([0182cd7](https://github.com/bocan/bocan-music/commit/0182cd71bd09046811e2ea36b4f2bed3d004a5ba))
 
 
-### ### Changed
+### Changed
 
 * **ui:** rewrite Settings as sidebar navigation ([3255ec1](https://github.com/bocan/bocan-music/commit/3255ec13130ce20dcb61188b6753c8094c9a798d))
 * **ui:** split SubsonicSongTable into three files to fix lint violations ([6a32263](https://github.com/bocan/bocan-music/commit/6a3226302216a60027a8433fb7cc2c26babf6f6e))
@@ -1311,7 +1311,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [1.3.1](https://github.com/bocan/bocan-music/compare/v1.3.0...v1.3.1) (2026-05-24)
 
 
-### ### Fixed
+### Fixed
 
 * **playback:** register PlaybackQueue.changes subscribers synchronously ([eaf7bb1](https://github.com/bocan/bocan-music/commit/eaf7bb12813f81285682a3bcda298777ee3b842d))
 * **playback:** skip and disable missing-file tracks during auto-advance ([bcfa726](https://github.com/bocan/bocan-music/commit/bcfa7262fdac7f73ff9ecc21dce11e1cb3b748f2))
@@ -1321,12 +1321,12 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [1.3.0](https://github.com/bocan/bocan-music/compare/v1.2.1...v1.3.0) (2026-05-21)
 
 
-### ### Added
+### Added
 
 * **ui:** add visualizer mini-player mode and toolbar pane toggles ([02facaa](https://github.com/bocan/bocan-music/commit/02facaa2b329e78ba927f3244b38c6043f6661a0))
 
 
-### ### Fixed
+### Fixed
 
 * **library:** expand FSEvent directory events and suppress watcher reloads during scan ([f27849b](https://github.com/bocan/bocan-music/commit/f27849bb252f7bcf5ad5c94c777c98143198712f))
 * **library:** fix two test failures in LibraryScannerTests ([9e152ea](https://github.com/bocan/bocan-music/commit/9e152ea89ffbf03d586f82b1d9a99e5b17205a6a))
@@ -1341,7 +1341,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [1.2.1](https://github.com/bocan/bocan-music/compare/v1.2.0...v1.2.1) (2026-05-20)
 
 
-### ### Fixed
+### Fixed
 
 * **library:** expand FSEvent directory events and suppress watcher reloads during scan ([f27849b](https://github.com/bocan/bocan-music/commit/f27849bb252f7bcf5ad5c94c777c98143198712f))
 * **library:** fix two test failures in LibraryScannerTests ([9e152ea](https://github.com/bocan/bocan-music/commit/9e152ea89ffbf03d586f82b1d9a99e5b17205a6a))
@@ -1356,13 +1356,13 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [1.2.0](https://github.com/bocan/bocan-music/compare/v1.1.0...v1.2.0) (2026-05-18)
 
 
-### ### Added
+### Added
 
 * **scrobble:** register Rocksky provider and wire up UI ([f329956](https://github.com/bocan/bocan-music/commit/f3299561b676bf51ce40a6a8a766f2717c95e2d3))
 * **scrobble:** switch Rocksky to ListenBrainz-compatible API ([c9ca221](https://github.com/bocan/bocan-music/commit/c9ca221f087b5ac72a16423d480214ed1ff3a802))
 
 
-### ### Fixed
+### Fixed
 
 * **playback:** wire up periodic scrobble threshold check ([556a438](https://github.com/bocan/bocan-music/commit/556a438c305b9dc48a33710a160ce0e947dc5b46))
 * **scrobble:** simplify Rocksky connect UI to API key only ([72b9d00](https://github.com/bocan/bocan-music/commit/72b9d00e4a557264158657b551e21cc32d642810))
@@ -1371,20 +1371,20 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [1.1.0](https://github.com/bocan/bocan-music/compare/v1.0.1...v1.1.0) (2026-05-16)
 
 
-### ### Added
+### Added
 
 * **build:** re-establish macOS 15 Sequoia compatibility
 * **audio:** add MP2/MP1, AC-3, DTS, WMA, Wave64, RF64, Matroska, AU support ([5850066](https://github.com/bocan/bocan-music/commit/58500664c2399701589042ea3a9ee05520dd8e56))
 
 
-### ### Fixed
+### Fixed
 
 * **lint:** wrap long FFmpeg format string, extract sync-word checks to reduce cyclomatic complexity ([480e5de](https://github.com/bocan/bocan-music/commit/480e5deaac087286faf19c5a7552948915084323))
 
 ## [1.0.1](https://github.com/bocan/bocan-music/compare/v1.0.0...v1.0.1) (2026-05-15)
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** debounce FSEvents watcher reloads to prevent cascade ([8563099](https://github.com/bocan/bocan-music/commit/8563099c21bcf19143a59ab0ad283e805b698ca9))
 * **ui:** pre-mark year as edited when file stores a full date string ([b0f14db](https://github.com/bocan/bocan-music/commit/b0f14db0dd299cae6ab81e0aa811ac517a273a3c))
@@ -1397,7 +1397,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 
 * release v1.0.0
 
-### ### Added
+### Added
 
 * release v1.0.0 ([ef27d43](https://github.com/bocan/bocan-music/commit/ef27d43021cff65c499258fa3df1ea693052fddc))
 * **ui:** add read-only track info floating panel ([353b7e5](https://github.com/bocan/bocan-music/commit/353b7e5291d08b56b0e38bba47f233499c21edfd))
@@ -1413,7 +1413,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** wire native Help Book — move to Bocan.help bundle, replace GitHub fallback ([b82acec](https://github.com/bocan/bocan-music/commit/b82acecef9ad51f649972365a073d33793889e4f))
 
 
-### ### Fixed
+### Fixed
 
 * **ci:** guard Sparkle steps, point DMG at export/ directly ([8e25bac](https://github.com/bocan/bocan-music/commit/8e25bac71bf668b489a44d49a6fd98945fd9e79b))
 * **metadata:** use stable taglib opt symlink instead of versioned Cellar path ([5662434](https://github.com/bocan/bocan-music/commit/5662434599238417585f83328e916695caf98f5b))
@@ -1437,7 +1437,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.12.0](https://github.com/bocan/bocan-music/compare/v0.11.0...v0.12.0) (2026-05-12)
 
 
-### ### Added
+### Added
 
 * **ui:** add album context menu in Artist view (play, gapless, shuffle, get info, remove) ([a2557ce](https://github.com/bocan/bocan-music/commit/a2557ce207b6b6af4efb4d2b47b8cd0085eb61d2))
 * **ui:** add Composer, BPM, Key, Bit Depth, Channels, Lossless, Skips, Last Played, File Size, Date Modified columns (hidden by default) ([4d565a7](https://github.com/bocan/bocan-music/commit/4d565a7bc6ec3cf64a818b6f9b02f644d95b69a0))
@@ -1445,7 +1445,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** add song counts to Artists list and detail section headers ([9aab293](https://github.com/bocan/bocan-music/commit/9aab2938973d1984b1866b16efdfe4ea70c81856))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** correct gapless position bar by tracking per-track sample offset ([2b47ceb](https://github.com/bocan/bocan-music/commit/2b47ceb95b0dec12e45cd604ceee0cbef5ab7df2))
 * **ci:** split AudioEngine to pass file_length lint; fix ArtistsViewModel syntax ([b5a638c](https://github.com/bocan/bocan-music/commit/b5a638ca32c90dea3ba42664b60585c38a1c5a01))
@@ -1457,12 +1457,12 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.11.0](https://github.com/bocan/bocan-music/compare/v0.10.0...v0.11.0) (2026-05-11)
 
 
-### ### Added
+### Added
 
 * **ui:** show song count on album cells in ArtistDetailView ([18881ef](https://github.com/bocan/bocan-music/commit/18881efe293dab1b3be17dc44af925d25918ad1f))
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** Edit Lyrics context menu now edits the right-clicked track ([f6b7135](https://github.com/bocan/bocan-music/commit/f6b7135de4608dfdd4f227ce8920b0125995ddce))
 * **ui:** preserve search after delete, prune orphan albums/artists, add Remove context menus ([5bea2fc](https://github.com/bocan/bocan-music/commit/5bea2fcb55e721c821fd0389ea5fbdbf4074222a))
@@ -1470,40 +1470,40 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.10.0](https://github.com/bocan/bocan-music/compare/v0.9.4...v0.10.0) (2026-05-11)
 
 
-### ### Added
+### Added
 
 * **scrobble,ui:** wire loved toggle to scrobble services + add love button to play bar ([db454d5](https://github.com/bocan/bocan-music/commit/db454d59c2fbff2598aa8b9231f81002553e6e07))
 * **ui:** add ♥ Loved column to track list (on by default) ([e4ab248](https://github.com/bocan/bocan-music/commit/e4ab248a311490510c73843f9dc39e8ad36af1d4))
 
 
-### ### Fixed
+### Fixed
 
 * **sparkle:** remove channel tag from stable appcast entries ([37fec24](https://github.com/bocan/bocan-music/commit/37fec246b655ddecdf436acb6e010eefda88a54b))
 
 ## [0.9.4](https://github.com/bocan/bocan-music/compare/v0.9.3...v0.9.4) (2026-05-11)
 
 
-### ### Fixed
+### Fixed
 
 * **ui:** add missing Foundation import in LibraryViewModel+Delete.swift ([f17b10b](https://github.com/bocan/bocan-music/commit/f17b10ba276d31ee56919633eb5969e731e474cd))
 * **ui:** batch multi-select Delete from Disk with single DB reload ([14c2a54](https://github.com/bocan/bocan-music/commit/14c2a5411569d3d377d2b41a7f9bb2cf96a190e4))
 
 
-### ### Changed
+### Changed
 
 * **ui:** extract delete methods to LibraryViewModel+Delete.swift ([57842bd](https://github.com/bocan/bocan-music/commit/57842bded1ab8a1c227369529da24cb0600f62de))
 
 ## [0.9.3](https://github.com/bocan/bocan-music/compare/v0.9.2...v0.9.3) (2026-05-10)
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** call AudioUnitReset before zeroing EQ band gains in reset() ([fa6783b](https://github.com/bocan/bocan-music/commit/fa6783bcdbc9fa3cf3126df75b8dc03cc4b3d751))
 
 ## [0.9.2](https://github.com/bocan/bocan-music/compare/v0.9.1...v0.9.2) (2026-05-10)
 
 
-### ### Fixed
+### Fixed
 
 * **ci:** trigger website redeploy via workflow_run instead of gh workflow run ([eafbec1](https://github.com/bocan/bocan-music/commit/eafbec1c2a29e45b77e6ecb2036035f97bc9d37d))
 * **release:** strip 300dpi metadata from DMG background, stage only .app into DMG ([0cb754a](https://github.com/bocan/bocan-music/commit/0cb754a72ac30f1618667c6f394e0b5f8c999ec3))
@@ -1511,7 +1511,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.9.1](https://github.com/bocan/bocan-music/compare/v0.9.0...v0.9.1) (2026-05-10)
 
 
-### ### Fixed
+### Fixed
 
 * **ci:** checkout actual tagged commit on workflow_dispatch, not main HEAD ([3c8e074](https://github.com/bocan/bocan-music/commit/3c8e074c7ee8c39df34eddc3243ae33cc631c0e4))
 * **ci:** switch to main before pushing appcast — detached HEAD at tag caused rejection ([e8e57b4](https://github.com/bocan/bocan-music/commit/e8e57b4570a09c8cfa35d851c571892ed6866bac))
@@ -1521,7 +1521,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.9.0](https://github.com/bocan/bocan-music/compare/v0.8.0...v0.9.0) (2026-05-10)
 
 
-### ### Added
+### Added
 
 * **app:** crash recovery via LaunchSanity sentinel and recovery banner ([#208](https://github.com/bocan/bocan-music/issues/208)) ([866e9ca](https://github.com/bocan/bocan-music/commit/866e9caf178a8e7a836c7b62538448e42e65c91d))
 * **app:** single-instance enforcement via lock file and distributed notification ([#207](https://github.com/bocan/bocan-music/issues/207)) ([1b6de51](https://github.com/bocan/bocan-music/commit/1b6de51d8206de4e86c574151ddb6d8a932120cf))
@@ -1534,7 +1534,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **updates:** integrate Sparkle 2 — dependency, UpdateController, menu item ([87fce62](https://github.com/bocan/bocan-music/commit/87fce620e6f76d50a8741c9d74120c339f3e72ec)), closes [#205](https://github.com/bocan/bocan-music/issues/205)
 
 
-### ### Fixed
+### Fixed
 
 * **distribution:** use CURRENT_PROJECT_VERSION for CFBundleVersion ([1c74b93](https://github.com/bocan/bocan-music/commit/1c74b93664a36d5115204e19d6d7f0c27ab2d1e1)), closes [#217](https://github.com/bocan/bocan-music/issues/217)
 * **lint:** resolve force-unwrap and line-length violations ([512a649](https://github.com/bocan/bocan-music/commit/512a649d86a5c23f0e2ec1c7a1f2fc2b5a928d36))
@@ -1546,7 +1546,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.8.0](https://github.com/bocan/bocan-music/compare/v0.7.0...v0.8.0) (2026-05-10)
 
 
-### ### Added
+### Added
 
 * playlist import/export fixes, routing teardown, dock menu, and Phase 16 audit ([ed8129b](https://github.com/bocan/bocan-music/commit/ed8129b6d8091c9d7474da8293fba478c9c11081))
 * **ui:** add 'Choose Audio Output…' menu item with ⌘⇧U shortcut ([#202](https://github.com/bocan/bocan-music/issues/202)) ([5893fe5](https://github.com/bocan/bocan-music/commit/5893fe5d7ebf9521fda91f945f805760251a9a6f))
@@ -1554,7 +1554,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** route dropped playlist files to importer instead of scanner ([257df06](https://github.com/bocan/bocan-music/commit/257df06c86a145d18b4eef2af283a3227dd6ed11)), closes [#188](https://github.com/bocan/bocan-music/issues/188)
 
 
-### ### Fixed
+### Fixed
 
 * **app:** cleanly shut down routing subsystem on app termination ([d5cc1ff](https://github.com/bocan/bocan-music/commit/d5cc1ff719c930665f1e1c5818f1b671a22d48f7))
 * **audio-engine:** attach EQUnit node to AVAudioEngine in tests ([9207b3e](https://github.com/bocan/bocan-music/commit/9207b3ebf7e18b259ba082e1caa6a53cd0464048))
@@ -1570,7 +1570,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.7.0](https://github.com/bocan/bocan-music/compare/v0.6.0...v0.7.0) (2026-05-09)
 
 
-### ### Added
+### Added
 
 * **scrobble:** add pending indicator to transport strip ([#175](https://github.com/bocan/bocan-music/issues/175)) ([38b6dd1](https://github.com/bocan/bocan-music/commit/38b6dd17190af486f12f1e4350a8ee438fc29fde))
 * **scrobble:** add Show Recent Scrobbles menu item and keyboard shortcut ([#176](https://github.com/bocan/bocan-music/issues/176)) ([f56c484](https://github.com/bocan/bocan-music/commit/f56c48446dbb4812005c64baa8ad6dcf6445946f))
@@ -1583,7 +1583,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** show lyrics source badge in pane header ([eadc958](https://github.com/bocan/bocan-music/commit/eadc95813dfe8251661094dddb467030b141bec8))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** bypass EQ at Flat preset; skip redundant ramp tasks ([d38dc5d](https://github.com/bocan/bocan-music/commit/d38dc5dee6ba6c76d7b7b6950d7b2201c1098624))
 * **audio:** bypass TimePitch at unity rate by default; add pump starvation logging ([75b9770](https://github.com/bocan/bocan-music/commit/75b977053f784bcb8d53839b92af1508c9852e14))
@@ -1620,14 +1620,14 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** wire lyrics pane search bar to LyricsView filtering ([ad01607](https://github.com/bocan/bocan-music/commit/ad01607eb79982f438fcefb2580207b3aaa601d6))
 
 
-### ### Changed
+### Changed
 
 * **audio:** split AudioEngine.swift into extension files to fix file_length lint ([d6942b8](https://github.com/bocan/bocan-music/commit/d6942b86c0cc569e4088dc49bdad574d2bfaf71b))
 
 ## [0.6.0](https://github.com/bocan/bocan-music/compare/v0.5.1...v0.6.0) (2026-05-07)
 
 
-### ### Added
+### Added
 
 * **app:** prompt before quit when scan or RG analysis is active ([321ceb4](https://github.com/bocan/bocan-music/commit/321ceb45b604cfa06d2ef0ed382cdb2587a6d909))
 * **persistence,ui:** add local backup with configurable rolling count ([4e0c879](https://github.com/bocan/bocan-music/commit/4e0c879ef1d7bcc26a4f61cd26ed718bb412c469))
@@ -1640,7 +1640,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** spring-animate mini player layout transitions ([ecbed96](https://github.com/bocan/bocan-music/commit/ecbed961115d3932e05cd37e49fdac6be4c41119))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** prevent pops from VFS contention and CPU bursts at playback start ([c12c1ce](https://github.com/bocan/bocan-music/commit/c12c1ce547f0e91074cce5f27092ccdfe2f764b1))
 * **persistence:** use requiresWriteAccess to avoid WAL snapshot deadlock ([c6fda5e](https://github.com/bocan/bocan-music/commit/c6fda5ea61bb1a810b02dccbba5c6200ea32d56a))
@@ -1653,7 +1653,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.5.1](https://github.com/bocan/bocan-music/compare/v0.5.0...v0.5.1) (2026-05-06)
 
 
-### ### Fixed
+### Fixed
 
 * **build:** add stable Homebrew HEADER_SEARCH_PATHS to project.yml ([a5099da](https://github.com/bocan/bocan-music/commit/a5099dab3850602a7d5748ae837ca14cd8d3d723))
 * **persistence:** use .async(onQueue:main) scheduler to fix GRDB writer-queue deadlock ([a2a8575](https://github.com/bocan/bocan-music/commit/a2a85752d27eea53ad8c4e33276c12f75d5203c0))
@@ -1661,7 +1661,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.5.0](https://github.com/bocan/bocan-music/compare/v0.4.0...v0.5.0) (2026-05-06)
 
 
-### ### Added
+### Added
 
 * **ui:** add accessibilityIdentifier to all NowPlayingStrip controls ([2c20f4b](https://github.com/bocan/bocan-music/commit/2c20f4bdb4caea76214f6d857794e1f49545083f))
 * **ui:** add Compute Missing ReplayGain to Tools menu ([8b43c9f](https://github.com/bocan/bocan-music/commit/8b43c9fcb18d1bfab64f00d8f74a74fd849cafd8))
@@ -1679,7 +1679,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** replace DSP modal sheet with non-modal floating window ([3d1650e](https://github.com/bocan/bocan-music/commit/3d1650e2c94447c693da4fe7dc40aa40d5f85042))
 
 
-### ### Fixed
+### Fixed
 
 * **ci:** redirect codesign stderr so hardened runtime grep works ([cf03508](https://github.com/bocan/bocan-music/commit/cf035088df8799a597d321f656c629721592bda3))
 * **persistence:** remove spurious await from DatabaseWriter.backup call ([c43e521](https://github.com/bocan/bocan-music/commit/c43e5215b8cc2ec700006a8491757fb1a9e640f3))
@@ -1705,14 +1705,14 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.4.0](https://github.com/bocan/bocan-music/compare/v0.3.0...v0.4.0) (2026-05-04)
 
 
-### ### Added
+### Added
 
 * **tests:** add DSPViewModel environment to NowPlayingStrip snapshots ([4f2c448](https://github.com/bocan/bocan-music/commit/4f2c44850735b15b7146b7dad2d1c81102ee0ddf))
 * **ui:** add ⌘⌥E keyboard shortcut and menu item for EQ/DSP panel ([#94](https://github.com/bocan/bocan-music/issues/94)) ([37d314b](https://github.com/bocan/bocan-music/commit/37d314b532fbaecfacad891fb3eaa89fd43a7b6f))
 * **ui:** implement per-track and per-album EQ scope picker ([#91](https://github.com/bocan/bocan-music/issues/91)) ([7a1da10](https://github.com/bocan/bocan-music/commit/7a1da10906c55b5f841383990ce76783b9333d6e))
 
 
-### ### Fixed
+### Fixed
 
 * **audio:** flush EQ IIR delay lines before un-bypass to prevent pop ([#92](https://github.com/bocan/bocan-music/issues/92)) ([5e82403](https://github.com/bocan/bocan-music/commit/5e8240315b0f99e29cf56850d1a804d88d168506))
 * **ui:** A/B compare is press-and-hold, not a toggle ([#93](https://github.com/bocan/bocan-music/issues/93)) ([fe2379d](https://github.com/bocan/bocan-music/commit/fe2379d6533c6e1217678c99d2497ed26e9d7473))
@@ -1723,7 +1723,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 ## [0.3.0](https://github.com/bocan/bocan-music/compare/v0.2.0...v0.3.0) (2026-05-04)
 
 
-### ### Added
+### Added
 
 * **playback:** wire CrossfadeScheduler end-to-end ([#87](https://github.com/bocan/bocan-music/issues/87)) ([7a4f5ce](https://github.com/bocan/bocan-music/commit/7a4f5ceaa854e85f6211beeba4e6eb019d1a4bfd))
 * **settings:** add embed cover art preference (phase-8 audit H5) ([08312f1](https://github.com/bocan/bocan-music/commit/08312f198634956e48e5d9583706ccd3447d9082)), closes [#67](https://github.com/bocan/bocan-music/issues/67)
@@ -1738,7 +1738,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** show conflict-resolution banner in TagEditorSheet ([#73](https://github.com/bocan/bocan-music/issues/73)) ([2bde72e](https://github.com/bocan/bocan-music/commit/2bde72e5f568895ecfe613a66dbfed9b4e799e0f))
 
 
-### ### Fixed
+### Fixed
 
 * **app:** declare playlist-drag UTType in Info.plist, fix conflict log level ([3085d67](https://github.com/bocan/bocan-music/commit/3085d670c85175d67d4be3aafa60ad62497077c2))
 * **audio:** ramp bass-boost gain/bypass to prevent audio pop ([#86](https://github.com/bocan/bocan-music/issues/86)) ([e4bb57f](https://github.com/bocan/bocan-music/commit/e4bb57fe06fda6e48e3c1d888646005eeecacbd2))
@@ -1768,14 +1768,14 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** streamline TrackTableCoordinator's data handling ([f09e2d8](https://github.com/bocan/bocan-music/commit/f09e2d88c562fffe0d10cce1d2ecce2db1a70495))
 
 
-### ### Changed
+### Changed
 
 * **ui:** inject CoverArtFetcher into TagEditorViewModel ([#75](https://github.com/bocan/bocan-music/issues/75)) ([a9cb4cb](https://github.com/bocan/bocan-music/commit/a9cb4cb70baee844b93fbe0ce4313abe9838323b))
 
 ## [0.2.0](https://github.com/bocan/bocan-music/compare/v0.1.0...v0.2.0) (2026-05-01)
 
 
-### ### Added
+### Added
 
 * **acoustics:** implement phase 8.5 AcoustID fingerprinting & MusicBrainz auto-tagging ([2228b28](https://github.com/bocan/bocan-music/commit/2228b28d42008413a85c6dceba9e8a9d79b48d4d))
 * **albums:** artist + track count + exclude-from-shuffle toggle ([b621b3b](https://github.com/bocan/bocan-music/commit/b621b3b6c784b5fcc3974710b959d35cfb404789))
@@ -1864,7 +1864,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **visualizer:** implement Phase 12 — audio visualizer with Metal particle system ([83d25ad](https://github.com/bocan/bocan-music/commit/83d25adbbc5c18e5cc05b88d35f77720ad50d8b9))
 
 
-### ### Fixed
+### Fixed
 
 * **acoustics:** bundle libchromaprint and add Homebrew sandbox exception ([ebab225](https://github.com/bocan/bocan-music/commit/ebab225381403bdec33a8498dca146c1bf8e542d))
 * **acoustics:** correct capitalized(with:) label in titleCased helper ([d084814](https://github.com/bocan/bocan-music/commit/d084814852c6e0c55960d995c1d36cf47eff831e))
@@ -2023,7 +2023,7 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **visualizer:** rework FluidMetal — additive blending, larger points, correct HSV ([8e3034d](https://github.com/bocan/bocan-music/commit/8e3034d6d85739d68abcd3ca5775c2b8de269cc3))
 
 
-### ### Changed
+### Changed
 
 * **playback:** eliminate DB round-trips when queueing full library ([315b003](https://github.com/bocan/bocan-music/commit/315b003dad47f15b7e71ed562dd4f7df91f3ab58))
 * **search:** in-place filtering via the current view's VM ([e2ec51e](https://github.com/bocan/bocan-music/commit/e2ec51e0e826f7379612e7f9a196403bde44cde4))
