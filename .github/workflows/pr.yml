@@ -43,6 +43,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      website: ${{ steps.diff.outputs.website }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,6 +66,43 @@ jobs:
             echo "code=false" >> "$GITHUB_OUTPUT"
             echo "Docs-only change: skipping the full suite."
           fi
+          # The site renders CHANGELOG.md, so a changelog edit can break its links too.
+          if grep -qE '^(website/.*|CHANGELOG\.md)$' <<<"$changed"; then
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "website=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  website:
+    name: Website build & links
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      # The prebuild step assembles the appcast feeds offline from the seeds;
+      # the deployed site fetches the release entries, which a PR never needs.
+      - name: Build with Eleventy
+        working-directory: website
+        run: npm run build
+
+      - name: Check internal links
+        working-directory: website
+        run: npm run check
 
   scripts:
     name: Script tests
