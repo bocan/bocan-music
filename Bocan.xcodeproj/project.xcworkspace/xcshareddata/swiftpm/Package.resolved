@@ -1,13 +1,13 @@
 {
-  "originHash" : "84faf8b4155201830f3e86fd70db5307fb430adb9bb0bdd4ef142dc36fbe58ff",
+  "originHash" : "f6b894f78956e7b2d3cc249395bd8fe8d6b6c50e7c03a67951869c67ed10ab2e",
   "pins" : [
     {
       "identity" : "feedkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nmdias/FeedKit.git",
       "state" : {
-        "revision" : "545aba8b9357fb00ffe51483b659519d96a9d635",
-        "version" : "10.9.4"
+        "revision" : "0ffb248b5c3df0a05e724544900d3ceb1a1f9e6d",
+        "version" : "10.10.1"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sparkle-project/Sparkle",
       "state" : {
-        "revision" : "eef1a539a373c1f1a320624b1130fc5de7b2e100",
-        "version" : "2.10.0"
+        "revision" : "ab7d71291238df6e0492143b120c9b696a35f603",
+        "version" : "2.10.1"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-certificates.git",
       "state" : {
-        "revision" : "ff86b924ead66f853b8baf91f3c41926a8f36177",
-        "version" : "1.21.0"
+        "revision" : "84f03fafeca28c19f5fc4b528df3d22ce8896bd7",
+        "version" : "1.21.1"
       }
     },
     {

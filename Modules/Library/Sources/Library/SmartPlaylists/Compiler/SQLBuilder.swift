@@ -351,13 +351,13 @@ public enum SQLBuilder {
     private static func numericArg(_ rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch rule.value {
         case let .int(number):
-            return number
+            number
 
         case let .double(number):
-            return number
+            number
 
         case let .duration(number):
-            return number
+            number
 
         default:
             throw self.valueError(rule)
@@ -367,16 +367,16 @@ public enum SQLBuilder {
     private static func scalarArg(_ value: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch value {
         case let .int(x):
-            return x
+            x
 
         case let .double(x):
-            return x
+            x
 
         case let .duration(x):
-            return x
+            x
 
         case let .date(x):
-            return Int64(x.timeIntervalSince1970)
+            Int64(x.timeIntervalSince1970)
 
         default:
             throw self.valueError(rule)

@@ -349,7 +349,7 @@ SOFTWARE.
 
 ---
 
-## Sparkle 2.10.0
+## Sparkle 2.10.1
 
 <https://sparkle-project.org>
 
@@ -407,7 +407,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.9.4
+## FeedKit 10.10.1
 
 <https://github.com/nmdias/FeedKit>
 
@@ -449,7 +449,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-certificates 1.21.0
+## swift-certificates 1.21.1
 
 <https://github.com/apple/swift-certificates>
 
