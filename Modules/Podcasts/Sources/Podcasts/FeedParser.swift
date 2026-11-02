@@ -105,9 +105,9 @@ public struct FeedParser: Sendable {
             return self.parseRepairingDates(data, sourceURL: sourceURL)
         }
 
-        // FeedKit's format sniffer inspects only the first 256 bytes. Feeds that
-        // carry an `<?xml-stylesheet?>` PI (so browsers render them) can push the
-        // `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
+        // FeedKit's format sniffer inspects only the first 1024 bytes. Feeds that
+        // carry `<?xml-stylesheet?>` PIs and comments (so browsers render them) can
+        // push the `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
         // Retry once with the XML prolog stripped so the root leads the data.
         guard let stripped = Self.feedDataWithStrippedProlog(data) else { return nil }
         do {

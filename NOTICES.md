@@ -407,7 +407,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.10.1
+## FeedKit 10.10.2
 
 <https://github.com/nmdias/FeedKit>
 
