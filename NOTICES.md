@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.0.3
+## swift-crypto 5.1.0
 
 <https://github.com/apple/swift-crypto>
 
@@ -461,7 +461,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-asn1 1.7.3
+## swift-asn1 1.7.4
 
 <https://github.com/apple/swift-asn1>
 
