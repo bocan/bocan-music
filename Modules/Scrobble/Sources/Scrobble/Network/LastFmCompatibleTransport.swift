@@ -2,8 +2,9 @@ import Foundation
 
 // MARK: - LastFmCompatibleTransport
 
-/// Shared HTTP + signing engine for Last.fm-compatible scrobble APIs
-/// (Last.fm, Rocksky, …).
+/// HTTP + signing engine for Last.fm-compatible scrobble APIs. Last.fm is the
+/// only user today; Rocksky speaks the ListenBrainz-compatible API instead,
+/// through `ListenBrainzCompatibleTransport`.
 ///
 /// Handles request building, `api_sig` generation via `LastFmSignature`,
 /// and maps Last.fm error codes to typed `ScrobbleError` values.

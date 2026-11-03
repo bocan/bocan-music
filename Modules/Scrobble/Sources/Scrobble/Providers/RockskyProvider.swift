@@ -20,10 +20,11 @@ public struct RockskyConfig: Sendable, Equatable {
 
 /// `ScrobbleProvider` for https://rocksky.app/.
 ///
-/// Uses Rocksky's ListenBrainz-compatible API — the same JSON protocol used
-/// by Jellyfin, Navidrome, and Pano Scrobbler. The user's Rocksky API key
-/// (from rocksky.app/apikeys) is sent as a Bearer token. No shared secret
-/// or signed requests are required.
+/// Uses Rocksky's ListenBrainz-compatible API (version 1: `submit-listens` for
+/// scrobbles and now playing, `feedback/recording-feedback` for loves), the
+/// same JSON protocol used by Jellyfin, Navidrome, and Pano Scrobbler. The
+/// user's Rocksky API key (from rocksky.app/apikeys) is sent as a `Token`
+/// bearer. No shared secret or signed requests are required.
 public actor RockskyProvider: ScrobbleProvider {
     public nonisolated let id = "rocksky"
     public nonisolated let displayName = "Rocksky"
@@ -112,11 +113,17 @@ public actor RockskyProvider: ScrobbleProvider {
     }
 
     public func love(track: TrackIdentity, loved: Bool) async throws {
-        // Rocksky's ListenBrainz-compatible scrobble API does not expose a
-        // feedback/love endpoint. Loved state is managed via their native
-        // XRPC API (api.rocksky.app), which requires a separate integration.
-        // Skip silently so callers don't surface a spurious error.
-        self.log.debug("scrobble.rocksky.love.skip", ["reason": "not supported by scrobble api", "track": track.title])
+        guard let token = try await self.credentials.rockskyApiKey(), !token.isEmpty else {
+            throw ScrobbleError.notAuthenticated(provider: self.id)
+        }
+        // Rocksky finds the recording by its MusicBrainz ID and answers 400 for
+        // one it cannot place, so a track without an MBID is skipped here.
+        guard let mbid = track.mbid, !mbid.isEmpty else {
+            self.log.debug("scrobble.rocksky.love.skip", ["reason": "no mbid"])
+            return
+        }
+        try await self.transport.postFeedback(mbid: mbid, loved: loved, token: token, providerID: self.id)
+        self.log.info("scrobble.rocksky.love", ["loved": loved])
     }
 }
 

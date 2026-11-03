@@ -123,16 +123,7 @@ public actor ListenBrainzProvider: ScrobbleProvider {
             self.log.debug("scrobble.listenbrainz.love.skip", ["reason": "no mbid"])
             return
         }
-        let payload: [String: Any] = [
-            "recording_mbid": mbid,
-            "score": loved ? 1 : 0,
-        ]
-        _ = try await self.transport.post(
-            path: "/1/feedback/recording-feedback",
-            token: token,
-            payload: payload,
-            providerID: self.id
-        )
+        try await self.transport.postFeedback(mbid: mbid, loved: loved, token: token, providerID: self.id)
         self.log.info("scrobble.listenbrainz.love", ["loved": loved])
     }
 

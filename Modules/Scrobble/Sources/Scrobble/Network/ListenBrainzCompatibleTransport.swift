@@ -6,12 +6,13 @@ import Observability
 /// Shared payload builder + HTTP engine for ListenBrainz-compatible scrobble
 /// APIs (ListenBrainz, Rocksky, …).
 ///
-/// The two providers speak the identical `submit-listens` wire protocol
-/// (Bearer/`Token` auth, the same `track_metadata` JSON), so the payload
-/// construction and the POST + status-to-`ScrobbleError` mapping live here once
-/// rather than being copied per provider. Providers keep their own
-/// method-level logic and logging (and their distinct `love`/auth surfaces) and
-/// call `buildPayload` / `post` for the shared parts.
+/// The two providers speak the identical `submit-listens` and
+/// `recording-feedback` wire protocol (Bearer/`Token` auth, the same
+/// `track_metadata` JSON), so the payload construction and the POST +
+/// status-to-`ScrobbleError` mapping live here once rather than being copied
+/// per provider. Providers keep their own method-level logic and logging (and
+/// their distinct auth surfaces) and call `buildPayload` / `postFeedback` /
+/// `post` for the shared parts.
 ///
 /// This mirrors `LastFmCompatibleTransport`, which does the same job for the
 /// Last.fm-compatible family.
@@ -57,6 +58,22 @@ struct ListenBrainzCompatibleTransport {
             return listen
         }
         return ["listen_type": listenType, "payload": listens]
+    }
+
+    /// POSTs a love (`score` 1) or a cleared love (`score` 0) for the recording
+    /// `mbid` to `feedback/recording-feedback`. The service identifies the
+    /// recording by its MusicBrainz ID, so callers skip tracks that have none.
+    func postFeedback(mbid: String, loved: Bool, token: String, providerID: String) async throws {
+        let payload: [String: Any] = [
+            "recording_mbid": mbid,
+            "score": loved ? 1 : 0,
+        ]
+        try await self.post(
+            path: "/1/feedback/recording-feedback",
+            token: token,
+            payload: payload,
+            providerID: providerID
+        )
     }
 
     // MARK: HTTP

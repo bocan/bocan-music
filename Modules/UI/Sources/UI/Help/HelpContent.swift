@@ -111,7 +111,9 @@ enum HelpContent {
         HelpTopic(
             title: "Scrobbling",
             body: "Connect your Last.fm, ListenBrainz, or Rocksky account under Bòcan → Settings… → Scrobbling"
-                + " to enable automatic track scrobbling."
+                + " to enable automatic track scrobbling. When you love a track, Bòcan loves it on each"
+                + " connected account too. ListenBrainz and Rocksky find the track by its MusicBrainz"
+                + " recording ID, so a track without one is loved in Bòcan only."
         ),
         HelpTopic(
             title: "Viewing logs",
