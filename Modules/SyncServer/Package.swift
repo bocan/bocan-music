@@ -24,9 +24,9 @@ let package = Package(
         .package(path: "../Library"),
         .package(path: "../Metadata"),
         .package(path: "../Podcasts"),
-        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.21.0"),
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "5.0.3"),
-        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.7.2"),
+        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.21.1"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "5.1.0"),
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.7.4"),
     ],
     targets: [
         .target(

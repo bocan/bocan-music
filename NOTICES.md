@@ -235,7 +235,7 @@ The LGPL 2.1 full text is available at:
 
 ---
 
-## GRDB.swift 7.11.1
+## GRDB.swift 7.12.0
 
 <https://github.com/groue/GRDB.swift>
 
@@ -349,7 +349,7 @@ SOFTWARE.
 
 ---
 
-## Sparkle 2.10.0
+## Sparkle 2.10.1
 
 <https://sparkle-project.org>
 
@@ -407,7 +407,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.9.4
+## FeedKit 10.10.2
 
 <https://github.com/nmdias/FeedKit>
 
@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.0.3
+## swift-crypto 5.1.0
 
 <https://github.com/apple/swift-crypto>
 
@@ -449,7 +449,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-certificates 1.21.0
+## swift-certificates 1.21.1
 
 <https://github.com/apple/swift-certificates>
 
@@ -461,7 +461,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-asn1 1.7.3
+## swift-asn1 1.7.4
 
 <https://github.com/apple/swift-asn1>
 

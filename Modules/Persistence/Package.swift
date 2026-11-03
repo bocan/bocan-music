@@ -12,7 +12,7 @@ let package = Package(
         .executable(name: "bocan-schema", targets: ["BocanSchema"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.11.1"),
+        .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.12.0"),
         .package(path: "../Observability"),
     ],
     targets: [
