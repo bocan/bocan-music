@@ -62,8 +62,11 @@ struct HelpContentTests {
         let bodies = HelpContent.allKeys.filter { $0.contains("Last.fm") }
         #expect(bodies.count == 2)
         for body in bodies {
-            #expect(body.contains("ListenBrainz") && body.contains("Rocksky"))
-            #expect(!body.localizedCaseInsensitiveContains("MusicBrainz"))
+            // The list once said "Musicbrainz" where ListenBrainz was meant (#602).
+            // MusicBrainz may still appear elsewhere, as the source of a track's
+            // recording ID, so check the list itself.
+            #expect(body.contains("Last.fm, ListenBrainz, or Rocksky"))
+            #expect(!body.localizedCaseInsensitiveContains("Last.fm, MusicBrainz"))
         }
     }
 

@@ -99,6 +99,27 @@ struct ListenBrainzProviderTests {
         }
     }
 
+    @Test("love posts recording feedback; a track without an MBID sends nothing")
+    func lovePostsFeedback() async throws {
+        try await withStubLock {
+            StubProtocol.reset()
+            StubProtocol.registerJSON(matching: "recording-feedback", json: ["status": "ok"])
+            let provider = ListenBrainzProvider(http: URLSession.stubbed, credentials: StubListenBrainzCreds(token: "tok"))
+            try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: nil), loved: true)
+            #expect(StubProtocol.capturedRequests.isEmpty)
+
+            try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: "abc-123"), loved: false)
+            let req = try #require(StubProtocol.capturedRequests.first)
+            #expect(req.url?.path == "/1/feedback/recording-feedback")
+            #expect(req.value(forHTTPHeaderField: "Authorization") == "Token tok")
+            let body = try #require(
+                JSONSerialization.jsonObject(with: StubProtocol.capturedBodies.first ?? Data()) as? [String: Any]
+            )
+            #expect(body["recording_mbid"] as? String == "abc-123")
+            #expect(body["score"] as? Int == 0)
+        }
+    }
+
     private func makeEvent() -> PlayEvent {
         PlayEvent(
             queueID: 1,

@@ -158,16 +158,70 @@ struct RockskyProviderTests {
         }
     }
 
-    @Test("love skips silently — not supported by scrobble API")
-    func loveSkips() async throws {
+    // MARK: - love
+
+    @Test("love posts recording feedback with the MBID and a score", arguments: [(true, 1), (false, 0)])
+    func lovePostsFeedback(loved: Bool, score: Int) async throws {
+        try await withStubLock {
+            StubProtocol.reset()
+            StubProtocol.registerJSON(matching: "recording-feedback", json: ["status": "ok"])
+            let creds = StubRockskyCreds(apiKey: "mykey")
+            let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
+            try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: "abc-123"), loved: loved)
+
+            let req = try #require(StubProtocol.capturedRequests.first)
+            #expect(req.httpMethod == "POST")
+            #expect(req.url?.absoluteString == "https://audioscrobbler.rocksky.app/1/feedback/recording-feedback")
+            #expect(req.value(forHTTPHeaderField: "Authorization") == "Token mykey")
+            let body = try #require(
+                JSONSerialization.jsonObject(with: StubProtocol.capturedBodies.first ?? Data()) as? [String: Any]
+            )
+            #expect(body["recording_mbid"] as? String == "abc-123")
+            #expect(body["score"] as? Int == score)
+        }
+    }
+
+    @Test("love without an MBID sends nothing")
+    func loveWithoutMBIDSkips() async throws {
         try await withStubLock {
             StubProtocol.reset()
             let creds = StubRockskyCreds(apiKey: "key")
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
-            // Should not throw and should send no request regardless of MBID presence
-            try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: "abc-123"), loved: true)
             try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: nil), loved: true)
+            try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: ""), loved: true)
             #expect(StubProtocol.capturedRequests.isEmpty)
+        }
+    }
+
+    @Test("love without an API key throws notAuthenticated and sends nothing")
+    func loveNotAuthenticated() async {
+        await withStubLock {
+            StubProtocol.reset()
+            let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: StubRockskyCreds())
+            await #expect(throws: ScrobbleError.notAuthenticated(provider: "rocksky")) {
+                try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: "abc-123"), loved: true)
+            }
+            #expect(StubProtocol.capturedRequests.isEmpty)
+        }
+    }
+
+    @Test("love of a recording Rocksky cannot place surfaces as a permanent error")
+    func loveUnknownRecording() async {
+        await withStubLock {
+            StubProtocol.reset()
+            StubProtocol.registerJSON(
+                matching: "recording-feedback",
+                json: ["code": 400, "error": "That recording is not in this catalogue, so it cannot be rated."],
+                status: 400
+            )
+            let creds = StubRockskyCreds(apiKey: "key")
+            let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: creds)
+            await #expect {
+                try await provider.love(track: TrackIdentity(artist: "Cher", title: "Believe", mbid: "abc-123"), loved: true)
+            } throws: { error in
+                guard case ScrobbleError.permanent(provider: "rocksky", _) = error else { return false }
+                return true
+            }
         }
     }
 
