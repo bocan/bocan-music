@@ -235,7 +235,7 @@ The LGPL 2.1 full text is available at:
 
 ---
 
-## GRDB.swift 7.11.1
+## GRDB.swift 7.12.0
 
 <https://github.com/groue/GRDB.swift>
 
