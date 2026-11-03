@@ -99,7 +99,7 @@ public extension LibraryViewModel {
                     if id == self.nowPlaying.nowPlayingTrackID {
                         self.nowPlaying.updateNowPlayingLoved(loved)
                     }
-                    // Fan out to remote scrobble services (Last.fm, ListenBrainz).
+                    // Fan out to remote scrobble services (Last.fm, ListenBrainz, Rocksky).
                     // Fire-and-forget — network failures are logged inside ScrobbleService.
                     if let svc = self.scrobbleService {
                         Task { await svc.love(trackID: id, loved: loved) }
