@@ -64,6 +64,39 @@ extension ScrobbleError: CustomStringConvertible {
     }
 }
 
+// MARK: - ScrobbleError + one-shot requests
+
+extension ScrobbleError {
+    /// The cause of the failure, without the scrobble queue's next step.
+    ///
+    /// `description` speaks for the queue: a transient failure "will be
+    /// retried" and an offline play waits for the network. A love and a
+    /// now-playing update are sent once and never queued, so a log line that
+    /// used `description` for them promised a retry that never came (#677).
+    var causeDescription: String {
+        switch self {
+        case let .transient(provider, reason, _):
+            "\(provider) is temporarily unavailable: \(reason)."
+
+        case let .permanent(provider, reason):
+            "\(provider) rejected the request: \(reason)"
+
+        case .offline:
+            "No network connection."
+
+        default:
+            self.description
+        }
+    }
+
+    /// `causeDescription` for a `ScrobbleError`, the full reflection for any
+    /// other error (a `URLError`, a decoding error), which says nothing about
+    /// retries.
+    static func causeDescription(of error: any Error) -> String {
+        (error as? ScrobbleError)?.causeDescription ?? String(reflecting: error)
+    }
+}
+
 // MARK: - ScrobbleError + LocalizedError
 
 /// Without this, `localizedDescription` is Foundation's fallback. The Settings

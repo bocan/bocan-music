@@ -227,12 +227,20 @@ public actor ScrobbleService: ScrobbleSink {
             do {
                 try await provider.nowPlaying(event)
             } catch {
-                self.log.warning("scrobble.service.nowplaying.fail", ["provider": pid, "err": String(reflecting: error)])
+                self.log.warning("scrobble.service.nowplaying.fail", [
+                    "provider": pid,
+                    "err": ScrobbleError.causeDescription(of: error),
+                    "result": "not sent, not retried",
+                ])
             }
         }
     }
 
     /// Toggle the loved flag at every connected provider.
+    ///
+    /// A love is sent once and never queued, so a failure is final for that
+    /// provider. The log line says so and leaves out the queue's "It will be
+    /// retried" (#677).
     public func love(track: TrackIdentity, loved: Bool) async {
         for (pid, provider) in self.providers {
             let authed = await provider.isAuthenticated()
@@ -240,7 +248,12 @@ public actor ScrobbleService: ScrobbleSink {
             do {
                 try await provider.love(track: track, loved: loved)
             } catch {
-                self.log.warning("scrobble.service.love.fail", ["provider": pid, "err": String(reflecting: error)])
+                self.log.warning("scrobble.service.love.fail", [
+                    "provider": pid,
+                    "loved": loved,
+                    "err": ScrobbleError.causeDescription(of: error),
+                    "result": "not sent, not retried",
+                ])
             }
         }
     }
