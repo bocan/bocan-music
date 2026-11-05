@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.24.0](https://github.com/bocan/bocan-music/compare/v2.23.0...v2.24.0) (2026-11-05)
+
 - Loving a track now loves it on [Rocksky](https://rocksky.app/) too, the same way it already did on Last.fm and ListenBrainz. Rocksky finds the track by its MusicBrainz recording ID, so a track without one stays loved in Bòcan only.
 - When a love or a now-playing update cannot reach a scrobble service, the log now says it was not sent, instead of promising a retry that never happens. Actual scrobbles are indeed queued for retry.
+
+### For developers
+
+**Added**
+- scrobble: send loves to Rocksky ([#678](https://github.com/bocan/bocan-music/pull/678))
+
+**Fixed**
+- scrobble: stop love failure logs promising a retry ([#679](https://github.com/bocan/bocan-music/pull/679))
 
 ## [2.23.0](https://github.com/bocan/bocan-music/compare/v2.22.1...v2.23.0) (2026-10-18)
 
