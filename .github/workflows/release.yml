@@ -40,7 +40,9 @@ jobs:
     name: Version, changelog, release PR, tag
     if: inputs.tag == ''
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # This job waits for the release PR's checks. The full PR suite alone took
+    # 31 minutes on 2026-11-05, so the old 30-minute limit cancelled 2.24.0.
+    timeout-minutes: 60
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     env:

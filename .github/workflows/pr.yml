@@ -55,11 +55,19 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           changed="$(git diff --name-only "$BASE" "$HEAD")"
           echo "$changed"
+          # The Release workflow's PR only stamps the version and moves the
+          # changelog notes. Its code is main's, which every merged PR already
+          # tested, and release.yml tests the tag again before it ships, so the
+          # 30-minute suite here only delays the release.
+          if [[ "$HEAD_REF" == release/* ]] && ! grep -qvE '^(CHANGELOG\.md|Resources/Info\.plist)$' <<<"$changed"; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Release PR (version stamp and changelog only): skipping the full suite; the release build tests the tag."
           # Anything outside these paths is code (or build config) and needs the suite.
-          if grep -qvE '^(.*\.md|docs/.*|website/.*|\.github/ISSUE_TEMPLATE/.*|\.github/PULL_REQUEST_TEMPLATE/.*|CHANGELOG\.md)$' <<<"$changed"; then
+          elif grep -qvE '^(.*\.md|docs/.*|website/.*|\.github/ISSUE_TEMPLATE/.*|\.github/PULL_REQUEST_TEMPLATE/.*|CHANGELOG\.md)$' <<<"$changed"; then
             echo "code=true" >> "$GITHUB_OUTPUT"
             echo "Code changed: running the full suite."
           else

@@ -71,6 +71,8 @@ process:
 
 Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflows (`branch.yml` via `paths-ignore`; `pr.yml` via its `changes` job, because a required check that never starts would block the PR).
 
+The release PR that `release.yml` opens (branch `release/*`, diff limited to `CHANGELOG.md` and `Resources/Info.plist`) also skips the full suite in `pr.yml`. Its code is main's, and the release build runs `make test-coverage` on the tag before it signs anything. Before this rule, the release PR's suite (31 minutes on 2026-11-05) ran into the prepare job's 30-minute limit and cancelled 2.24.0.
+
 ## Guardrails
 
 | Mistake | What stops it |
