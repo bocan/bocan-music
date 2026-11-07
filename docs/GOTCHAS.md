@@ -328,7 +328,7 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Problem:** the `KeychainIdentityStore` test "loadOrCreate persists a stable identity across calls" failed in about half of the full SyncServer runs (#617). The second call did not find the certificate that the first call had stored, and made a new one.
 
-**Rule:** never treat one `errSecItemNotFound` as proof that an item does not exist when the result is the replacement of stored material. Read again with a wait first (`KeychainIdentityStore.readAgain`), and replace only when the miss is stable.
+**Rule:** never treat one `errSecItemNotFound` as proof that an item does not exist when the result is the replacement of stored material. Read again with a wait first (`KeychainIdentityStore.readAgain`), and replace only when the miss is stable. The same applies to a read that reports a missing credential: `SubsonicServerStore.secret(for:)` reads again the same way (`settledKeychainRead`), after its "update without newSecret" test failed on CI with -25300 directly after the write.
 
 **Why:** measured on 2026-10-02 with eight threads that each made identities: 31 of 96 reads of a generic-password item done directly after its `SecItemAdd` answered `errSecItemNotFound`, and the same read succeeded 30 to 100 ms later. An item older than 300 ms was never missed in 3840 reads under the same load, and the key was never missed. So this is a read-after-write delay while other writes are in progress, not a loss of data. A new Phone Sync identity breaks every pairing (#622), so the cost of a wrong "not found" is high.
 

@@ -111,12 +111,18 @@ struct SubsonicServerStoreTests {
         }
     }
 
-    @Test("secret throws for an unknown server")
+    @Test("secret throws not found for an unknown server after reading again")
     func secretMissing() async throws {
         let (store, _) = try await makeStore()
-        await #expect(throws: (any Error).self) {
+        let error = await #expect(throws: SubsonicError.self) {
             _ = try await store.secret(for: UUID())
         }
+        guard case let .keychain(status, operation) = error else {
+            Issue.record("expected a keychain error, got \(String(describing: error))")
+            return
+        }
+        #expect(status == errSecItemNotFound)
+        #expect(operation == "read")
     }
 
     @Test("apiKey servers round-trip through add/secret")
