@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "reviewers": ["bocan"]
+  "reviewers": ["bocan"],
   "extends": [
     "config:recommended"
   ]
