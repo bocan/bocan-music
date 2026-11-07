@@ -136,11 +136,15 @@ public actor SubsonicServerStore {
 
     /// Reads the credential secret from the Keychain for `serverID`.
     ///
+    /// An item written a moment ago can read as "not found" while other
+    /// Keychain writes are in progress (docs/GOTCHAS.md), so a miss is read
+    /// again with a growing wait before it is reported.
+    ///
     /// - Returns: The password or API key string.
     /// - Throws: `SubsonicError.keychain` if the item is absent.
-    public func secret(for serverID: UUID) throws -> String {
+    public func secret(for serverID: UUID) async throws -> String {
         let account = serverID.uuidString
-        let credential = try self.keychainRead(account: account)
+        let credential = try await self.settledKeychainRead(account: account)
         return credential.secret
     }
 
@@ -286,7 +290,35 @@ public actor SubsonicServerStore {
         }
     }
 
-    private func keychainRead(account: String) throws -> SubsonicCredential {
+    /// How many times a "not found" read is tried again. With the growing wait
+    /// below, the last read is 300 ms after the first miss; the misses measured
+    /// for #617 ended within 100 ms.
+    private static let rereadAttempts = 5
+
+    /// Reads the credential, and on "not found" reads again with a growing
+    /// wait. Throws "not found" only when every read misses; any other status
+    /// throws at once.
+    private func settledKeychainRead(account: String) async throws -> SubsonicCredential {
+        var read = self.keychainCopy(account: account)
+        var attempt = 0
+        while read.status == errSecItemNotFound, attempt < Self.rereadAttempts {
+            attempt += 1
+            try await Task.sleep(for: .milliseconds(20 * attempt))
+            read = self.keychainCopy(account: account)
+        }
+        guard let data = read.data else {
+            self.log.error("subsonic.keychain.read.failed", ["status": Int(read.status), "account": account, "attempts": attempt])
+            throw SubsonicError.keychain(read.status, "read")
+        }
+        if attempt > 0 {
+            self.log.debug("subsonic.keychain.read.settled", ["account": account, "attempt": attempt])
+        }
+        return try JSONDecoder().decode(SubsonicCredential.self, from: data)
+    }
+
+    /// One Keychain read. `data` is nil exactly when the read failed; a
+    /// success without data reports `errSecDecode`.
+    private func keychainCopy(account: String) -> (status: OSStatus, data: Data?) {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
@@ -297,10 +329,9 @@ public actor SubsonicServerStore {
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         guard status == errSecSuccess, let data = result as? Data else {
-            self.log.error("subsonic.keychain.read.failed", ["status": Int(status), "account": account])
-            throw SubsonicError.keychain(status, "read")
+            return (status == errSecSuccess ? errSecDecode : status, nil)
         }
-        return try JSONDecoder().decode(SubsonicCredential.self, from: data)
+        return (status, data)
     }
 
     private func keychainDelete(account: String) throws {
