@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- A Subsonic server's saved password is no longer reported as missing when it is read directly after you save it.
+
 ## [2.24.0](https://github.com/bocan/bocan-music/compare/v2.23.0...v2.24.0) (2026-11-05)
 
 - Loving a track now loves it on [Rocksky](https://rocksky.app/) too, the same way it already did on Last.fm and ListenBrainz. Rocksky finds the track by its MusicBrainz recording ID, so a track without one stays loved in Bòcan only.
