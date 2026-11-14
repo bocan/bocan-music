@@ -502,8 +502,11 @@ second round trip. Exact parameter names are checked in slice 2.
 
 ### Cover art
 
-For a song with no image of its own the mapper uses `AlbumId` and its image
-tag. The URL is `/Items/{id}/Images/Primary` with `maxWidth`, the image `tag`
+A song uses `AlbumId` and the album's image tag whenever the album has one, and
+falls back to its own image only when it has no album image. (The first draft
+did it the other way round. A real 12.2.0 server gives every song its own copy
+of the album picture, so preferring the song's copy would cost one image request
+per track where one per album is enough.) The URL is `/Items/{id}/Images/Primary` with `maxWidth`, the image `tag`
 (so a changed cover does not show stale) and `api_key`.
 
 ### Stream URL

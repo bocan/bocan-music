@@ -29,14 +29,18 @@ enum JellyfinMapping {
 
     /// The item that owns the cover image, and the image tag to put in the URL.
     ///
-    /// A song with no image of its own uses its album's (`AlbumId`), because the
-    /// song id is not the id of the item that holds the picture.
+    /// A song uses its album's picture (`AlbumId`) when the album has one. A real
+    /// 12.2.0 server gives every song of an album its own copy of the same image
+    /// as well, so preferring the song's copy would make one request per track
+    /// where one per album is enough, and the cache would never share a cover.
+    /// The song's own image is the fallback. The song id is never the cover id on
+    /// its own: the id must be the one that owns the picture.
     static func cover(of item: BaseItemDto) -> (id: String?, tag: String?) {
-        if let id = item.id, let tag = item.imageTags?["Primary"] {
-            return (id, tag)
-        }
         if let albumID = item.albumID, let tag = item.albumPrimaryImageTag {
             return (albumID, tag)
+        }
+        if let id = item.id, let tag = item.imageTags?["Primary"] {
+            return (id, tag)
         }
         if let parentID = item.parentPrimaryImageItemID, let tag = item.parentPrimaryImageTag {
             return (parentID, tag)

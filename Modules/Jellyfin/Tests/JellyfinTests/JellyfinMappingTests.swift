@@ -63,9 +63,24 @@ struct JellyfinMappingTests {
         #expect(song.bitrateKbps == nil)
         #expect(song.container == "mp3")
         #expect(song.isStarred == false)
-        // The song's own image wins over any album image.
+        // This song has no album image, so its own image is the cover.
         #expect(song.coverArtID == "11112222333344445555666677778888")
         #expect(song.coverArtTag == "deadbeefdeadbeefdeadbeefdeadbeef")
+    }
+
+    @Test("a song that has both its own image and its album's uses the album's, so a whole album shares one cover")
+    func albumCoverWinsOverSongCopy() {
+        // A real 12.2.0 server sends both for every song of an album.
+        let item = BaseItemDto(
+            albumID: "album-1",
+            albumPrimaryImageTag: "album-tag",
+            id: "song-1",
+            imageTags: ["Primary": "song-tag"],
+            name: "t"
+        )
+        let song = JellyfinMapping.song(item)
+        #expect(song?.coverArtID == "album-1")
+        #expect(song?.coverArtTag == "album-tag")
     }
 
     @Test("a song falls back to the parent image, then to the album artist for its name")

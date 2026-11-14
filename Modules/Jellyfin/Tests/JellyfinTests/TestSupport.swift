@@ -190,6 +190,14 @@ final class StubAuthClient: JellyfinAuthClientProtocol, @unchecked Sendable {
     }
 }
 
+// MARK: - StubbedNetwork
+
+/// The parent of every suite that uses `StubURLProtocol`. Its handler is global,
+/// so those suites must not run at the same time; `.serialized` here covers the
+/// nested suites too.
+@Suite("Stubbed network", .serialized)
+enum StubbedNetwork {}
+
 // MARK: - StubURLProtocol
 
 /// Answers every request from the SDK client without touching the network.
