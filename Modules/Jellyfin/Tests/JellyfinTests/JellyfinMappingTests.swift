@@ -149,11 +149,23 @@ struct JellyfinMappingTests {
     @Test("playlist mapping")
     func playlists() throws {
         let result = try Fixture.decode(BaseItemDtoQueryResult.self, "playlists")
-        let playlist = try #require(JellyfinMapping.page(result, JellyfinMapping.playlist).items.first)
+        let page = JellyfinMapping.page(result, JellyfinMapping.playlist)
+        let playlist = try #require(page.items.first)
         #expect(playlist.name == "Road trip")
         #expect(playlist.songCount == 25)
         #expect(playlist.durationSeconds == 5400)
         #expect(playlist.coverArtTag == "abababababababababababababababab")
+    }
+
+    @Test("an audio playlist reported as Unknown is kept and a video playlist is dropped")
+    func playlistMediaTypes() throws {
+        // A real Jellyfin 12.2 server reports `Unknown` for audio playlists imported from an M3U file.
+        let result = try Fixture.decode(BaseItemDtoQueryResult.self, "playlists")
+        let page = JellyfinMapping.page(result, JellyfinMapping.playlist)
+        #expect(page.items.map(\.name) == ["Road trip", "Imported from an M3U file"])
+        #expect(page.items[1].coverArtID == nil)
+        // The server's own total is kept, since the drop happens after paging.
+        #expect(page.total == 3)
     }
 
     @Test("server info mapping")

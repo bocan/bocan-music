@@ -23,7 +23,7 @@ Talking to Jellyfin servers. It is a **sibling** of `Subsonic`: it mirrors that 
 - **Do not name a type `Server`, `Song` or `Album`.** Everything here starts with `Jellyfin`.
 - **The bitrate cap applies only when a format is chosen.** With the original format the static stream is sent as it is (`JellyfinStreamURL`).
 - **Login Keychain only, no `kSecAttrAccessible*`**, and read again before treating "not found" as final (`settledKeychainRead`). Tests give the store its own Keychain service name so they never touch a real server's item.
-- **Tests must not hit the network.** `StubURLProtocol` drives the real SDK client without a socket; `StubJellyfinClient` and `StubAuthClient` script the seam. The checked-in fixtures are shaped like Jellyfin's responses but were written by hand, not captured; replace them with redacted captures from a real server when one is available.
+- **Tests must not hit the network.** `StubURLProtocol` drives the real SDK client without a socket; `StubJellyfinClient` and `StubAuthClient` script the seam. The checked-in fixtures are shaped like Jellyfin's responses but were written by hand. Real captures hold someone's own library, so they are not checked in: make them with `Scripts/capture-jellyfin-fixtures.py` and run `JELLYFIN_CAPTURE_DIR=<dir> swift test --filter Captured` to push them through the real SDK client and the mappers. Fold any new shape the captures show into the hand-written fixtures.
 
 ## Testing
 

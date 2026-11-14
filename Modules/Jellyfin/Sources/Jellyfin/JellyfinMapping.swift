@@ -106,8 +106,16 @@ enum JellyfinMapping {
         return JellyfinGenre(id: id, name: name, songCount: item.songCount, albumCount: item.albumCount)
     }
 
+    /// A playlist is kept unless the server says it holds something other than audio.
+    ///
+    /// Do not require `MediaType == Audio`: a real Jellyfin 12.2 server reports
+    /// `Unknown` for audio playlists that were imported from an M3U file, so that
+    /// filter would hide them. A playlist of video or photos is dropped.
     static func playlist(_ item: BaseItemDto) -> JellyfinPlaylist? {
         guard let id = item.id else { return nil }
+        if let mediaType = item.mediaType, mediaType == .video || mediaType == .photo || mediaType == .book {
+            return nil
+        }
         let cover = self.cover(of: item)
         return JellyfinPlaylist(
             id: id,

@@ -493,7 +493,7 @@ not on every ping.
 | Random | `Audio`, random sort, limit |
 | Recently Added | `MusicAlbum`, date created descending |
 | Most Played | `Audio`, play count descending |
-| Playlists | `Playlist` items whose media type is audio |
+| Playlists | `Playlist` items, minus any the server says hold video, photos or books. Do not require `MediaType = Audio`: a real 12.2.0 server reports `Unknown` for audio playlists imported from an M3U file |
 | Search | three parallel queries (songs, albums, artists) with a search term |
 
 Every request carries the user id and asks for the fields the mappers need
@@ -746,7 +746,8 @@ checked in under `Modules/Jellyfin/Tests/JellyfinTests/Fixtures/`.
 | Slice | State |
 |---|---|
 | 1 Persistence | Done. `M055`, `JellyfinServerRepository`, tests, data dictionary. |
-| 2 `Jellyfin` module | Done on 2026-11-14, with these departures from the plan: `Get` is a second declared dependency; the module has its own `JellyfinAuth` that owns the Quick Connect loop; `ApiKey` is the URL parameter; the ping is `/Users/Me`; the fixtures are hand-written in Jellyfin's response shape, not captured from a server (replace them when a real server is available, see "Decisions that still need the maintainer", item 3). |
+| 2 `Jellyfin` module | Done on 2026-11-14, with these departures from the plan: `Get` is a second declared dependency; the module has its own `JellyfinAuth` that owns the Quick Connect loop; `ApiKey` is the URL parameter; the ping is `/Users/Me`; the checked-in fixtures are hand-written in Jellyfin's response shape. |
+| 2, real server check | Done on 2026-11-14 against Jellyfin **12.2.0** (the maintainer's server), with `Scripts/capture-jellyfin-fixtures.py`. SDK 3.4.0 decodes every captured list, the sign-in answer and the public info, and no item is dropped by a mapper. Item and user ids are 32 hex characters with no dashes in every list, so no id normalisation is needed. Genres from `/Genres` have type `Genre`, not `MusicGenre`. Audio playlists imported from M3U report media type `Unknown` (fixed in the mapper). The captures hold a person's own library, so they are not checked in: `JellyfinCapturedFixtureTests` runs them when `JELLYFIN_CAPTURE_DIR` is set. Not yet checked on a real server: favourite, play reports, stream and cover URLs, Quick Connect through the Swift code, and the transcode formats. The minimum server version stays unset; 12.2.0 is the only version seen working. |
 
 ## Handoff
 
