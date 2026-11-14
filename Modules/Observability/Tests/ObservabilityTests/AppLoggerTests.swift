@@ -98,6 +98,24 @@ struct RedactionTests {
         #expect(scrubbed.contains("artist=Lankum"))
     }
 
+    @Test("scrubURLQueryParams scrubs a Jellyfin access token in a stream URL (ADR-097)")
+    func scrubJellyfinAccessToken() {
+        let url = "https://jf.example.com/Audio/item-1/stream?static=true&ApiKey=FAKETESTTOKEN"
+        let scrubbed = Redaction.scrubURLQueryParams(in: url)
+        #expect(!scrubbed.contains("FAKETESTTOKEN"), "Jellyfin ApiKey must be scrubbed")
+        #expect(scrubbed.contains("ApiKey=<redacted>"))
+        #expect(scrubbed.contains("static=true"), "non-sensitive params must be preserved")
+    }
+
+    @Test("sanitize redacts Jellyfin token field names (ADR-097)")
+    func sanitizeJellyfinKeys() {
+        let result = Redaction.sanitize(["api_key": "abc", "X-Emby-Token": "def", "ApiKey": "ghi", "item": "keep"])
+        #expect(result["api_key"] == "<redacted>")
+        #expect(result["X-Emby-Token"] == "<redacted>")
+        #expect(result["ApiKey"] == "<redacted>")
+        #expect(result["item"] == "keep")
+    }
+
     @Test("sanitize scrubs auth params inside a reflected URLError string")
     func sanitizeScrubsReflectedErrorURL() {
         // String(reflecting:) of a URLError embeds the full failing URL; the
@@ -134,7 +152,7 @@ struct LogCategoryTests {
         let names = Set(LogCategory.allCases.map(\.rawValue))
         let expected: Set = [
             "app", "audio", "library", "metadata", "persistence",
-            "ui", "network", "playback", "podcasts", "scrobble", "subsonic", "sync",
+            "ui", "network", "playback", "podcasts", "scrobble", "subsonic", "jellyfin", "sync",
         ]
         #expect(names == expected)
     }

@@ -17,7 +17,7 @@ All everyday commands go through the top-level `Makefile`. Run `make help` for t
 | Debug build | `make build` |
 | Unit + integration tests (Xcode bundle, excludes UI snapshots) | `make test` |
 | Coverage gate (CI gate, fails < 80%) | `make test-coverage` |
-| Per-module SPM tests | `make test-<module>` (one per module: `test-observability`, `test-persistence`, `test-metadata`, `test-library`, `test-acoustics`, `test-audio-engine`, `test-playback`, `test-scrobble`, `test-subsonic`, `test-podcasts`, `test-sync-server`, `test-ui`) |
+| Per-module SPM tests | `make test-<module>` (one per module: `test-observability`, `test-persistence`, `test-metadata`, `test-library`, `test-acoustics`, `test-audio-engine`, `test-playback`, `test-scrobble`, `test-subsonic`, `test-jellyfin`, `test-podcasts`, `test-sync-server`, `test-ui`) |
 | Per-module coverage with module-level floors | `make coverage-all` |
 | Lint (strict, CI gate) | `make lint` |
 | Auto-format | `make format` |
@@ -37,7 +37,7 @@ Before opening a feat, fix or perf PR, run /slice-review. Its output is the `## 
 Strict module DAG, no upward imports:
 
 ```
-Observability → { AudioEngine, Metadata, Acoustics, Persistence } → { Subsonic, Podcasts, Library, Playback } → { Scrobble, SyncServer } → UI → App
+Observability → { AudioEngine, Metadata, Acoustics, Persistence } → { Subsonic, Jellyfin, Podcasts, Library, Playback } → { Scrobble, SyncServer } → UI → App
 ```
 
 Inside a layer the modules are not all independent. `Library` depends on `Metadata` and `Acoustics`, `Playback` on `AudioEngine`, `Scrobble` on `Playback`, and `SyncServer` on `AudioEngine`, `Library`, `Metadata` and `Podcasts`. The table in `docs/design-spec/_standards.md` ("Module layout") is the source of truth for every edge.
@@ -52,6 +52,7 @@ Inside a layer the modules are not all independent. `Library` depends on `Metada
 | `Playback` | `QueuePlayer` actor, queue/history/shuffle, `GaplessScheduler`, `CrossfadeScheduler`, `PlayableSource` (`.localBookmark` / `.subsonic` / `.internetRadio` / `.podcast`), MPNowPlaying, sleep timer, queue persistence v1→v2. |
 | `Scrobble` | Last.fm / ListenBrainz / Rocksky providers + an offline-resilient `ScrobbleService` queue. |
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
+| `Jellyfin` | ADR-097. A sibling of `Subsonic` that mirrors it and never imports it: `JellyfinService` actor over the official `jellyfin-sdk-swift` (confined to this module by `Scripts/audit-jellyfin-sdk-imports.py`, behind `JellyfinClientProtocol`), password and Quick Connect sign-in, access token in the login Keychain, connection monitor, favourites queue, and its own `Jellyfin*` models. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID, the single `MusicBrainzClient` (recording, artist, release-group; one shared 1 req/s limiter for the whole app) and `WikipediaClient`. |
 | `Podcasts` | FeedKit-based RSS/Atom feed refresh, Podcast Index + iTunes search, subscriptions, episode downloads and retention, Podcasting 2.0 extras (chapters, transcripts, persons, podroll). |
 | `SyncServer` | Phone Sync (ADR-060 to ADR-070): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and the Bonjour-advertised mutual-TLS server (`SyncListener`, `SyncServer`) that serves a manifest + files read-only to a paired phone. Separate identity/port from any ADR-034 remote control. |
@@ -79,7 +80,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md`. Read it if you
 
 - Swift 6 strict concurrency. Long-lived state is owned by `actor`s, not classes with locks. SwiftUI view state is `@MainActor`. `Task.checkCancellation()` inside any long loop.
 - Each module has one public `*Error: Error, Sendable` enum per domain area (a small module has one), carrying context (URL, underlying error, reason), not bare cases. An internal error enum is fine if it is wrapped before it crosses the module boundary. No ad hoc `struct Foo: Error {}`.
-- `AppLogger` facade only. Categories: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `sync`. Standard pattern: `log.debug("op.start", […])` / `log.debug("op.end", ["ms": …])` / `log.error("op.failed", ["error": String(reflecting: err)])`. Keys in `Observability.sensitiveKeys` are redacted automatically.
+- `AppLogger` facade only. Categories: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `jellyfin`, `sync`. Standard pattern: `log.debug("op.start", […])` / `log.debug("op.end", ["ms": …])` / `log.error("op.failed", ["error": String(reflecting: err)])`. Keys in `Observability.sensitiveKeys` are redacted automatically.
 - No `print`, no raw `os_log`, no `fatalError` outside `#if DEBUG`, a truly-unreachable `default:`, or the body of an `@available(*, unavailable) required init(coder:)`. A failure that can happen at run time throws, returns `nil` or falls back, and logs.
 - **`try?` is allowed only for these idioms:** a `Task.sleep` whose caller re-checks cancellation (better: `try await Task.sleep` inside a throwing `Task` closure, which exits cleanly on cancellation with no `try?`); `defer { try? handle.close() }`; remove-if-present of a cache or temp file; directory pre-creation before a write that reports its own failure; a file-attribute read with a fallback value; a decode whose fallback is the documented contract. Everything else handles the error one of two ways. **Recover and log:** `do { try ... } catch { log.warning("op.failed", ["id": id, "error": String(reflecting: error)]) }`, with the context the log line needs. **Propagate:** `try` and let the caller decide; a user action that fails must reach the user (toast, alert, `lastError`), and a value that goes into the database or on the wire is never derived from a swallowed error. For a one-line recovery, `Observability.logged(_:_:context:_:)` is the sanctioned helper. `Scripts/audit-try-optional.py` enforces all of this from `make lint`: a site outside the idiom patterns needs an entry with a reason in `Scripts/audit-try-optional-allowlist.txt`. The audit behind this rule, with every site classified, is `docs/audits/try-optional-audit.md` (#459).
 - **Tests must not hit the network.** Stub via `URLProtocol` or a protocol-based HTTP client mock. Fixtures live in each module's `Tests/<Name>Tests/Fixtures/` and are checked in, not generated at test time.

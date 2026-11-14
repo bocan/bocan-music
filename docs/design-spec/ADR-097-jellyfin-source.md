@@ -206,7 +206,8 @@ existing fan-out. No progress heartbeat in v1; the server may drop "now
 playing" from its dashboard after its idle timeout. Accepted.
 
 **D6. SDK confined to the `Jellyfin` module.** Use the official
-`jellyfin-sdk-swift` (Context7 listed 3.2.0). It is for auth, requests and
+`jellyfin-sdk-swift` (Context7 listed 3.2.0; the spike on 2026-11-14 found 3.4.0
+the newest tag and pinned it, see "Spike result" under Dependencies). It is for auth, requests and
 typed DTOs. The module exposes its own small models (`JellyfinSong`,
 `JellyfinAlbum`, `JellyfinArtist`, `JellyfinGenre`, `JellyfinPlaylist`,
 `JellyfinSearchResult`, `JellyfinPage`), so the UI and App never import the
@@ -220,7 +221,9 @@ root `CLAUDE.md` rule on dependencies).
 carries `api_key`, as Subsonic's carries its token. Cover art uses the same
 parameter because `AsyncImage` cannot set headers. These URLs are never logged,
 never put in an error, never stored. `api_key`, `ApiKey` and `X-Emby-Token` are
-added to `Observability.sensitiveKeys`.
+added to `Observability.sensitiveKeys`. (As built: the SDK's own URL helper names the
+parameter `ApiKey`, so the module uses that spelling; `api_key` and
+`X-Emby-Token` are redacted as well.)
 
 **D8. One table per concern, trimmed to what Jellyfin uses.** Section
 "Persistence" gives the columns. A column exists only if this ADR writes it,
@@ -473,7 +476,10 @@ public struct JellyfinPage<Element: Sendable>: Sendable {
 `serverError`). The App maps it to the UI's existing
 `SubsonicSidebarConnectionState`. The monitor pings every 60 s, backs off
 5, 10, 20, 40, 80, 160, 300 s, re-pings on network return and on wake, and stops
-on 401.
+on 401. The ping is `GET /Users/Me`, not `/System/Ping`: the ping endpoint needs
+no token, so it could never notice a revoked one. The monitor writes
+`last_connected_at` when a server comes online and at most every 10 minutes after,
+not on every ping.
 
 ### Queries
 
@@ -504,8 +510,11 @@ tag. The URL is `/Items/{id}/Images/Primary` with `maxWidth`, the image `tag`
 
 | Preferred format | Request |
 |---|---|
-| Original | static stream of the original file |
+| Original | static stream of the original file (a bitrate cap is ignored: it needs a target codec) |
 | mp3, aac, opus, flac | transcode with codec, container and a bitrate cap in bit/s |
+
+The Settings editor (slice 3) must grey out the max bitrate while the format is
+Original, so the setting never looks active when it is not.
 
 The cache signals ready only after the full download (CLAUDE.md gotcha), so a
 transcode with no `Content-Length` is fine and seek works on the finished file.
@@ -554,9 +563,21 @@ ask.
 
 ## Dependencies
 
-- `.package(url: "https://github.com/jellyfin/jellyfin-sdk-swift", from: "3.2.0")`
-  in `Modules/Jellyfin/Package.swift` only. Pin the newest release that passes
-  the spike. Confirm the licence and add it to `NOTICES.md`.
+- `.package(url: "https://github.com/jellyfin/jellyfin-sdk-swift", from: "3.4.0")`
+  in `Modules/Jellyfin/Package.swift` only (the first draft said 3.2.0), and
+  `.package(url: "https://github.com/kean/Get", from: "2.2.1")` beside it, because
+  the SDK does not re-export `Get` and `APIError.unacceptableStatusCode` is the
+  only place a failed request's HTTP status lives. Confirm the licence and add
+  it to `NOTICES.md` (slice 8).
+- **Spike result (slice 2, 2026-11-14).** Tag 3.4.0 builds with Swift 6.4.2 on
+  macOS with `StrictConcurrency` on and zero warnings. The first clean build took
+  12 minutes 47 seconds, almost all of it fetching dependencies (GRDB's
+  submodule, swift-nio); after that the module compiles in about 12 seconds.
+  Licence: **MPL-2.0** (file-level copyleft; linking the library is allowed, and
+  `NOTICES.md` must name it and say where its source is). Transitive packages:
+  `Get`, `swift-nio-transport-services` and `swift-nio`. The client takes a
+  `URLSessionDelegate`, so the host trust exception is a delegate, as for Subsonic.
+  The SDK marks `/Artists/AlbumArtists` deprecated; see the Gotchas entry.
 - DAG: `Jellyfin` sits in the same layer as `Subsonic` and depends on
   `Observability` and `Persistence`. `UI` and `App` depend on `Jellyfin`.
   `Playback` and `Scrobble` do not depend on it (they use protocols and
@@ -719,6 +740,13 @@ checked in under `Modules/Jellyfin/Tests/JellyfinTests/Fixtures/`.
 - Lyrics, offline pinning.
 - If a third source is ever added, that is the moment to weigh a shared layer.
   It is not this ADR's job.
+
+## Slice status
+
+| Slice | State |
+|---|---|
+| 1 Persistence | Done. `M055`, `JellyfinServerRepository`, tests, data dictionary. |
+| 2 `Jellyfin` module | Done on 2026-11-14, with these departures from the plan: `Get` is a second declared dependency; the module has its own `JellyfinAuth` that owns the Quick Connect loop; `ApiKey` is the URL parameter; the ping is `/Users/Me`; the fixtures are hand-written in Jellyfin's response shape, not captured from a server (replace them when a real server is available, see "Decisions that still need the maintainer", item 3). |
 
 ## Handoff
 

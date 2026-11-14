@@ -1,0 +1,59 @@
+{
+  "Items": [
+    {
+      "Name": "Prayer in C",
+      "ServerId": "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+      "Id": "3f9c0d2e8b7a4c1d9e5f6a7b8c9d0e1f",
+      "Container": "flac",
+      "RunTimeTicks": 2405000000,
+      "ProductionYear": 2012,
+      "IndexNumber": 7,
+      "ParentIndexNumber": 2,
+      "Genres": ["Folk", "Indie"],
+      "Artists": ["Lilly Wood and The Prick"],
+      "ArtistItems": [{ "Name": "Lilly Wood and The Prick", "Id": "aa11bb22cc33dd44ee55ff6677889900" }],
+      "Album": "The Waves",
+      "AlbumId": "9d8c7b6a5f4e3d2c1b0a998877665544",
+      "AlbumPrimaryImageTag": "c0ffee00c0ffee00c0ffee00c0ffee00",
+      "AlbumArtist": "Lilly Wood and The Prick",
+      "AlbumArtists": [{ "Name": "Lilly Wood and The Prick", "Id": "aa11bb22cc33dd44ee55ff6677889900" }],
+      "ImageTags": {},
+      "MediaSources": [
+        {
+          "Protocol": "File",
+          "Id": "3f9c0d2e8b7a4c1d9e5f6a7b8c9d0e1f",
+          "Container": "flac",
+          "Bitrate": 960000,
+          "RunTimeTicks": 2405000000
+        }
+      ],
+      "UserData": { "IsFavorite": true, "PlayCount": 4, "PlaybackPositionTicks": 0, "Played": true, "Key": "k1" },
+      "Type": "Audio",
+      "MediaType": "Audio"
+    },
+    {
+      "Name": "Untitled demo",
+      "Id": "11112222333344445555666677778888",
+      "ImageTags": { "Primary": "deadbeefdeadbeefdeadbeefdeadbeef" },
+      "MediaSources": [{ "Protocol": "File", "Id": "11112222333344445555666677778888", "Container": "mp3" }],
+      "UserData": { "PlayCount": 0, "IsFavorite": false, "PlaybackPositionTicks": 0, "Played": false, "Key": "k2" },
+      "Type": "Audio",
+      "MediaType": "Audio"
+    },
+    {
+      "Name": "A row with no id",
+      "Type": "Audio"
+    },
+    {
+      "Name": "Albumless single",
+      "Id": "99998888777766665555444433332222",
+      "AlbumArtist": "Solo Artist",
+      "Artists": [],
+      "ParentPrimaryImageItemId": "abcdefabcdefabcdefabcdefabcdefab",
+      "ParentPrimaryImageTag": "0123456789abcdef0123456789abcdef",
+      "Type": "Audio"
+    }
+  ],
+  "TotalRecordCount": 412,
+  "StartIndex": 100
+}

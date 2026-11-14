@@ -363,6 +363,28 @@ Reading defaults reads the release app's preferences only.
 
 ---
 
+## Jellyfin (ADR-097)
+
+### A Jellyfin ping must be an authenticated call
+
+**Problem:** a revoked access token never showed "Sign in again": the status dot stayed green.
+
+**Rule:** the connection monitor's ping is `GET /Users/Me`, never `GET /System/Ping`. Keep it behind `JellyfinClientProtocol.ping()` and keep a test that a 401 reaches `JellyfinError.unauthorized`.
+
+**Why:** `/System/Ping` needs no token, so it answers 200 whatever the token's state. Only an authenticated call can notice a revoked token, and the monitor stops pinging and shows `authFailed` only on a 401.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinSDKClient.swift`
+
+### The Jellyfin SDK is confined to one module and needs `Get` named beside it
+
+**Problem:** a view or the App imports `JellyfinAPI`, and the SDK can no longer be replaced by a thin client without touching the UI.
+
+**Rule:** only `Modules/Jellyfin` imports `JellyfinAPI` or `Get`. `Scripts/audit-jellyfin-sdk-imports.py` (run by `make lint`) enforces it. Everything above the module sees `Jellyfin*` models and `JellyfinService`.
+
+**Why:** the SDK does not re-export `Get`, but `APIError.unacceptableStatusCode` is the only place the HTTP status of a failure lives, so the module declares `Get` itself. The SDK also marks `/Artists/AlbumArtists` deprecated; the request for it is built by hand in one place (`JellyfinSDKClient+Browse.swift`), so there is one line to change when the SDK or the server moves it. It sends a list parameter as a repeated name (`sortBy=A&sortBy=B`), which the request tests read back.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinSDKClient.swift`
+
 ## Testing
 
 ### The XCUITest runner is sandboxed no matter what the project says

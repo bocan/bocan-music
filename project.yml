@@ -118,6 +118,7 @@ targets:
       - package: Podcasts
       - package: Scrobble
       - package: Subsonic
+      - package: Jellyfin
       - package: SyncServer
       - package: UI
     scheme:
@@ -192,6 +193,8 @@ packages:
     path: Modules/Podcasts
   Subsonic:
     path: Modules/Subsonic
+  Jellyfin:
+    path: Modules/Jellyfin
   SyncServer:
     path: Modules/SyncServer
   UI:

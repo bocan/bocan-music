@@ -256,6 +256,9 @@ jobs:
       - name: Test Subsonic package
         run: make test-subsonic
 
+      - name: Test Jellyfin package
+        run: make test-jellyfin
+
       - name: Test Podcasts package
         run: make test-podcasts
 

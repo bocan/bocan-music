@@ -14,6 +14,7 @@
 		0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186F049CE6669E44D287954A /* SearchViewModelTests.swift */; };
 		0930C3F6FA5F345B5A26F234 /* Library in Frameworks */ = {isa = PBXBuildFile; productRef = D12DF4C04E3DB095C79E72AA /* Library */; };
 		097BB13F4BF81674CA466906 /* DeepDiveEnrichmentGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2024ED1EAB843BDC967DDAED /* DeepDiveEnrichmentGateTests.swift */; };
+		09829CE32F89C641C9C956CB /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
 		09B12F83B7BD848E5E82B710 /* PhoneSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FF1E7A12FB10D997435BD5 /* PhoneSyncController.swift */; };
 		09EB5116A16C3BF5BE7F96F8 /* PhoneSyncWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BCD10FC9FB02BCADD58FCB /* PhoneSyncWiringTests.swift */; };
 		0A5E6E49C73F82EF51F155C8 /* L10nTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FA0EB21BFC45A22F1C61E1 /* L10nTests.swift */; };
@@ -155,7 +156,7 @@
 		8FBEF85C870FFF27D18A910F /* PodcastsSidebarConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58885B33390C32555279B1C6 /* PodcastsSidebarConventionTests.swift */; };
 		905B83A145C60C115F496A91 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
 		93DB6B254FF06C7892311EAA /* GenresComposersScrollRestoreConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC962EFCBEFE31DCE391766 /* GenresComposersScrollRestoreConventionTests.swift */; };
-		94BE1DE6EE31C9D7E5BEAB2F /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		94BE1DE6EE31C9D7E5BEAB2F /* SyncServer in Frameworks */ = {isa = PBXBuildFile; productRef = 58C9E8133CBEE4B811E9598B /* SyncServer */; };
 		96A36682C5C69445F0658AA8 /* RecentScrobblesConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C24DAA87753A2DF30A24F5C3 /* RecentScrobblesConventionTests.swift */; };
 		96B48CEB96CC567F7F79C574 /* LyricsViewModelOffsetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098BB3C6E120AF87752F2F89 /* LyricsViewModelOffsetTests.swift */; };
 		976D432E1A15D52BEBF45D32 /* MenuCrawler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 895EDA1D2F5C04C7F4A666BB /* MenuCrawler.swift */; };
@@ -235,7 +236,7 @@
 		D2B1D95F28561FE5D0C7D34A /* CacheDirectoryMarkerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88CDE06C76B8F0C5891A9A84 /* CacheDirectoryMarkerTests.swift */; };
 		D376AD0CF2E8518F2B7AEC32 /* SingleInstanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1CAA6A918DE471019AB205 /* SingleInstanceTests.swift */; };
 		D3DBF4DE1751AE7830A60A1F /* PhoneSyncViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */; };
-		D4370EDB9ACA992B6E0B2E7B /* SyncServer in Frameworks */ = {isa = PBXBuildFile; productRef = 58C9E8133CBEE4B811E9598B /* SyncServer */; };
+		D4370EDB9ACA992B6E0B2E7B /* Jellyfin in Frameworks */ = {isa = PBXBuildFile; productRef = CE461D24C9D303E24E39A6DD /* Jellyfin */; };
 		D4FF663D31850CABBFD89C5A /* AlbumsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F9CA039EA2E967BAA21F51 /* AlbumsViewModelTests.swift */; };
 		D53EDE6FD10273FA288C97C5 /* NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 8DE7AE70CABE9E93BDBE5955 /* NOTICES.md */; };
 		D5ADCD49724769425BB35B1A /* SubsonicSidebarConnectionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8A95FEB9C77F01D11F1773 /* SubsonicSidebarConnectionStateTests.swift */; };
@@ -338,6 +339,7 @@
 		36E307E6CD3D5FD3BA864778 /* LogEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogEntryTests.swift; sourceTree = "<group>"; };
 		377CDD783D5E45B2A404260D /* UpdateControllerConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateControllerConventionTests.swift; sourceTree = "<group>"; };
 		38D3908A7CD0D2A9A3BA7A60 /* VolumeIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = VolumeIcon.icns; sourceTree = "<group>"; };
+		3955B2EFD2E3E611C013F82C /* Jellyfin */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Jellyfin; path = Modules/Jellyfin; sourceTree = SOURCE_ROOT; };
 		3AB7C159C37D262541974E75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3ACED25997E20291760CE1BE /* LibraryRootRemovalFailureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryRootRemovalFailureTests.swift; sourceTree = "<group>"; };
 		3BC2BFDE7E0BF2180866ABE1 /* SubsonicMonitorConnectionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicMonitorConnectionObserver.swift; sourceTree = "<group>"; };
@@ -555,7 +557,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_9452134A-6C49-408A-AF23-709DF016E9C7" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_E4AA50D3-9DD7-4DD4-B6D4-5F64FC79BC8B" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -573,8 +575,9 @@
 				251364DE7069EC1D663C49E1 /* Podcasts in Frameworks */,
 				9B60DEC59F8E4D4A133B1CAF /* Scrobble in Frameworks */,
 				7F67B098FEA98614EA0DEBD4 /* Subsonic in Frameworks */,
-				D4370EDB9ACA992B6E0B2E7B /* SyncServer in Frameworks */,
-				94BE1DE6EE31C9D7E5BEAB2F /* UI in Frameworks */,
+				D4370EDB9ACA992B6E0B2E7B /* Jellyfin in Frameworks */,
+				94BE1DE6EE31C9D7E5BEAB2F /* SyncServer in Frameworks */,
+				09829CE32F89C641C9C956CB /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -868,6 +871,7 @@
 			children = (
 				B9F344DDAC11E38DE1697304 /* Acoustics */,
 				D2389E70DB249B9953B85CD4 /* AudioEngine */,
+				3955B2EFD2E3E611C013F82C /* Jellyfin */,
 				F401487E6DE506B5348C7F94 /* Library */,
 				8C85F460580B049360716FE5 /* Observability */,
 				6E014B4987A60B08F6DE299A /* Persistence */,
@@ -1077,10 +1081,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_36A8BE9D-F9E0-47BD-9B6F-93857F533116" /* bocan-music */ = {
+		"TEMP_7BDF0C42-633D-4BAB-8C83-1525D696E58C" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_9452134A-6C49-408A-AF23-709DF016E9C7" /* Secrets.xcconfig */,
+				"TEMP_E4AA50D3-9DD7-4DD4-B6D4-5F64FC79BC8B" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1112,6 +1116,7 @@
 				D39F44552C427260901E72AF /* Podcasts */,
 				7958F5C62AD395861A62A40B /* Scrobble */,
 				A785EA980EBAF6FB63114FE6 /* Subsonic */,
+				CE461D24C9D303E24E39A6DD /* Jellyfin */,
 				58C9E8133CBEE4B811E9598B /* SyncServer */,
 				D1ABAB928B628AE14B24A3B8 /* UI */,
 			);
@@ -1187,6 +1192,7 @@
 				989A8700FC0094AE2DD92144 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				88F22A7297DE63DC36E97CB5 /* XCLocalSwiftPackageReference "Modules/Acoustics" */,
 				A17D0542DA503F381C619312 /* XCLocalSwiftPackageReference "Modules/AudioEngine" */,
+				6FEC0C09EC53BB3F4791EEB5 /* XCLocalSwiftPackageReference "Modules/Jellyfin" */,
 				29FFCEC96A9AD74E175B26CD /* XCLocalSwiftPackageReference "Modules/Library" */,
 				DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */,
 				73929B74C971FA1861E7E569 /* XCLocalSwiftPackageReference "Modules/Persistence" */,
@@ -1536,7 +1542,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9452134A-6C49-408A-AF23-709DF016E9C7" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4AA50D3-9DD7-4DD4-B6D4-5F64FC79BC8B" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1673,7 +1679,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9452134A-6C49-408A-AF23-709DF016E9C7" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4AA50D3-9DD7-4DD4-B6D4-5F64FC79BC8B" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1819,6 +1825,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Scrobble;
 		};
+		6FEC0C09EC53BB3F4791EEB5 /* XCLocalSwiftPackageReference "Modules/Jellyfin" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Jellyfin;
+		};
 		73929B74C971FA1861E7E569 /* XCLocalSwiftPackageReference "Modules/Persistence" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Persistence;
@@ -1913,6 +1923,10 @@
 		A785EA980EBAF6FB63114FE6 /* Subsonic */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Subsonic;
+		};
+		CE461D24C9D303E24E39A6DD /* Jellyfin */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Jellyfin;
 		};
 		D12DF4C04E3DB095C79E72AA /* Library */ = {
 			isa = XCSwiftPackageProductDependency;

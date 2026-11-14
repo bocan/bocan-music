@@ -1,0 +1,14 @@
+{
+  "Items": [
+    {
+      "Name": "Lilly Wood and The Prick",
+      "Id": "aa11bb22cc33dd44ee55ff6677889900",
+      "AlbumCount": 3,
+      "ImageTags": { "Primary": "feedfacefeedfacefeedfacefeedface" },
+      "UserData": { "IsFavorite": false, "PlayCount": 0, "PlaybackPositionTicks": 0, "Played": false, "Key": "r1" },
+      "Type": "MusicArtist"
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}

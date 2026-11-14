@@ -1,0 +1,15 @@
+{
+  "Items": [
+    {
+      "Name": "Road trip",
+      "Id": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+      "ChildCount": 25,
+      "RunTimeTicks": 54000000000,
+      "ImageTags": { "Primary": "abababababababababababababababab" },
+      "MediaType": "Audio",
+      "Type": "Playlist"
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}
