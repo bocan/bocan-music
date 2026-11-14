@@ -231,5 +231,93 @@
   "podcast_episode_chapters.source_url": {
     "traces": "ADR-066, #608",
     "note": "The episode chapters_url the body was fetched from. Every read joins on podcast_episodes.chapters_url = source_url, so a feed that moves or drops its chapters retires the row without a delete."
+  },
+  "jellyfin_servers.id": {
+    "traces": "ADR-097",
+    "note": "Local UUID, also the Keychain account for this server's access token. Never the Jellyfin server's own id."
+  },
+  "jellyfin_servers.name": {
+    "traces": "ADR-097",
+    "note": "Display name chosen in the editor. Unique (jellyfin_servers_name_idx), like subsonic_servers."
+  },
+  "jellyfin_servers.server_url": {
+    "traces": "ADR-097",
+    "note": "Base URL the user typed, including any path prefix, with no trailing slash."
+  },
+  "jellyfin_servers.user_id": {
+    "traces": "ADR-097",
+    "note": "Jellyfin user id (an opaque GUID string) returned by sign-in. Every library request names it. Never an integer, never parsed."
+  },
+  "jellyfin_servers.username": {
+    "traces": "ADR-097",
+    "note": "Account name shown as 'Signed in as' in the editor. Display only. No password is stored anywhere; the access token is in the login Keychain."
+  },
+  "jellyfin_servers.device_id": {
+    "traces": "ADR-097",
+    "note": "Client device id sent in the authorization header. Made once when the server is added and kept, so the server sees one stable device per Mac."
+  },
+  "jellyfin_servers.allow_self_signed_tls": {
+    "traces": "ADR-097",
+    "note": "Per-server opt-in to a self-signed certificate. The editor shows the same warning as Subsonic."
+  },
+  "jellyfin_servers.max_bitrate": {
+    "traces": "ADR-097",
+    "note": "'original' or a kbps cap as text. The stream URL builder converts it to bits per second for Jellyfin."
+  },
+  "jellyfin_servers.preferred_format": {
+    "traces": "ADR-097",
+    "note": "'original' builds the static stream URL. Any other value builds a transcode URL with that container."
+  },
+  "jellyfin_servers.precache_next": {
+    "traces": "ADR-097",
+    "note": "Whether the resolver pre-downloads the next queued song from this server."
+  },
+  "jellyfin_servers.include_in_search": {
+    "traces": "ADR-097",
+    "note": "Whether this server joins the global search fan-out."
+  },
+  "jellyfin_servers.show_in_sidebar": {
+    "traces": "ADR-097",
+    "note": "Hidden Sources menu toggle. A hidden server stays configured and playable."
+  },
+  "jellyfin_servers.scrobble": {
+    "traces": "ADR-097",
+    "note": "Whether plays from this server are reported back to it as play reports."
+  },
+  "jellyfin_servers.sync_stars": {
+    "traces": "ADR-097",
+    "note": "Whether a star in Bòcan sets IsFavorite on this server. Jellyfin has no star rating, so there is no sync_ratings column."
+  },
+  "jellyfin_servers.sort_index": {
+    "traces": "ADR-097",
+    "note": "Sidebar order among Jellyfin servers. Ties break on created_at."
+  },
+  "jellyfin_servers.created_at": {
+    "traces": "ADR-097",
+    "note": "Unix seconds when the server was added."
+  },
+  "jellyfin_servers.last_connected_at": {
+    "traces": "ADR-097",
+    "note": "Unix seconds of the last successful ping. Written by the connection monitor. Null until the first success."
+  },
+  "jellyfin_metadata_cache.server_id": {
+    "traces": "ADR-097",
+    "note": "jellyfin_servers.id as text. No foreign key; deleteCache(serverID:) clears a removed server's rows."
+  },
+  "jellyfin_metadata_cache.entity_kind": {
+    "traces": "ADR-097",
+    "note": "Kind of cached payload (album, artist, song list and so on). Part of the key."
+  },
+  "jellyfin_metadata_cache.entity_id": {
+    "traces": "ADR-097",
+    "note": "Jellyfin item id as text. Part of the key."
+  },
+  "jellyfin_metadata_cache.payload_json": {
+    "traces": "ADR-097",
+    "note": "Encoded Jellyfin* model snapshot, shown while the server is offline. Re-fetchable."
+  },
+  "jellyfin_metadata_cache.fetched_at": {
+    "traces": "ADR-097",
+    "note": "Unix seconds of the fetch. Reads ignore rows older than 7 days and pruneStaleCache() deletes them at launch."
   }
 }

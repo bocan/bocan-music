@@ -89,6 +89,7 @@ public struct Migrator {
         M052ArtistMusicBrainzIDSource.register(in: &dm)
         M053SyncTranscodes.register(in: &dm)
         M054PodcastEpisodeChapters.register(in: &dm)
+        M055JellyfinServers.register(in: &dm)
     }
 
     // MARK: - Migration
