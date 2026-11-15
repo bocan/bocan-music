@@ -385,6 +385,16 @@ Reading defaults reads the release app's preferences only.
 
 **Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinSDKClient.swift`
 
+### Every value in the Jellyfin `Authorization` header must be plain ASCII
+
+**Problem:** a Jellyfin server "lost" its sign-in: the status dot turned orange a minute after signing in, after a restart, and while browsing, with "Sign-in no longer accepted". The server had not revoked anything. A script with the same token got 200 for minutes.
+
+**Rule:** every value the module hands the SDK for the header (client name, device name, device id, version) goes through `JellyfinClientIdentity.headerSafe`: typographic characters become ASCII ("’" becomes "'"), and anything else outside printable ASCII, plus `,`, `=` and `"`, is dropped. Keep the wire test in `JellyfinAuthorizationHeaderTests` that makes 25 requests and checks that every header holds all five fields in ASCII.
+
+**Why:** the SDK builds the header from a Swift dictionary (`PassthroughAPIClientDelegate.authorizationHeaders`), with unquoted values and a new field order on every request. CFNetwork cuts a header off at its first non-ASCII byte. A computer name such as "Chris’s MacBook Pro" (U+2019) therefore dropped whichever fields followed it on that request: the token on about half of all requests (401), and `Client` on some sign-ins (400). The monitor takes one 401 as a revoked token and stops, so one unlucky ping was enough. Images kept loading because they carry the token in the URL. To see what really goes on the wire, point a client at `nc -l 127.0.0.1 8999` with a fake user; the opt-in `JellyfinLiveProbeTests` checks a real server.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinClientProtocol.swift`
+
 ## Testing
 
 ### The XCUITest runner is sandboxed no matter what the project says

@@ -10,21 +10,46 @@ import Foundation
 // MARK: - JellyfinClientIdentity
 
 /// What the client tells the server about itself.
+///
+/// Every value goes into the `Authorization` header, so every value must be
+/// plain ASCII with no `,`, `=` or `"`. The SDK builds that header from a
+/// dictionary, without quotes and in a different field order on each request,
+/// and CFNetwork cuts a header off at its first non-ASCII byte. A computer name
+/// such as "Chris’s MacBook Pro" (U+2019) therefore dropped whichever fields
+/// happened to follow it, the token included: about half of all requests got a
+/// 401, and the monitor took the first one as a revoked sign-in. See
+/// docs/GOTCHAS.md, "Jellyfin (ADR-097)".
 struct JellyfinClientIdentity: Sendable, Equatable {
     /// ASCII app name, shown on the server's Devices page. Always "Bocan".
     var client: String
-    /// The Mac's computer name. It goes only to the server the user chose.
+    /// The Mac's computer name, made header-safe. It goes only to the server the user chose.
     var deviceName: String
-    /// The app version, from the bundle.
+    /// The app version, from the bundle, made header-safe.
     var version: String
 
     static func current(bundle: Bundle = .main) -> Self {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         return Self(
             client: JellyfinService.clientName,
-            deviceName: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
-            version: version ?? "0"
+            deviceName: Self.headerSafe(Host.current().localizedName ?? ProcessInfo.processInfo.hostName, fallback: "Mac"),
+            version: Self.headerSafe(version ?? "0", fallback: "0")
         )
+    }
+
+    /// `text` as a value the SDK can put in its unquoted `Authorization` header:
+    /// letters with accents or typographic punctuation become their plain ASCII
+    /// form ("’" becomes "'", "é" becomes "e"), anything still outside printable
+    /// ASCII is dropped, and so are `,`, `=` and `"`, which would end the field
+    /// early. Runs of spaces collapse to one. An empty result gives `fallback`.
+    static func headerSafe(_ text: String, fallback: String) -> String {
+        let latin = text.applyingTransform(StringTransform("Any-Latin; Latin-ASCII"), reverse: false) ?? text
+        let kept = latin.unicodeScalars.filter { scalar in
+            scalar.value >= 0x20 && scalar.value < 0x7F && !",=\"".unicodeScalars.contains(scalar)
+        }
+        let collapsed = String(String.UnicodeScalarView(kept))
+            .split(separator: " ", omittingEmptySubsequences: true)
+            .joined(separator: " ")
+        return collapsed.isEmpty ? fallback : collapsed
     }
 }
 
