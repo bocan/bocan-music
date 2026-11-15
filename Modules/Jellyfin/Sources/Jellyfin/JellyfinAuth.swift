@@ -27,6 +27,20 @@ public struct JellyfinEndpoint: Sendable, Equatable {
     }
 }
 
+// MARK: - JellyfinAuthenticating
+
+/// What the add-server flow needs from the sign-in layer. `JellyfinAuth` is the
+/// one real implementation; the Settings tests pass a double so they need no network.
+public protocol JellyfinAuthenticating: Sendable {
+    func probe(_ endpoint: JellyfinEndpoint) async throws -> JellyfinServerInfo
+    func quickConnectAvailable(_ endpoint: JellyfinEndpoint) async -> Bool
+    func signIn(_ endpoint: JellyfinEndpoint, username: String, password: String) async throws -> JellyfinSession
+    func quickConnect(
+        _ endpoint: JellyfinEndpoint,
+        policy: JellyfinQuickConnectPolicy
+    ) -> AsyncThrowingStream<JellyfinQuickConnectEvent, Error>
+}
+
 // MARK: - JellyfinAuth
 
 /// Everything that happens before a server has a token: probing it, signing in
@@ -35,7 +49,7 @@ public struct JellyfinEndpoint: Sendable, Equatable {
 /// The password is passed straight to the server and is never stored or logged.
 /// The result is a `JellyfinSession`, which `JellyfinServerStore` writes to the
 /// Keychain.
-public struct JellyfinAuth: Sendable {
+public struct JellyfinAuth: JellyfinAuthenticating {
     typealias ClientFactory = @Sendable (JellyfinClientConfiguration) -> any JellyfinAuthClientProtocol
     typealias Sleeper = @Sendable (Duration) async throws -> Void
 

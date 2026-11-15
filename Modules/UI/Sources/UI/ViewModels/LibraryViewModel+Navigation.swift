@@ -59,9 +59,12 @@ extension LibraryViewModel {
              .subsonicPlaylists, .subsonicPlaylist, .subsonicStarred,
              .subsonicRandom, .subsonicRecentlyAdded, .subsonicMostPlayed,
              .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks,
-             .subsonicArtist, .subsonicAlbum:
-            // Per-server Subsonic destinations manage their own loading via
-            // dedicated view models. Nothing to fan out here.
+             .subsonicArtist, .subsonicAlbum,
+             .jellyfinRoot, .jellyfinSongs, .jellyfinAlbums, .jellyfinArtists, .jellyfinGenres,
+             .jellyfinPlaylists, .jellyfinStarred, .jellyfinRandom, .jellyfinRecentlyAdded,
+             .jellyfinMostPlayed:
+            // Per-server Subsonic and Jellyfin (ADR-097) destinations manage their
+            // own loading via dedicated view models. Nothing to fan out here.
             break
 
         case .podcasts, .podcastDownloads:

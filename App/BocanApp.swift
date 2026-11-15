@@ -625,6 +625,8 @@ struct AppGraph {
     let subsonicStore: SubsonicServerStore
     let subsonicService: SubsonicService
     let subsonicSettingsViewModel: SubsonicSettingsViewModel
+    /// ADR-097: the Settings -> Sources -> Jellyfin view model.
+    let jellyfinSettingsViewModel: JellyfinSettingsViewModel
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
     let logConsoleViewModel: LogConsoleViewModel
@@ -821,6 +823,8 @@ extension BocanApp {
         let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
         let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
         let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore, service: subsonicService)
+        // ADR-097: the whole Jellyfin graph, built in one place.
+        let jellyfin = JellyfinWiring.make(database: db)
 
         // Build the scrobble service before the player so the sink can be wired in.
         let scrobbleParts = Self.makeScrobble(
@@ -960,6 +964,7 @@ extension BocanApp {
             subsonicAnnotationDelivery: subsonicAnnotations,
             subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor),
+            jellyfin: jellyfin.sourceModel,
             podcastLibrary: podcastService,
             podcastActions: podcastActions,
             podcastSearch: podcastSearch,
@@ -1067,6 +1072,7 @@ extension BocanApp {
         // ADR-004 audit H1: re-open FSEvent streams after the system wakes.
         Self.installLibraryWakeObserver(scanner: scanner)
         Self.installSubsonicWakeObserver(monitor: subsonicMonitor)
+        jellyfin.installWakeObserver()
 
         // ADR-004 audit M1: kick off the FSEvents watcher at app launch (gated on
         // the `library.watchForChanges` preference).
@@ -1128,6 +1134,9 @@ extension BocanApp {
                 lvm: lvm
             )
         }
+        // ADR-097: the same for Jellyfin. The sidebar reload at its end is the
+        // idempotent catch-all that `JellyfinSourceModel.bootstrapServers` also runs.
+        Task { await jellyfin.hydrate() }
 
         return AppGraph(
             database: db,
@@ -1147,6 +1156,7 @@ extension BocanApp {
             subsonicStore: subsonicStore,
             subsonicService: subsonicService,
             subsonicSettingsViewModel: subsonicSettingsViewModel,
+            jellyfinSettingsViewModel: jellyfin.settingsViewModel,
             settingsRouter: SettingsRouter(),
             logConsoleViewModel: LogConsoleViewModel(),
             syncServer: syncServer,

@@ -85,6 +85,25 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     /// `String` is the album's upstream Subsonic ID.
     case subsonicAlbum(UUID, String)
 
+    // MARK: - ADR-097 (Jellyfin)
+
+    //
+    // Per-server browse roots. The associated `UUID` is the
+    // `JellyfinServer.id`. Slice 3 adds the cases so the sidebar can tag its
+    // nine rows; the drill-downs (artist, album, playlist) come with the
+    // browse views in slice 4.
+
+    case jellyfinRoot(UUID)
+    case jellyfinSongs(UUID)
+    case jellyfinAlbums(UUID)
+    case jellyfinArtists(UUID)
+    case jellyfinGenres(UUID)
+    case jellyfinPlaylists(UUID)
+    case jellyfinStarred(UUID)
+    case jellyfinRandom(UUID)
+    case jellyfinRecentlyAdded(UUID)
+    case jellyfinMostPlayed(UUID)
+
     // MARK: - ADR-037 (Podcasts)
 
     /// The local Podcasts library root: Add bar + subscribed-shows grid.
@@ -128,6 +147,27 @@ public extension SidebarDestination {
              let .subsonicBookmarks(id),
              let .subsonicArtist(id, _),
              let .subsonicAlbum(id, _):
+            id
+
+        default:
+            nil
+        }
+    }
+
+    /// The Jellyfin server ID this destination targets, if any (ADR-097). The
+    /// twin of `subsonicServerID`.
+    var jellyfinServerID: UUID? {
+        switch self {
+        case let .jellyfinRoot(id),
+             let .jellyfinSongs(id),
+             let .jellyfinAlbums(id),
+             let .jellyfinArtists(id),
+             let .jellyfinGenres(id),
+             let .jellyfinPlaylists(id),
+             let .jellyfinStarred(id),
+             let .jellyfinRandom(id),
+             let .jellyfinRecentlyAdded(id),
+             let .jellyfinMostPlayed(id):
             id
 
         default:

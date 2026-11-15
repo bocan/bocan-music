@@ -61,8 +61,9 @@ public actor JellyfinServerStore {
     }
 
     /// Test seam: the same store with its own Keychain service name, so a test
-    /// never touches a real server's item.
-    init(repository: JellyfinServerRepository, keychainService: String) {
+    /// never touches a real server's item. Public so the Settings tests in `UI`
+    /// can run the add flow against their own service name. The app never calls it.
+    public init(repository: JellyfinServerRepository, keychainService: String) {
         self.repository = repository
         self.keychainService = keychainService
     }

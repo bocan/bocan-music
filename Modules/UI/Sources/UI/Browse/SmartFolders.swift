@@ -166,6 +166,33 @@ extension SidebarDestination {
 
         case .radio:
             L10n.string("Radio")
+
+        case .jellyfinSongs, .jellyfinRoot:
+            L10n.string("Songs")
+
+        case .jellyfinAlbums:
+            L10n.string("Albums")
+
+        case .jellyfinArtists:
+            L10n.string("Artists")
+
+        case .jellyfinGenres:
+            L10n.string("Genres")
+
+        case .jellyfinPlaylists:
+            L10n.string("Playlists")
+
+        case .jellyfinStarred:
+            L10n.string("Starred")
+
+        case .jellyfinRandom:
+            L10n.string("Random")
+
+        case .jellyfinRecentlyAdded:
+            L10n.string("Recently Added")
+
+        case .jellyfinMostPlayed:
+            L10n.string("Most Played")
         }
     }
 }

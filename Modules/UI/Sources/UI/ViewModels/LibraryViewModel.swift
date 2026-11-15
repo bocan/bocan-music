@@ -474,6 +474,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `nil` when no annotation delivery was supplied.
     public let subsonicAnnotations: SubsonicAnnotationCoordinator?
 
+    /// ADR-097: everything the window knows about Jellyfin servers. Its own
+    /// `ObservableObject`; this view model does not forward its changes, so the
+    /// Sidebar and the content pane observe it directly.
+    public let jellyfin: JellyfinSourceModel
+
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -492,6 +497,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
         subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
         subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil,
+        jellyfin: JellyfinSourceModel = JellyfinSourceModel(),
         podcastLibrary: (any PodcastLibraryDataSource)? = nil,
         podcastActions: (any PodcastActions)? = nil,
         podcastSearch: (any PodcastSearchProviding)? = nil,
@@ -509,6 +515,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicSidebarListing = subsonicSidebarListing
         self.subsonicCapabilityObserver = subsonicCapabilityObserver
         self.subsonicConnectionObserver = subsonicConnectionObserver
+        self.jellyfin = jellyfin
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.subsonicMetadataCache = subsonicMetadataCache

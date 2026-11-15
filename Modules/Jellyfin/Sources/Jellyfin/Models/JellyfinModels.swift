@@ -252,6 +252,14 @@ public struct JellyfinSession: Sendable {
     public let userID: String
     public let username: String
     let accessToken: String
+
+    /// Creates a session. Only a sign-in makes one in the app; the initialiser is
+    /// public so a test double for `JellyfinAuthenticating` can return one.
+    public init(userID: String, username: String, accessToken: String) {
+        self.userID = userID
+        self.username = username
+        self.accessToken = accessToken
+    }
 }
 
 // MARK: - JellyfinQuickConnectEvent

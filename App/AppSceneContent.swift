@@ -32,6 +32,7 @@ struct SettingsWindowContent: View {
                 backupViewModel: graph.backupSettingsViewModel,
                 scrobbleViewModel: graph.scrobbleSettingsViewModel,
                 subsonicViewModel: graph.subsonicSettingsViewModel,
+                jellyfinViewModel: graph.jellyfinSettingsViewModel,
                 phoneSyncViewModel: graph.phoneSyncSettingsViewModel
             )
             .environment(graph.dspViewModel)

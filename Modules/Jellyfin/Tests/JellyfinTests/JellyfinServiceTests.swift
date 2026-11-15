@@ -230,6 +230,25 @@ struct JellyfinServiceTests {
         #expect(harness.stub.calls.value == ["signOut"])
     }
 
+    @Test("removing a server ends its token, deletes the row and drops the client")
+    func removeServerEndsTheSession() async throws {
+        let harness = try await self.makeHarness()
+        try await harness.service.removeServer(id: harness.serverID)
+        #expect(harness.stub.calls.value == ["signOut"])
+        #expect(try await harness.repository.fetch(id: harness.serverID) == nil)
+        await #expect(throws: JellyfinError.unknownServer(harness.serverID)) {
+            try await harness.service.ping(serverID: harness.serverID)
+        }
+    }
+
+    @Test("a server that refuses the sign-out is still removed")
+    func removeServerSurvivesARefusedSignOut() async throws {
+        let harness = try await self.makeHarness()
+        harness.stub.onSignOut = { throw JellyfinError.http(status: 500) }
+        try await harness.service.removeServer(id: harness.serverID)
+        #expect(try await harness.repository.fetch(id: harness.serverID) == nil)
+    }
+
     // MARK: Flags
 
     @Test("the syncStars and scrobble flags are read from the row")

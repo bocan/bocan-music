@@ -363,7 +363,21 @@ public struct ContentPane: View {
 
         case .radio:
             RadioView(library: self.vm, searchQuery: self.vm.searchQuery)
+
+        case .jellyfinRoot, .jellyfinSongs, .jellyfinAlbums, .jellyfinArtists, .jellyfinGenres,
+             .jellyfinPlaylists, .jellyfinStarred, .jellyfinRandom, .jellyfinRecentlyAdded,
+             .jellyfinMostPlayed:
+            // ADR-097 slice 3 adds the rows; the browse views arrive in slice 4.
+            self.jellyfinBrowsePending
         }
+    }
+
+    private var jellyfinBrowsePending: some View {
+        ContentUnavailableView(
+            L10n.string("Jellyfin Browsing Is Not Ready"),
+            systemImage: "hourglass",
+            description: Text(localized: "This server is added. Its music views are not built yet.")
+        )
     }
 
     private var subsonicUnavailable: some View {

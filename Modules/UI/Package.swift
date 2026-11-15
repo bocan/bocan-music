@@ -31,6 +31,7 @@ let package = Package(
         .package(path: "../Acoustics"),
         .package(path: "../Scrobble"),
         .package(path: "../Subsonic"),
+        .package(path: "../Jellyfin"),
         .package(
             url: "https://github.com/MathieuDubart/swiftsonic.git",
             from: "0.9.1"
@@ -52,6 +53,7 @@ let package = Package(
                 .product(name: "Acoustics", package: "Acoustics"),
                 .product(name: "Scrobble", package: "Scrobble"),
                 .product(name: "Subsonic", package: "Subsonic"),
+                .product(name: "Jellyfin", package: "Jellyfin"),
                 .product(name: "SwiftSonic", package: "swiftsonic"),
             ],
             resources: [
@@ -85,6 +87,7 @@ let package = Package(
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Library", package: "Library"),
                 .product(name: "Subsonic", package: "Subsonic"),
+                .product(name: "Jellyfin", package: "Jellyfin"),
                 .product(name: "SwiftSonic", package: "swiftsonic"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],

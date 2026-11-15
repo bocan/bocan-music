@@ -41,7 +41,7 @@ Current internal-module dependencies:
 | Library       | Observability, Persistence, Metadata, Acoustics                                           | GRDB (playlists, smart-playlist SQL compiler) |
 | Playback      | Observability, Persistence, AudioEngine                                                   |                                              |
 | Scrobble      | Observability, Persistence, Playback                                                      | GRDB (the scrobble queue repository)         |
-| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
+| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Jellyfin, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
 | App           | UI, Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Jellyfin, Acoustics, Podcasts, SyncServer (all declared in `project.yml`; UI does not pull in Podcasts or SyncServer) | Metadata (the E2E fixture seeder only)       |
 
 The first column lists direct manifest edges only. A module may also import a package that one of its declared dependencies owns: GRDB through `Persistence`, `Metadata` through `Library`. The version floor stays in the owning module's manifest and nowhere else, so a dependency bump has one place to change. Such an import is recorded in the second column; an import that no declared dependency owns is an error.

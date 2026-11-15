@@ -82,6 +82,15 @@ public actor JellyfinService {
         self.log.debug("jellyfin.service.client.remove", ["id": serverID.uuidString])
     }
 
+    /// Removes a server for good: asks it to end this device's token first (best
+    /// effort), then deletes the row, the Keychain item and the cached metadata,
+    /// and drops the client. A server that cannot be reached never blocks the removal.
+    public func removeServer(id: UUID) async throws {
+        await self.endSession(serverID: id)
+        try await self.store.remove(id: id)
+        self.removeClient(for: id)
+    }
+
     // MARK: - System
 
     /// Makes an authenticated round trip; throws `JellyfinError` on failure.
