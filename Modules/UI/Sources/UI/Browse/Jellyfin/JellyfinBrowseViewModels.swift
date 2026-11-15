@@ -52,8 +52,11 @@ public enum JellyfinSongsSource: String, Sendable, Hashable {
 
 /// Drives the per-server Songs, Random and Most Played destinations (ADR-097).
 ///
-/// Unlike Subsonic, Jellyfin can page through every song, so Songs is the real
-/// list and not a sample. Random and Most Played are one request each.
+/// Jellyfin pages through every song with `StartIndex` and `Limit`, so Songs is
+/// the whole library, in order. (The Subsonic Songs view in this app shows a
+/// random sample, because it was built on `getRandomSongs`; that is a choice of
+/// that view, not a limit of the Subsonic API.) Random and Most Played are one
+/// request each.
 @MainActor
 public final class JellyfinSongsViewModel: JellyfinSongListModel {
     public static let pageSize = 100
