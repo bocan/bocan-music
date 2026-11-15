@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Jellyfin
 import Observability
 
 // MARK: - JellyfinSidebarServer
@@ -82,19 +83,41 @@ public final class JellyfinSourceModel: ObservableObject {
     /// destination is restored, as `subsonicBootstrap` does.
     public var bootstrap: (@Sendable () async -> Void)?
 
+    /// What the browse views ask for their data. `nil` without the Jellyfin
+    /// module wired in (tests, snapshots): the views then show their empty state.
+    public let dataSource: (any JellyfinBrowseDataSource)?
+
+    /// Resolves cover-art URLs for the browse views. `nil` when not wired in.
+    public let coverArtProvider: JellyfinCoverArtProvider?
+
+    /// The metadata cache the browse view models hydrate from. The protocol is
+    /// the Subsonic one, which carries nothing Subsonic specific.
+    public let metadataCache: (any SubsonicMetadataCaching)?
+
+    /// Cross-server search, shown by the Jellyfin Songs, Albums and Artists views
+    /// while the search field has text. `nil` when there is no data source.
+    public let search: JellyfinMultiSourceSearchViewModel?
+
     private let listing: (any JellyfinSidebarListing)?
     private let connectionObserver: (any JellyfinConnectionObserving)?
     private var connectionTask: Task<Void, Never>?
     private let log = AppLogger.make(.ui)
 
-    /// Both parameters are `nil` in tests and snapshots that run without the
+    /// Every parameter is `nil` in tests and snapshots that run without the
     /// Jellyfin module wired in; every method is then a no-op.
     public init(
         listing: (any JellyfinSidebarListing)? = nil,
-        connectionObserver: (any JellyfinConnectionObserving)? = nil
+        connectionObserver: (any JellyfinConnectionObserving)? = nil,
+        dataSource: (any JellyfinBrowseDataSource)? = nil,
+        coverArtProvider: JellyfinCoverArtProvider? = nil,
+        metadataCache: (any SubsonicMetadataCaching)? = nil
     ) {
         self.listing = listing
         self.connectionObserver = connectionObserver
+        self.dataSource = dataSource
+        self.coverArtProvider = coverArtProvider
+        self.metadataCache = metadataCache
+        self.search = dataSource.map { JellyfinMultiSourceSearchViewModel(dataSource: $0) }
         self.observeConnectionChanges()
     }
 

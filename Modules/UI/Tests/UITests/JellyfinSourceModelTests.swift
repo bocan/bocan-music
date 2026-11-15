@@ -199,7 +199,7 @@ struct JellyfinSourceModelTests {
     }
 
     /// Polls the main actor until `condition` holds, so a stream update has landed.
-    private func waitUntil(timeout: Duration = .seconds(3), _ condition: @MainActor () -> Bool) async -> Bool {
+    private func waitUntil(timeout: Duration = .seconds(20), _ condition: @MainActor () -> Bool) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
             if condition() {

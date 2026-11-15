@@ -34,7 +34,10 @@ struct JellyfinWiring {
         let listing = JellyfinStoreSidebarListing(store: store, service: service, monitor: monitor)
         let sourceModel = JellyfinSourceModel(
             listing: listing,
-            connectionObserver: JellyfinMonitorConnectionObserver(monitor: monitor)
+            connectionObserver: JellyfinMonitorConnectionObserver(monitor: monitor),
+            dataSource: service,
+            coverArtProvider: JellyfinCoverArtProvider(service: service),
+            metadataCache: JellyfinRepositoryMetadataCache(repository: repository)
         )
         // A persisted Jellyfin destination must find its client before the window
         // restores it, so RootView runs this ahead of `restoreUIState`.

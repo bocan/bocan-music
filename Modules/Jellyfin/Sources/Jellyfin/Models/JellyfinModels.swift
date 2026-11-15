@@ -7,7 +7,7 @@ import Foundation
 // MARK: - JellyfinSong
 
 /// One music track.
-public struct JellyfinSong: Sendable, Hashable, Identifiable {
+public struct JellyfinSong: Sendable, Hashable, Identifiable, Codable {
     public let id: String
     public var title: String
     public var artistName: String?
@@ -68,7 +68,7 @@ public struct JellyfinSong: Sendable, Hashable, Identifiable {
 // MARK: - JellyfinAlbum
 
 /// One music album.
-public struct JellyfinAlbum: Sendable, Hashable, Identifiable {
+public struct JellyfinAlbum: Sendable, Hashable, Identifiable, Codable {
     public let id: String
     public var title: String
     public var artistName: String?
@@ -111,7 +111,7 @@ public struct JellyfinAlbum: Sendable, Hashable, Identifiable {
 // MARK: - JellyfinArtist
 
 /// One artist.
-public struct JellyfinArtist: Sendable, Hashable, Identifiable {
+public struct JellyfinArtist: Sendable, Hashable, Identifiable, Codable {
     public let id: String
     public var name: String
     public var albumCount: Int?
@@ -139,7 +139,7 @@ public struct JellyfinArtist: Sendable, Hashable, Identifiable {
 // MARK: - JellyfinGenre
 
 /// One music genre.
-public struct JellyfinGenre: Sendable, Hashable, Identifiable {
+public struct JellyfinGenre: Sendable, Hashable, Identifiable, Codable {
     public let id: String
     public var name: String
     public var songCount: Int?
@@ -156,7 +156,7 @@ public struct JellyfinGenre: Sendable, Hashable, Identifiable {
 // MARK: - JellyfinPlaylist
 
 /// One audio playlist.
-public struct JellyfinPlaylist: Sendable, Hashable, Identifiable {
+public struct JellyfinPlaylist: Sendable, Hashable, Identifiable, Codable {
     public let id: String
     public var name: String
     public var songCount: Int?

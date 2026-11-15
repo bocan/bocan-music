@@ -104,6 +104,11 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case jellyfinRecentlyAdded(UUID)
     case jellyfinMostPlayed(UUID)
 
+    /// Drill-downs (slice 4). The `String` is the item's Jellyfin id, kept as sent.
+    case jellyfinPlaylist(UUID, String)
+    case jellyfinArtist(UUID, String)
+    case jellyfinAlbum(UUID, String)
+
     // MARK: - ADR-037 (Podcasts)
 
     /// The local Podcasts library root: Add bar + subscribed-shows grid.
@@ -167,7 +172,10 @@ public extension SidebarDestination {
              let .jellyfinStarred(id),
              let .jellyfinRandom(id),
              let .jellyfinRecentlyAdded(id),
-             let .jellyfinMostPlayed(id):
+             let .jellyfinMostPlayed(id),
+             let .jellyfinPlaylist(id, _),
+             let .jellyfinArtist(id, _),
+             let .jellyfinAlbum(id, _):
             id
 
         default:

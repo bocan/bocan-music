@@ -855,6 +855,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 guard let self else { return }
                 Task { await self.loadCurrentDestination() }
                 self.subsonicSearch?.search(query: query, servers: self.subsonicServers)
+                self.jellyfin.search?.search(query: query, servers: self.jellyfin.servers)
             }
     }
 
@@ -1133,7 +1134,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         switch destination {
         case .album, .artist, .playlist, .smartPlaylist, .folder,
              .genre, .composer, .podcastShow,
-             .subsonicAlbum, .subsonicArtist:
+             .subsonicAlbum, .subsonicArtist,
+             .jellyfinAlbum, .jellyfinArtist, .jellyfinPlaylist:
             self.searchQuery = ""
 
         default:

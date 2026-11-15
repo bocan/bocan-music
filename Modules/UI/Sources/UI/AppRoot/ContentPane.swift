@@ -61,6 +61,8 @@ public struct ContentPane: View {
                         state: state
                     ) { Task { await self.vm.retrySubsonicConnection(serverID: serverID) } }
                 }
+                // ADR-097: the same for a Jellyfin server, with "Sign in again" for a refused token.
+                JellyfinOfflineBannerHost(model: self.vm.jellyfin, destination: self.vm.selectedDestination)
             }
             .environment(\.subsonicAnnotationCoordinator, self.vm.subsonicAnnotations)
     }
@@ -366,18 +368,10 @@ public struct ContentPane: View {
 
         case .jellyfinRoot, .jellyfinSongs, .jellyfinAlbums, .jellyfinArtists, .jellyfinGenres,
              .jellyfinPlaylists, .jellyfinStarred, .jellyfinRandom, .jellyfinRecentlyAdded,
-             .jellyfinMostPlayed:
-            // ADR-097 slice 3 adds the rows; the browse views arrive in slice 4.
-            self.jellyfinBrowsePending
+             .jellyfinMostPlayed, .jellyfinPlaylist, .jellyfinArtist, .jellyfinAlbum:
+            // ADR-097: every Jellyfin destination goes to one switch in its own file.
+            JellyfinDestinationView(destination: self.vm.selectedDestination, library: self.vm)
         }
-    }
-
-    private var jellyfinBrowsePending: some View {
-        ContentUnavailableView(
-            L10n.string("Jellyfin Browsing Is Not Ready"),
-            systemImage: "hourglass",
-            description: Text(localized: "This server is added. Its music views are not built yet.")
-        )
     }
 
     private var subsonicUnavailable: some View {

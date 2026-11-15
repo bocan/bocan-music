@@ -193,6 +193,15 @@ extension SidebarDestination {
 
         case .jellyfinMostPlayed:
             L10n.string("Most Played")
+
+        case .jellyfinPlaylist:
+            L10n.string("Playlist")
+
+        case .jellyfinArtist:
+            L10n.string("Artist")
+
+        case .jellyfinAlbum:
+            L10n.string("Album")
         }
     }
 }
