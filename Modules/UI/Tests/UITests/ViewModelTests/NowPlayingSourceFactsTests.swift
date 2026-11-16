@@ -242,4 +242,18 @@ struct NowPlayingSourceFactsViewModelTests {
         }
         #expect(vm.sourceFacts == nil)
     }
+
+    @Test("a streamed song's file gives rate, channels and bitrate, and the decoder still names the codec (ADR-097)")
+    func streamedFileFacts() {
+        let file = NowPlayingSourceFacts(file: LoadedFileFacts(sampleRateHz: 44100, channelCount: 2, bitrateKbps: 320))
+        #expect(file.sampleRateHz == 44100)
+        #expect(file.channelCount == 2)
+        #expect(file.bitrateKbps == 320)
+        #expect(file.codec == nil, "only the decoder names the codec")
+        #expect(file.bitDepth == nil, "a compressed file header cannot give it")
+
+        let merged = file.merging(NowPlayingSourceFacts(details: nil, codec: "mp3"))
+        #expect(merged.codec == "mp3")
+        #expect(merged.bitrateKbps == 320)
+    }
 }

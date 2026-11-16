@@ -358,6 +358,12 @@ public actor QueuePlayer: Transport {
         get async { await self.engine.currentCodec }
     }
 
+    /// Facts about the local file the engine plays (ADR-097 slice 7). The
+    /// strip shows them for a streamed song, which has no library row.
+    public var currentFileFacts: LoadedFileFacts? {
+        get async { await self.engine.currentFileFacts }
+    }
+
     /// Re-emits a live ICY title while the current item is internet radio:
     /// once to the UI stream, once to `MPNowPlayingInfoCenter` with the
     /// station name moved into the artist slot.

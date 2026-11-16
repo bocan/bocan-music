@@ -44,6 +44,11 @@ public protocol Transport: Sendable {
     /// decoder route; nil when nothing is loaded or the decoder cannot say
     /// (ADR-092). Defaulted for the same reason as `currentStreamDetails`.
     var currentCodec: String? { get async }
+
+    /// Facts about the local file the current decoder plays (ADR-097 slice
+    /// 7); nil for a network source. Defaulted for the same reason as
+    /// `currentStreamDetails`.
+    var currentFileFacts: LoadedFileFacts? { get async }
 }
 
 /// Default so conformers without an FFmpeg decoder (tests, simple mocks)
@@ -56,6 +61,11 @@ public extension Transport {
 
     /// By default a transport cannot name the codec it is playing.
     var currentCodec: String? {
+        get async { nil }
+    }
+
+    /// By default a transport knows nothing about the file it plays.
+    var currentFileFacts: LoadedFileFacts? {
         get async { nil }
     }
 }

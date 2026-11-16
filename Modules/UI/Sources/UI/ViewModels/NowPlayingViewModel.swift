@@ -1041,13 +1041,24 @@ private extension NowPlayingViewModel {
     func refreshSourceFacts() async {
         let details = await self.engine.currentStreamDetails
         let codec = await self.engine.currentCodec
-        self.applySourceFacts(NowPlayingSourceFacts(details: details, codec: codec))
+        // A streamed song has no library columns, only the downloaded copy:
+        // its facts stand in for the columns (ADR-097 slice 7).
+        let fileFacts = self.isStreamedSong ? await self.engine.currentFileFacts : nil
+        self.applySourceFacts(NowPlayingSourceFacts(details: details, codec: codec), fileFacts: fileFacts)
+    }
+
+    /// True while a Subsonic or Jellyfin song is current: no library row, but
+    /// a whole local file in the stream cache. Radio and podcasts are left out.
+    var isStreamedSong: Bool {
+        self.nowPlayingSubsonicSongID != nil || self.nowPlayingJellyfinItemID != nil
     }
 
     /// Merges live decoder facts over the current item's columns, and leaves
-    /// `sourceFacts` nil when the two together say nothing.
-    func applySourceFacts(_ live: NowPlayingSourceFacts) {
-        let merged = (self.trackSourceFacts ?? NowPlayingSourceFacts()).merging(live)
+    /// `sourceFacts` nil when the two together say nothing. For a streamed
+    /// song `fileFacts` fills the place of the columns.
+    func applySourceFacts(_ live: NowPlayingSourceFacts, fileFacts: LoadedFileFacts? = nil) {
+        let base = self.trackSourceFacts ?? fileFacts.map(NowPlayingSourceFacts.init(file:)) ?? NowPlayingSourceFacts()
+        let merged = base.merging(live)
         self.sourceFacts = merged.isEmpty ? nil : merged
     }
 }
