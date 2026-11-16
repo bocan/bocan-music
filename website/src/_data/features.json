@@ -53,7 +53,7 @@
   },
   {
     "title": "Plays your other library too.",
-    "body": "Subsonic, Navidrome, Airsonic. As many servers as you like, federated search across the ones you include, per-server status dots, offline banners with one-tap retry, and <kbd>⌘⇧1</kbd>–<kbd>⌘⇧9</kbd> to expand or collapse a server in the sidebar. Plays through the same gapless engine as your local files."
+    "body": "Subsonic, Navidrome, Airsonic and Jellyfin. As many servers as you like, federated search across the ones you include, per-server status dots, offline banners with one-tap retry, and <kbd>⌘⇧1</kbd>–<kbd>⌘⇧9</kbd> to expand or collapse a server in the sidebar. Plays through the same gapless engine as your local files."
   },
   {
     "title": "Podcasts that keep up.",

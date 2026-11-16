@@ -42,5 +42,24 @@
     "url": "https://github.com/MathieuDubart/swiftsonic",
     "license": "MIT",
     "purpose": "Subsonic / Navidrome / Airsonic API client."
+  },
+  {
+    "name": "Jellyfin SDK for Swift",
+    "url": "https://github.com/jellyfin/jellyfin-sdk-swift",
+    "license": "MPL 2.0",
+    "source": "https://github.com/jellyfin/jellyfin-sdk-swift",
+    "purpose": "Jellyfin server client."
+  },
+  {
+    "name": "Get",
+    "url": "https://github.com/kean/Get",
+    "license": "MIT",
+    "purpose": "HTTP client underneath the Jellyfin SDK."
+  },
+  {
+    "name": "SwiftNIO and SwiftNIO Transport Services",
+    "url": "https://github.com/apple/swift-nio",
+    "license": "Apache 2.0",
+    "purpose": "Networking underneath the Jellyfin SDK, with Swift Atomics, Swift Collections and Swift System."
   }
 ]

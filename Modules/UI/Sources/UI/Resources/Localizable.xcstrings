@@ -3231,6 +3231,17 @@
         }
       }
     },
+    "Adding a Jellyfin server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđíñĝ á Ĵéĺĺýƒíñ šéŕvéŕ one two"
+          }
+        }
+      }
+    },
     "Adding a server" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4829,6 +4840,17 @@
         }
       }
     },
+    "Browsing a Jellyfin server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ɓŕóŵšíñĝ á Ĵéĺĺýƒíñ šéŕvéŕ one two"
+          }
+        }
+      }
+    },
     "Browsing episodes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4978,6 +5000,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ɓòçáñ ƥĺáýš áĺĺ ƒóŕḿáţš šúƥƥóŕţéđ ƀý ḿáçÓŠ Çóŕé Áúđíó ƥĺúš áđđíţíóñáĺ ƒóŕḿáţš víá íţš ƀúíĺţ-íñ ƑƑḿƥéĝ éñĝíñé. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "Bòcan plays the music on a Jellyfin server alongside your local library and your Subsonic servers." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ɓòçáñ ƥĺáýš ţĥé ḿúšíç óñ á Ĵéĺĺýƒíñ šéŕvéŕ áĺóñĝšíđé ýóúŕ ĺóçáĺ ĺíƀŕáŕý áñđ ýóúŕ Šúƀšóñíç šéŕvéŕš. one two three four five six seven"
           }
         }
       }
@@ -9461,6 +9494,17 @@
         }
       }
     },
+    "Each Jellyfin server has its own sidebar section under your Subsonic servers: Songs, Albums, Artists, Genres, Playlists, Starred, Random, Recently Added and Most Played. The status dots, the offline banner with Retry now, and the server shortcuts work as they do for Subsonic servers." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éáçĥ Ĵéĺĺýƒíñ šéŕvéŕ ĥáš íţš óŵñ šíđéƀáŕ šéçţíóñ úñđéŕ ýóúŕ Šúƀšóñíç šéŕvéŕš: Šóñĝš, Áĺƀúḿš, Áŕţíšţš, Ĝéñŕéš, Ƥĺáýĺíšţš, Šţáŕŕéđ, Ŕáñđóḿ, Ŕéçéñţĺý Áđđéđ áñđ Ḿóšţ Ƥĺáýéđ. Ţĥé šţáţúš đóţš, ţĥé óƒƒĺíñé ƀáññéŕ ŵíţĥ Ŕéţŕý ñóŵ, áñđ ţĥé šéŕvéŕ šĥóŕţçúţš ŵóŕķ áš ţĥéý đó ƒóŕ Šúƀšóñíç šéŕvéŕš. one two three four five six seven eight nine ten one two three four five six seven eight"
+          }
+        }
+      }
+    },
     "Each server has its own sidebar section: Songs, Albums, Artists, Genres, Playlists, Starred, Random, Recently Added and Most Played, plus Internet Radio, Podcasts and Bookmarks when the server supports them. Bòcan checks what a server supports at launch, at most once a day, and when you click Test Connection in Settings → Sources." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9479,6 +9523,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Éáçĥ šéŕvéŕ íñ ţĥé šíđéƀáŕ šĥóŵš íţš šţáţé: á šƥíññéŕ = çóññéçţíñĝ, ĝŕééñ = óñĺíñé, óŕáñĝé = áúţĥéñţíçáţíóñ ƒáíĺéđ, ŕéđ = úñŕéáçĥáƀĺé óŕ šéŕvéŕ éŕŕóŕ, ĝŕéý = ñóţ çĥéçķéđ ýéţ. Évéŕý đóţ ĥáš á VóíçéÓvéŕ ĺáƀéĺ áññóúñçíñĝ ţĥé šéŕvéŕ ñáḿé áñđ çúŕŕéñţ šţáţé. one two three four five six seven eight nine ten one two three four five six"
+          }
+        }
+      }
+    },
+    "Each song downloads completely before it starts, so seeking is exact. In the server's settings you can ask for MP3, Opus, AAC or FLAC instead of the original file, cap the bitrate, and fetch the next song in the queue while one plays." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éáçĥ šóñĝ đóŵñĺóáđš çóḿƥĺéţéĺý ƀéƒóŕé íţ šţáŕţš, šó šééķíñĝ íš éxáçţ. Íñ ţĥé šéŕvéŕ'š šéţţíñĝš ýóú çáñ ášķ ƒóŕ ḾƤ3, Óƥúš, ÁÁÇ óŕ ƑĹÁÇ íñšţéáđ óƒ ţĥé óŕíĝíñáĺ ƒíĺé, çáƥ ţĥé ƀíţŕáţé, áñđ ƒéţçĥ ţĥé ñéxţ šóñĝ íñ ţĥé qúéúé ŵĥíĺé óñé ƥĺáýš. one two three four five six seven eight nine ten one two three four five"
           }
         }
       }
@@ -10456,6 +10511,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƒáíĺéđ ţó ĺóáđ ƥóđçášţ đéţáíĺš. one two three"
+          }
+        }
+      }
+    },
+    "Favourites" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒávóúŕíţéš one"
           }
         }
       }
@@ -12422,6 +12488,17 @@
         }
       }
     },
+    "If the server stops accepting the saved sign-in, for example after the device is removed in the Jellyfin dashboard, the server's dot turns orange and the banner offers Sign in again. It opens Settings → Sources, where you sign in once more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Íƒ ţĥé šéŕvéŕ šţóƥš áççéƥţíñĝ ţĥé šávéđ šíĝñ-íñ, ƒóŕ éxáḿƥĺé áƒţéŕ ţĥé đévíçé íš ŕéḿóvéđ íñ ţĥé Ĵéĺĺýƒíñ đášĥƀóáŕđ, ţĥé šéŕvéŕ'š đóţ ţúŕñš óŕáñĝé áñđ ţĥé ƀáññéŕ óƒƒéŕš Šíĝñ íñ áĝáíñ. Íţ óƥéñš Šéţţíñĝš → Šóúŕçéš, ŵĥéŕé ýóú šíĝñ íñ óñçé ḿóŕé. one two three four five six seven eight nine ten one two three four five"
+          }
+        }
+      }
+    },
     "Ignored" : {
       "localizations" : {
         "en" : {
@@ -12971,6 +13048,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ĵážž one"
+          }
+        }
+      }
+    },
+    "Jellyfin Servers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĵéĺĺýƒíñ Šéŕvéŕš one two"
           }
         }
       }
@@ -17082,6 +17170,17 @@
         }
       }
     },
+    "Open Bòcan → Settings… → Sources, choose Jellyfin in the switch at the top, then click Add Server. Enter the server URL (including http:// or https://) and click Test Server. Sign in with your user name and password, or click Use Quick Connect and enter the code it shows in a Jellyfin app where you are already signed in. Bòcan keeps only a sign-in token in your Keychain, never the password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñ Ɓòçáñ → Šéţţíñĝš… → Šóúŕçéš, çĥóóšé Ĵéĺĺýƒíñ íñ ţĥé šŵíţçĥ áţ ţĥé ţóƥ, ţĥéñ çĺíçķ Áđđ Šéŕvéŕ. Éñţéŕ ţĥé šéŕvéŕ ÚŔĹ (íñçĺúđíñĝ ĥţţƥ:// óŕ ĥţţƥš://) áñđ çĺíçķ Ţéšţ Šéŕvéŕ. Šíĝñ íñ ŵíţĥ ýóúŕ úšéŕ ñáḿé áñđ ƥáššŵóŕđ, óŕ çĺíçķ Úšé Qúíçķ Çóññéçţ áñđ éñţéŕ ţĥé çóđé íţ šĥóŵš íñ á Ĵéĺĺýƒíñ áƥƥ ŵĥéŕé ýóú áŕé áĺŕéáđý šíĝñéđ íñ. Ɓòçáñ ķééƥš óñĺý á šíĝñ-íñ ţóķéñ íñ ýóúŕ Ķéýçĥáíñ, ñévéŕ ţĥé ƥáššŵóŕđ. one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three four five"
+          }
+        }
+      }
+    },
     "Open Bòcan → Settings… → Sources, then click Add Server. Enter the server URL (including https://), a username, and a password. Credentials are stored in the macOS Keychain; the password is never written to the library or to preferences. You can add more than one Subsonic, Navidrome, or Airsonic server." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18356,6 +18455,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƥĺáý ĥíšţóŕý one"
+          }
+        }
+      }
+    },
+    "Play reports" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥĺáý ŕéƥóŕţš one"
           }
         }
       }
@@ -20460,6 +20570,17 @@
         }
       }
     },
+    "Removing a Jellyfin server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéḿóvíñĝ á Ĵéĺĺýƒíñ šéŕvéŕ one two"
+          }
+        }
+      }
+    },
     "Rename" : {
       "comment" : "A button that renames a playlist folder.",
       "isCommentAutoGenerated" : true,
@@ -21858,6 +21979,17 @@
         }
       }
     },
+    "Searching your Jellyfin servers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šéáŕçĥíñĝ ýóúŕ Ĵéĺĺýƒíñ šéŕvéŕš one two three"
+          }
+        }
+      }
+    },
     "Searching…" : {
       "localizations" : {
         "en" : {
@@ -22041,6 +22173,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šéĺéçţ óñé óŕ ḿóŕé ţŕáçķš áñđ ƥŕéšš ⌘Í, óŕ çĥóóšé Ţŕáçķ → Ĝéţ Íñƒó. Ţĥé éđíţóŕ ĺéţš ýóú úƥđáţé ţáĝš, áŕţŵóŕķ, áñđ ĺýŕíçš ƒóŕ á šíñĝĺé ţŕáçķ óŕ íñ ƀúĺķ. one two three four five six seven eight nine ten"
+          }
+        }
+      }
+    },
+    "Select the server in Settings → Sources and click Remove. Bòcan asks the server to end the sign-in, then deletes the token, the downloaded songs and the saved server details." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šéĺéçţ ţĥé šéŕvéŕ íñ Šéţţíñĝš → Šóúŕçéš áñđ çĺíçķ Ŕéḿóvé. Ɓòçáñ ášķš ţĥé šéŕvéŕ ţó éñđ ţĥé šíĝñ-íñ, ţĥéñ đéĺéţéš ţĥé ţóķéñ, ţĥé đóŵñĺóáđéđ šóñĝš áñđ ţĥé šávéđ šéŕvéŕ đéţáíĺš. one two three four five six seven eight nine ten one"
           }
         }
       }
@@ -23067,6 +23210,17 @@
         }
       }
     },
+    "Signing in again" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šíĝñíñĝ íñ áĝáíñ one two"
+          }
+        }
+      }
+    },
     "Single" : {
       "localizations" : {
         "en-XA" : {
@@ -23919,6 +24073,17 @@
         }
       }
     },
+    "Starring a song, in the star column or from the right-click menu, marks it as a favourite on the server, so the Jellyfin apps show it too. With Sync starred items switched off in the server's settings, a star is not sent and is lost when you quit." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţáŕŕíñĝ á šóñĝ, íñ ţĥé šţáŕ çóĺúḿñ óŕ ƒŕóḿ ţĥé ŕíĝĥţ-çĺíçķ ḿéñú, ḿáŕķš íţ áš á ƒávóúŕíţé óñ ţĥé šéŕvéŕ, šó ţĥé Ĵéĺĺýƒíñ áƥƥš šĥóŵ íţ ţóó. Ŵíţĥ Šýñç šţáŕŕéđ íţéḿš šŵíţçĥéđ óƒƒ íñ ţĥé šéŕvéŕ'š šéţţíñĝš, á šţáŕ íš ñóţ šéñţ áñđ íš ĺóšţ ŵĥéñ ýóú qúíţ. one two three four five six seven eight nine ten one two three four five six"
+          }
+        }
+      }
+    },
     "Starring a track or setting a 1–5 star rating writes back to the server via the standard Subsonic star and setRating calls. Changes appear on the server immediately and survive a relaunch." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -24399,6 +24564,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šţŕéáḿíñĝ áñđ šçŕóƀƀĺíñĝ one two"
+          }
+        }
+      }
+    },
+    "Streaming from Jellyfin" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţŕéáḿíñĝ ƒŕóḿ Ĵéĺĺýƒíñ one two"
           }
         }
       }
@@ -26268,6 +26444,17 @@
         }
       }
     },
+    "Type in the search field in a Jellyfin server's Songs, Albums or Artists view. Bòcan searches every Jellyfin server that has Include in global search switched on, and each result shows which server it is from." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţýƥé íñ ţĥé šéáŕçĥ ƒíéĺđ íñ á Ĵéĺĺýƒíñ šéŕvéŕ'š Šóñĝš, Áĺƀúḿš óŕ Áŕţíšţš víéŵ. Ɓòçáñ šéáŕçĥéš évéŕý Ĵéĺĺýƒíñ šéŕvéŕ ţĥáţ ĥáš Íñçĺúđé íñ ĝĺóƀáĺ šéáŕçĥ šŵíţçĥéđ óñ, áñđ éáçĥ ŕéšúĺţ šĥóŵš ŵĥíçĥ šéŕvéŕ íţ íš ƒŕóḿ. one two three four five six seven eight nine ten one two three"
+          }
+        }
+      }
+    },
     "UPPERCASE" : {
       "localizations" : {
         "en-XA" : {
@@ -27422,6 +27609,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŵíķíƥéđíá one"
+          }
+        }
+      }
+    },
+    "With Scrobble to this server switched on, Bòcan tells the server when a song starts and when it ends, so its play counts and listening history stay current. The same plays also go to the scrobbling services you connected under Settings → Scrobbling." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŵíţĥ Šçŕóƀƀĺé ţó ţĥíš šéŕvéŕ šŵíţçĥéđ óñ, Ɓòçáñ ţéĺĺš ţĥé šéŕvéŕ ŵĥéñ á šóñĝ šţáŕţš áñđ ŵĥéñ íţ éñđš, šó íţš ƥĺáý çóúñţš áñđ ĺíšţéñíñĝ ĥíšţóŕý šţáý çúŕŕéñţ. Ţĥé šáḿé ƥĺáýš áĺšó ĝó ţó ţĥé šçŕóƀƀĺíñĝ šéŕvíçéš ýóú çóññéçţéđ úñđéŕ Šéţţíñĝš → Šçŕóƀƀĺíñĝ. one two three four five six seven eight nine ten one two three four five six"
           }
         }
       }

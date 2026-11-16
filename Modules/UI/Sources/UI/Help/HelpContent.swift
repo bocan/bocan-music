@@ -8,6 +8,7 @@ enum HelpSection: String, CaseIterable, Hashable {
     case podcasts = "Podcasts"
     case internetRadio = "Internet Radio"
     case subsonic = "Subsonic Servers"
+    case jellyfin = "Jellyfin Servers"
     case shortcuts = "Keyboard Shortcuts"
     case mouseButtons = "Mouse Buttons"
     case formats = "Supported Formats"
@@ -26,6 +27,7 @@ enum HelpSection: String, CaseIterable, Hashable {
         .podcasts: "mic",
         .internetRadio: "dot.radiowaves.left.and.right",
         .subsonic: "server.rack",
+        .jellyfin: "server.rack",
         .shortcuts: "keyboard",
         .mouseButtons: "computermouse",
         .formats: "music.note.list",
@@ -287,6 +289,63 @@ enum HelpContent {
         ),
     ]
 
+    static let jellyfinIntro = "Bòcan plays the music on a Jellyfin server alongside your local library"
+        + " and your Subsonic servers."
+
+    static let jellyfin: [HelpTopic] = [
+        HelpTopic(
+            title: "Adding a Jellyfin server",
+            body: "Open Bòcan → Settings… → Sources, choose Jellyfin in the switch at the top, then"
+                + " click Add Server. Enter the server URL (including http:// or https://) and click"
+                + " Test Server. Sign in with your user name and password, or click Use Quick Connect"
+                + " and enter the code it shows in a Jellyfin app where you are already signed in."
+                + " Bòcan keeps only a sign-in token in your Keychain, never the password."
+        ),
+        HelpTopic(
+            title: "Signing in again",
+            body: "If the server stops accepting the saved sign-in, for example after the device is"
+                + " removed in the Jellyfin dashboard, the server's dot turns orange and the banner"
+                + " offers Sign in again. It opens Settings → Sources, where you sign in once more."
+        ),
+        HelpTopic(
+            title: "Browsing a Jellyfin server",
+            body: "Each Jellyfin server has its own sidebar section under your Subsonic servers:"
+                + " Songs, Albums, Artists, Genres, Playlists, Starred, Random, Recently Added and"
+                + " Most Played. The status dots, the offline banner with Retry now, and the"
+                + " server shortcuts work as they do for Subsonic servers."
+        ),
+        HelpTopic(
+            title: "Searching your Jellyfin servers",
+            body: "Type in the search field in a Jellyfin server's Songs, Albums or Artists view."
+                + " Bòcan searches every Jellyfin server that has Include in global search switched on,"
+                + " and each result shows which server it is from."
+        ),
+        HelpTopic(
+            title: "Favourites",
+            body: "Starring a song, in the star column or from the right-click menu, marks it as a"
+                + " favourite on the server, so the Jellyfin apps show it too. With Sync starred items"
+                + " switched off in the server's settings, a star is not sent and is lost when you quit."
+        ),
+        HelpTopic(
+            title: "Streaming from Jellyfin",
+            body: "Each song downloads completely before it starts, so seeking is exact. In the"
+                + " server's settings you can ask for MP3, Opus, AAC or FLAC instead of the original"
+                + " file, cap the bitrate, and fetch the next song in the queue while one plays."
+        ),
+        HelpTopic(
+            title: "Play reports",
+            body: "With Scrobble to this server switched on, Bòcan tells the server when a song starts"
+                + " and when it ends, so its play counts and listening history stay current. The same"
+                + " plays also go to the scrobbling services you connected under Settings → Scrobbling."
+        ),
+        HelpTopic(
+            title: "Removing a Jellyfin server",
+            body: "Select the server in Settings → Sources and click Remove. Bòcan asks the server to"
+                + " end the sign-in, then deletes the token, the downloaded songs and the saved"
+                + " server details."
+        ),
+    ]
+
     static let formatsIntro = "Bòcan plays all formats supported by macOS Core Audio"
         + " plus additional formats via its built-in FFmpeg engine."
 
@@ -317,6 +376,7 @@ enum HelpContent {
         .podcasts: podcasts,
         .internetRadio: internetRadio,
         .subsonic: subsonic,
+        .jellyfin: jellyfin,
         .mouseButtons: mouseButtons,
     ]
 
@@ -327,6 +387,7 @@ enum HelpContent {
 
     private static let intros: [HelpSection: String] = [
         .subsonic: subsonicIntro,
+        .jellyfin: jellyfinIntro,
         .formats: formatsIntro,
     ]
 
@@ -337,7 +398,7 @@ enum HelpContent {
             keys.append(topic.title)
             keys.append(topic.body)
         }
-        keys += [self.subsonicIntro, self.formatsIntro, self.formatsTags, HelpShortcuts.spaceKey]
+        keys += [self.subsonicIntro, self.jellyfinIntro, self.formatsIntro, self.formatsTags, HelpShortcuts.spaceKey]
         for group in HelpShortcuts.groups {
             keys.append(group.title)
             keys += group.shortcuts.map(\.action)
