@@ -41,14 +41,21 @@ public actor ScrobbleQueueRepository {
                 arguments: [trackID, Int(playedAt.timeIntervalSince1970)]
             )
             guard let queueID else { return nil }
-            for pid in providerIDs {
-                try db.execute(sql: """
-                INSERT OR IGNORE INTO scrobble_submissions
-                  (queue_id, provider_id, status, attempts)
-                VALUES (?, ?, 'pending', 0)
-                """, arguments: [queueID, pid])
-            }
+            try Self.insertPendingSubmissions(db, queueID: queueID, providerIDs: providerIDs)
             return queueID
+        }
+    }
+
+    /// Adds a `pending` submission row per provider for one queue row. `OR
+    /// IGNORE` keeps a repeated enqueue of the same play from adding a second
+    /// row. Every enqueue (local, Subsonic, Jellyfin) ends with this.
+    static func insertPendingSubmissions(_ db: GRDB.Database, queueID: Int64, providerIDs: [String]) throws {
+        for pid in providerIDs {
+            try db.execute(sql: """
+            INSERT OR IGNORE INTO scrobble_submissions
+              (queue_id, provider_id, status, attempts)
+            VALUES (?, ?, 'pending', 0)
+            """, arguments: [queueID, pid])
         }
     }
 
@@ -93,13 +100,7 @@ public actor ScrobbleQueueRepository {
                 arguments: [serverIDString, songID, playedAtEpoch]
             )
             guard let queueID else { return nil }
-            for pid in providerIDs {
-                try db.execute(sql: """
-                INSERT OR IGNORE INTO scrobble_submissions
-                  (queue_id, provider_id, status, attempts)
-                VALUES (?, ?, 'pending', 0)
-                """, arguments: [queueID, pid])
-            }
+            try Self.insertPendingSubmissions(db, queueID: queueID, providerIDs: providerIDs)
             return queueID
         }
     }

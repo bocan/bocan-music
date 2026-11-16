@@ -52,13 +52,7 @@ public extension ScrobbleQueueRepository {
                 arguments: [serverIDString, itemID, playedAtEpoch]
             )
             guard let queueID else { return nil }
-            for pid in providerIDs {
-                try db.execute(sql: """
-                INSERT OR IGNORE INTO scrobble_submissions
-                  (queue_id, provider_id, status, attempts)
-                VALUES (?, ?, 'pending', 0)
-                """, arguments: [queueID, pid])
-            }
+            try Self.insertPendingSubmissions(db, queueID: queueID, providerIDs: providerIDs)
             return queueID
         }
     }
