@@ -19,12 +19,22 @@ struct JellyfinPlaybackWiringTests {
     @Test("the player gets a Jellyfin resolver built from its own stream cache folder")
     func playerGetsTheResolver() throws {
         let app = try self.source("App/BocanApp.swift")
-        #expect(app.contains("jellyfin.makeStreamResolver(cachesFolder:"))
+        #expect(app.contains("jellyfin.makeStreamResolver("))
         #expect(app.contains("jellyfinResolver: jellyfinStreamResolver"))
+        // Slice 9: an E2E run streams into its own home, never the real Caches.
+        #expect(app.contains("cachesFolder: E2EEnvironment.jellyfinCachesFolder ??"))
 
         let wiring = try self.source("App/JellyfinWiring.swift")
         #expect(wiring.contains("\"JellyfinStreams\""), "Jellyfin streams need their own folder, apart from SubsonicStreams")
         #expect(wiring.contains("log.error(\"jellyfin.streamCache.initFailed\""))
+    }
+
+    @Test("an E2E run keeps its Jellyfin token under its own Keychain service (ADR-097 slice 9)")
+    func e2eKeepsItsOwnKeychainService() throws {
+        let wiring = try self.source("App/JellyfinWiring.swift")
+        #expect(wiring.contains("if let service = E2EEnvironment.jellyfinKeychainService"))
+        let environment = try self.source("App/E2EEnvironment.swift")
+        #expect(environment.contains("self.isActive ? \"io.cloudcauldron.bocan.jellyfin.e2e\" : nil"))
     }
 
     @Test("removing a server clears that server's stream cache folder")

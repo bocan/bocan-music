@@ -55,6 +55,7 @@ struct JellyfinSidebarRows: View {
                     .padding(.leading, 18)
                     .tag(row.destination)
                     .accessibilityLabel(row.label)
+                    .accessibilityIdentifier(A11y.Jellyfin.sidebarRow(row.key))
             }
         }
     }
@@ -64,28 +65,37 @@ struct JellyfinSidebarRows: View {
         let destination: SidebarDestination
         let symbol: String
         let label: String
+        /// The end of the row's accessibility identifier, `sidebar.jellyfin.<key>`.
+        let key: String
     }
 
     /// The nine rows of a Jellyfin server, with the Subsonic icons. A Jellyfin
     /// server has no Internet Radio, Podcasts or Bookmarks row.
     static func rows(for id: UUID) -> [Row] {
         [
-            Row(destination: .jellyfinSongs(id), symbol: "music.note", label: L10n.string("Songs")),
-            Row(destination: .jellyfinAlbums(id), symbol: "square.grid.2x2", label: L10n.string("Albums")),
-            Row(destination: .jellyfinArtists(id), symbol: "music.mic", label: L10n.string("Artists")),
-            Row(destination: .jellyfinGenres(id), symbol: "tag", label: L10n.string("Genres")),
-            Row(destination: .jellyfinPlaylists(id), symbol: "music.note.list", label: L10n.string("Playlists")),
-            Row(destination: .jellyfinStarred(id), symbol: "star", label: L10n.string("Starred")),
-            Row(destination: .jellyfinRandom(id), symbol: "shuffle", label: L10n.string("Random")),
+            Row(destination: .jellyfinSongs(id), symbol: "music.note", label: L10n.string("Songs"), key: "songs"),
+            Row(destination: .jellyfinAlbums(id), symbol: "square.grid.2x2", label: L10n.string("Albums"), key: "albums"),
+            Row(destination: .jellyfinArtists(id), symbol: "music.mic", label: L10n.string("Artists"), key: "artists"),
+            Row(destination: .jellyfinGenres(id), symbol: "tag", label: L10n.string("Genres"), key: "genres"),
+            Row(
+                destination: .jellyfinPlaylists(id),
+                symbol: "music.note.list",
+                label: L10n.string("Playlists"),
+                key: "playlists"
+            ),
+            Row(destination: .jellyfinStarred(id), symbol: "star", label: L10n.string("Starred"), key: "starred"),
+            Row(destination: .jellyfinRandom(id), symbol: "shuffle", label: L10n.string("Random"), key: "random"),
             Row(
                 destination: .jellyfinRecentlyAdded(id),
                 symbol: "clock.badge.checkmark",
-                label: L10n.string("Recently Added")
+                label: L10n.string("Recently Added"),
+                key: "recentlyAdded"
             ),
             Row(
                 destination: .jellyfinMostPlayed(id),
                 symbol: "chart.line.uptrend.xyaxis",
-                label: L10n.string("Most Played")
+                label: L10n.string("Most Played"),
+                key: "mostPlayed"
             ),
         ]
     }
@@ -117,6 +127,7 @@ struct JellyfinSidebarRows: View {
         .buttonStyle(.plain)
         .help(L10n.string("\(server.name) (\(state.displayLabel))"))
         .accessibilityLabel(server.name)
+        .accessibilityIdentifier(A11y.Jellyfin.sidebarServer)
         .accessibilityValue(L10n.string(
             "\(state.displayLabel). \(binding.wrappedValue ? L10n.string("Expanded") : L10n.string("Collapsed"))"
         ))

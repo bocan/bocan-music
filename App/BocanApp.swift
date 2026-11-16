@@ -877,7 +877,10 @@ extension BocanApp {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
         // ADR-097: the same for Jellyfin, in its own `JellyfinStreams` folder.
-        let jellyfinStreamResolver = jellyfin.makeStreamResolver(cachesFolder: streamCacheDir.deletingLastPathComponent())
+        // An E2E run puts it in the run's own home instead (slice 9).
+        let jellyfinStreamResolver = jellyfin.makeStreamResolver(
+            cachesFolder: E2EEnvironment.jellyfinCachesFolder ?? streamCacheDir.deletingLastPathComponent()
+        )
 
         // ADR-042: build a PodcastService and adapt it to the player's
         // PodcastEpisodeResolving seam so .podcast queue items can play,

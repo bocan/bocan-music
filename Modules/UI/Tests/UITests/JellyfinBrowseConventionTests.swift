@@ -45,15 +45,26 @@ struct JellyfinBrowseConventionTests {
         ]
         let settings = try files.map { try self.source($0) }.joined(separator: "\n")
         let ids = try self.source("Accessibility/A11yIdentifiers+Jellyfin.swift")
-        let names = ids.split(separator: "\n").compactMap { line -> String? in
+        // Only the Settings enum: the browse enum above it is used elsewhere.
+        let settingsBlock = try #require(ids.components(separatedBy: "enum JellyfinSettings").last)
+        let settingsNames = settingsBlock.split(separator: "\n").compactMap { line -> String? in
             guard let range = line.range(of: "public static let ") else { return nil }
             return line[range.upperBound...].split(separator: " ").first.map(String.init)
         }
-        let settingsNames = names.filter { $0 != "songTable" }
         #expect(settingsNames.count >= 20)
         for name in settingsNames {
             #expect(settings.contains("A11y.JellyfinSettings.\(name))"), "A11y.JellyfinSettings.\(name) is never applied")
         }
+    }
+
+    @Test("the server row and its nine rows carry identifiers, which the E2E journey clicks (ADR-097 slice 9)")
+    func sidebarRowsAreIdentified() throws {
+        let keys = JellyfinSidebarRows.rows(for: UUID()).map(\.key)
+        #expect(keys.count == 9)
+        #expect(Set(keys).count == keys.count)
+        let rows = try self.source("AppRoot/JellyfinSidebarRows.swift")
+        #expect(rows.contains(".accessibilityIdentifier(A11y.Jellyfin.sidebarRow(row.key))"))
+        #expect(rows.contains(".accessibilityIdentifier(A11y.Jellyfin.sidebarServer)"))
     }
 
     @Test("no Jellyfin browse file swallows an error with try?")

@@ -7,6 +7,16 @@ public extension A11y {
     enum Jellyfin {
         /// The Jellyfin browse song table (an `NSTableView`).
         public static let songTable = "jellyfinSongsTable"
+        /// A Jellyfin server's disclosure row in the sidebar (slice 9). The
+        /// same for every server: the E2E journey adds only one.
+        public static let sidebarServer = "sidebar.jellyfin.server"
+
+        /// One of the nine rows under a Jellyfin server, by its key
+        /// (`songs`, `albums`, ...). Without an identifier a tag-selected
+        /// List row is not in the accessibility tree at all (ADR-081).
+        public static func sidebarRow(_ key: String) -> String {
+            "sidebar.jellyfin.\(key)"
+        }
     }
 
     /// Identifiers in Settings, Sources (ADR-097 slice 7). The identifier audit

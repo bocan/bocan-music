@@ -29,7 +29,12 @@ struct JellyfinWiring {
     @MainActor
     static func make(database: Database) -> Self {
         let repository = JellyfinServerRepository(database: database)
-        let store = JellyfinServerStore(repository: repository)
+        // An E2E run keeps its token under its own Keychain service (slice 9).
+        let store = if let service = E2EEnvironment.jellyfinKeychainService {
+            JellyfinServerStore(repository: repository, keychainService: service)
+        } else {
+            JellyfinServerStore(repository: repository)
+        }
         let service = JellyfinService(store: store)
         let monitor = JellyfinConnectionMonitor(service: service)
         let listing = JellyfinStoreSidebarListing(store: store, service: service, monitor: monitor)
