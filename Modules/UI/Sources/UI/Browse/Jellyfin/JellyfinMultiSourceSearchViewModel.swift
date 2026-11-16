@@ -79,7 +79,6 @@ public final class JellyfinMultiSourceSearchViewModel: ObservableObject {
     /// How the soft timeout waits. A test replaces it so the race between a
     /// server's answer and the deadline never depends on how busy the machine is.
     private let sleep: @Sendable (Duration) async throws -> Void
-    private let log = AppLogger.make(.ui)
     private var currentTask: Task<Void, Never>?
 
     public init(

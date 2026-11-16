@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Testing
 @testable import UI
@@ -192,6 +193,32 @@ struct JellyfinSourceModelTests {
         #expect(await self.waitUntil { model.connectionStates[id] == .online })
         await model.retryConnection(serverID: id)
         #expect(retries.value == [id])
+        continuation?.finish()
+    }
+
+    @Test("an unchanged state from the 60 s ping does not publish, so the sidebar does not redraw")
+    func unchangedStateDoesNotPublish() async {
+        let id = UUID()
+        let sentinel = UUID()
+        var continuation: AsyncStream<(UUID, SubsonicSidebarConnectionState)>.Continuation?
+        let updates = AsyncStream<(UUID, SubsonicSidebarConnectionState)> { continuation = $0 }
+        let model = JellyfinSourceModel(
+            listing: nil,
+            connectionObserver: StubObserver(snapshot: [:], updates: updates, retries: Locked([]))
+        )
+        continuation?.yield((id, .online))
+        #expect(await self.waitUntil { model.connectionStates[id] == .online })
+
+        let publishes = Locked(0)
+        let subscription = model.objectWillChange.sink { _ in publishes.update { $0 += 1 } }
+        for _ in 0 ..< 3 {
+            continuation?.yield((id, .online))
+        }
+        // The stream is in order, so once the sentinel lands the repeats have too.
+        continuation?.yield((sentinel, .online))
+        #expect(await self.waitUntil { model.connectionStates[sentinel] == .online })
+        #expect(publishes.value == 1, "only the sentinel's new state publishes")
+        subscription.cancel()
         continuation?.finish()
     }
 

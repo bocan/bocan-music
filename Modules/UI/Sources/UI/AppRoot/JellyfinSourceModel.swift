@@ -214,7 +214,11 @@ public final class JellyfinSourceModel: ObservableObject {
             self?.applySnapshot(snapshot)
             for await (serverID, state) in stream {
                 guard let self else { return }
-                self.connectionStates[serverID] = state
+                // The monitor reports "online" after every 60 s ping. Writing
+                // the same state would still publish and redraw the sidebar.
+                if self.connectionStates[serverID] != state {
+                    self.connectionStates[serverID] = state
+                }
             }
         }
     }

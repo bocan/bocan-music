@@ -30,6 +30,10 @@ public struct JellyfinSettingsView: View {
             }
         }
         .task { await self.vm.reload() }
+        // The view model lives as long as the app, so a Quick Connect wait
+        // would otherwise keep polling the server for up to its time limit
+        // after Settings closes (ADR-097, Gotchas).
+        .onDisappear { self.vm.cancelQuickConnect() }
     }
 
     /// Nothing to list and no draft in progress.

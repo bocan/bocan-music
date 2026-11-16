@@ -67,6 +67,12 @@ struct JellyfinBrowseConventionTests {
         #expect(rows.contains(".accessibilityIdentifier(A11y.Jellyfin.sidebarServer)"))
     }
 
+    @Test("leaving the Jellyfin settings page stops a Quick Connect wait")
+    func quickConnectStopsWithThePage() throws {
+        let view = try self.source("Settings/JellyfinSettingsView.swift")
+        #expect(view.contains(".onDisappear { self.vm.cancelQuickConnect() }"))
+    }
+
     @Test("no Jellyfin browse file swallows an error with try?")
     func noSwallowedErrors() throws {
         for file in try self.browseFiles() {
