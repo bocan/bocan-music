@@ -157,9 +157,9 @@ public struct Sidebar: View {
             ),
             titleVisibility: .visible,
             presenting: self.vm.subsonicServerPendingRemoval
-        ) { _ in
+        ) { server in
             Button(L10n.string("Remove Server"), role: .destructive) {
-                Task { await self.vm.confirmRemoveSubsonicServer() }
+                Task { await self.vm.confirmRemoveSubsonicServer(server) }
             }
             Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { _ in

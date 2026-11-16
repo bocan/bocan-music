@@ -792,18 +792,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Permanently removes the server currently queued in
-    /// `subsonicServerPendingRemoval` (set when the user confirms the sidebar's
-    /// "Remove…" dialog), then clears the pending state and reloads the sidebar.
+    /// Permanently removes `server`, the one the sidebar's "Remove…" dialog
+    /// presented, then clears the pending state and reloads the sidebar.
     /// Deletes the server, its in-memory client, and its Keychain credential via
     /// the injected listing (#306).
-    public func confirmRemoveSubsonicServer() async {
-        guard let server = self.subsonicServerPendingRemoval,
-              let listing = self.subsonicSidebarListing else {
-            self.subsonicServerPendingRemoval = nil
-            return
-        }
+    ///
+    /// The dialog passes the server in. It must not be read back from
+    /// `subsonicServerPendingRemoval`: the dialog's dismissal clears that before
+    /// the button's task runs, so the removal silently did nothing (docs/GOTCHAS.md).
+    public func confirmRemoveSubsonicServer(_ server: SubsonicSidebarServer) async {
         self.subsonicServerPendingRemoval = nil
+        guard let listing = self.subsonicSidebarListing else { return }
         do {
             try await listing.removeServer(id: server.id)
             await self.reloadSubsonicServers()

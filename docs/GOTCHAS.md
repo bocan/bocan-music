@@ -156,7 +156,7 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Rule:** in `.confirmationDialog(_:isPresented:presenting:actions:)`, take the item from the `actions` closure parameter and pass it to the action (`{ server in Button(...) { Task { await model.confirmRemoveServer(server) } } }`). Never read it back from the pending property that drives `isPresented`.
 
-**Why:** the button's action runs, then SwiftUI dismisses the dialog through the `isPresented` binding, whose setter clears the pending property. The action only starts a `Task`, and that task runs after the setter, so a confirm method that reads the pending property finds nil and returns. Found by the ADR-097 slice 9 E2E journey. The Subsonic removal dialog in `Sidebar.swift` and `LibraryViewModel.confirmRemoveSubsonicServer()` uses the same pattern and is not changed yet.
+**Why:** the button's action runs, then SwiftUI dismisses the dialog through the `isPresented` binding, whose setter clears the pending property. The action only starts a `Task`, and that task runs after the setter, so a confirm method that reads the pending property finds nil and returns. Found by the ADR-097 slice 9 E2E journey. The Subsonic removal dialog had the same defect and is fixed the same way (`LibraryViewModel.confirmRemoveSubsonicServer(_:)`).
 
 **Canonical file:** `Modules/UI/Sources/UI/AppRoot/Sidebar.swift`
 

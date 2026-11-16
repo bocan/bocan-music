@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - If Bòcan cannot read one song in the Up Next queue it saved when you quit, it now leaves out only that song, not the whole queue.
 
+- Remove Server in the sidebar now removes a Subsonic server. Before, it closed the dialog and left the server in place.
+
 - A Subsonic server's saved password is no longer reported as missing when it is read directly after you save it.
 
 ## [2.24.0](https://github.com/bocan/bocan-music/compare/v2.23.0...v2.24.0) (2026-11-05)

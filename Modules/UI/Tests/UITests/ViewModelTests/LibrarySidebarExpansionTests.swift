@@ -129,24 +129,27 @@ struct LibrarySidebarExpansionTests {
         #expect(vm.subsonicServers == [server])
 
         vm.subsonicServerPendingRemoval = server
-        await vm.confirmRemoveSubsonicServer()
+        await vm.confirmRemoveSubsonicServer(server)
 
         #expect(listing.lastRemovedServerID == id)
         #expect(vm.subsonicServerPendingRemoval == nil, "pending state must clear after delete")
         #expect(vm.subsonicServers.isEmpty)
     }
 
-    @Test("confirmRemoveSubsonicServer is a no-op when nothing is staged (#306)")
-    func confirmRemoveNoOpWhenNothingStaged() async throws {
+    @Test("confirmRemoveSubsonicServer still removes when the dialog cleared the staging first, as its dismissal does")
+    func confirmRemoveAfterDialogDismissal() async throws {
         let server = SubsonicSidebarServer(id: UUID(), name: "Home", sortIndex: 0)
         let listing = MutableStubListing(servers: [server])
         let db = try await Database(location: .inMemory)
         let vm = LibraryViewModel(database: db, engine: MockTransport(), subsonicSidebarListing: listing)
         await vm.reloadSubsonicServers()
 
-        await vm.confirmRemoveSubsonicServer() // nothing staged
-        #expect(listing.lastRemovedServerID == nil, "no delete should happen with nothing staged")
-        #expect(vm.subsonicServers == [server])
+        vm.subsonicServerPendingRemoval = server
+        // The dialog's isPresented setter runs before the button's task.
+        vm.subsonicServerPendingRemoval = nil
+        await vm.confirmRemoveSubsonicServer(server)
+        #expect(listing.lastRemovedServerID == server.id)
+        #expect(vm.subsonicServers.isEmpty)
     }
 
     @Test("Capability change events trigger a sidebar reload")
