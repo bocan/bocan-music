@@ -29,7 +29,7 @@ extension QueuePlayer {
         let url = resolved.url
 
         // Fetch track metadata (for NowPlaying).
-        let track = await self.nowPlayingTrack(item.trackID)
+        let track = await self.nowPlayingTrack(for: item)
         self.emitCurrentTrack(track)
 
         await self.loadMarkers(for: item)
@@ -221,12 +221,17 @@ extension QueuePlayer {
     /// The track row behind the now-playing metadata, or nil with a log line:
     /// a failed read otherwise leaves the strip, the lock screen and the menu
     /// bar showing nothing, as though no track were loaded (#494).
-    func nowPlayingTrack(_ trackID: Int64) async -> Track? {
+    ///
+    /// A remote item (Subsonic, Jellyfin, podcast, radio) has no `tracks` row,
+    /// only the placeholder id -1, so it is not looked up: the read could only
+    /// fail, and its log line would be noise on every remote track.
+    func nowPlayingTrack(for item: QueueItem) async -> Track? {
+        guard !item.playableSource.isRemote else { return nil }
         do {
-            return try await self.trackRepo.fetch(id: trackID)
+            return try await self.trackRepo.fetch(id: item.trackID)
         } catch {
             self.log.warning("queueplayer.nowPlaying.trackLookupFailed", [
-                "trackID": trackID,
+                "trackID": item.trackID,
                 "error": String(reflecting: error),
             ])
             return nil

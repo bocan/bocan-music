@@ -205,7 +205,7 @@ extension QueuePlayer {
                 showName: item.artistName ?? "",
                 duration: item.duration
             ) { await capturedEngine.currentTime }
-        } else if let track = await self.nowPlayingTrack(item.trackID) {
+        } else if let track = await self.nowPlayingTrack(for: item) {
             self.emitCurrentTrack(track)
             let capturedEngine = self.engine
             let coverPath = await self.resolveCoverArtPath(for: track)

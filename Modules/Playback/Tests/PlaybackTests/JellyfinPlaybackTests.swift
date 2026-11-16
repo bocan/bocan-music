@@ -167,6 +167,21 @@ struct JellyfinQueuePlayerTests {
         #expect(await stub.resolveCalls.isEmpty)
     }
 
+    @Test("a remote item is never looked up in the tracks table, so no lookup failure is logged")
+    func remoteItemSkipsTrackLookup() async throws {
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: AudioEngine(), database: db)
+        #expect(await player.nowPlayingTrack(for: makeJellyfinItem(serverID: UUID(), itemID: "x")) == nil)
+        // The log line cannot be read back, so pin the guard that skips the read.
+        let file = URL(filePath: #filePath)
+            .deletingLastPathComponent() // PlaybackTests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/Playback/
+            .appendingPathComponent("Sources/Playback/QueuePlayer+Loading.swift")
+        let source = try String(contentsOf: file, encoding: .utf8)
+        #expect(source.contains("guard !item.playableSource.isRemote else { return nil }"))
+    }
+
     @Test("a Jellyfin item is not recorded against the placeholder track id")
     func noLocalHistoryForJellyfin() async throws {
         let db = try await Database(location: .inMemory)
