@@ -177,14 +177,16 @@ public final class JellyfinSourceModel: ObservableObject {
         }
     }
 
-    /// Removes the server queued in `serverPendingRemoval`, then clears the
-    /// pending state and reloads the lists.
-    public func confirmRemoveServer() async {
-        guard let server = self.serverPendingRemoval, let listing = self.listing else {
-            self.serverPendingRemoval = nil
-            return
-        }
+    /// Removes `server`, the one the confirmation dialog presented, then clears
+    /// the pending state and reloads the lists.
+    ///
+    /// The dialog passes the server in. It must not be read back from
+    /// `serverPendingRemoval`: the dialog's dismissal clears that before the
+    /// button's task runs, so the removal silently did nothing (found by the
+    /// slice 9 E2E journey).
+    public func confirmRemoveServer(_ server: JellyfinSidebarServer) async {
         self.serverPendingRemoval = nil
+        guard let listing = self.listing else { return }
         do {
             try await listing.removeServer(id: server.id)
             self.connectionStates[server.id] = nil

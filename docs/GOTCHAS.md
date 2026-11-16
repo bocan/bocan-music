@@ -150,6 +150,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Scripts/smoke-launch.sh` (the playback check that catches it) and `Modules/UI/Package.swift`
 
+### A confirmation dialog's button must use the item the dialog presents
+
+**Problem:** "Remove Server" in the sidebar's Jellyfin removal dialog closed the dialog and did nothing: the server, its token and its row all stayed. No error was logged. The unit tests passed, because they set the pending item and called the confirm method directly.
+
+**Rule:** in `.confirmationDialog(_:isPresented:presenting:actions:)`, take the item from the `actions` closure parameter and pass it to the action (`{ server in Button(...) { Task { await model.confirmRemoveServer(server) } } }`). Never read it back from the pending property that drives `isPresented`.
+
+**Why:** the button's action runs, then SwiftUI dismisses the dialog through the `isPresented` binding, whose setter clears the pending property. The action only starts a `Task`, and that task runs after the setter, so a confirm method that reads the pending property finds nil and returns. Found by the ADR-097 slice 9 E2E journey. The Subsonic removal dialog in `Sidebar.swift` and `LibraryViewModel.confirmRemoveSubsonicServer()` uses the same pattern and is not changed yet.
+
+**Canonical file:** `Modules/UI/Sources/UI/AppRoot/Sidebar.swift`
+
 ### A toolbar control must survive the overflow menu
 
 **Problem:** in a narrow window a segmented picker in the toolbar moves into the » overflow menu and shows there as bare checkmarks with no labels. Or it works once from the menu, and then the menu comes back without it.

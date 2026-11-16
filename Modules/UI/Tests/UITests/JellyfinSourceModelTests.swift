@@ -144,10 +144,24 @@ struct JellyfinSourceModelTests {
         let model = JellyfinSourceModel(listing: listing)
         await model.reloadServers()
         model.serverPendingRemoval = alpha
-        await model.confirmRemoveServer()
+        await model.confirmRemoveServer(alpha)
         #expect(model.serverPendingRemoval == nil)
         #expect(model.servers.map(\.id) == [beta.id])
         #expect(await listing.removed == [alpha.id])
+    }
+
+    @Test("the removal still happens when the dialog cleared the staging first, as its dismissal does")
+    func removalAfterDialogDismissal() async {
+        let alpha = server("A", index: 0)
+        let listing = StubListing(shown: [alpha])
+        let model = JellyfinSourceModel(listing: listing)
+        await model.reloadServers()
+        model.serverPendingRemoval = alpha
+        // The dialog's isPresented setter runs before the button's task.
+        model.serverPendingRemoval = nil
+        await model.confirmRemoveServer(alpha)
+        #expect(await listing.removed == [alpha.id])
+        #expect(model.servers.isEmpty)
     }
 
     @Test("a failed removal clears the staging and keeps the server in the list")
@@ -158,17 +172,9 @@ struct JellyfinSourceModelTests {
         let model = JellyfinSourceModel(listing: listing)
         await model.reloadServers()
         model.serverPendingRemoval = alpha
-        await model.confirmRemoveServer()
+        await model.confirmRemoveServer(alpha)
         #expect(model.serverPendingRemoval == nil)
         #expect(model.servers.map(\.id) == [alpha.id])
-    }
-
-    @Test("confirming with nothing staged removes nothing")
-    func nothingStaged() async {
-        let listing = StubListing(shown: [server("A", index: 0)])
-        let model = JellyfinSourceModel(listing: listing)
-        await model.confirmRemoveServer()
-        #expect(await listing.removed.isEmpty)
     }
 
     @Test("connection states start from the snapshot and follow the updates; retry reaches the observer")

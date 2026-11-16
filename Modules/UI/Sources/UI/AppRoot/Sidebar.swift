@@ -177,9 +177,9 @@ public struct Sidebar: View {
             ),
             titleVisibility: .visible,
             presenting: self.jellyfin.serverPendingRemoval
-        ) { _ in
+        ) { server in
             Button(L10n.string("Remove Server"), role: .destructive) {
-                Task { await self.jellyfin.confirmRemoveServer() }
+                Task { await self.jellyfin.confirmRemoveServer(server) }
             }
             Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { _ in
