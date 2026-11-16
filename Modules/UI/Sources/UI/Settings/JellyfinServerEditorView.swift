@@ -47,6 +47,7 @@ struct JellyfinServerEditorView: View {
     private var serverSection: some View {
         Section(L10n.string("Server")) {
             TextField(L10n.string("Display Name"), text: self.$vm.editor.name)
+                .accessibilityIdentifier(A11y.JellyfinSettings.displayName)
             TextField(
                 L10n.string("Server URL"),
                 text: self.$vm.editor.serverURLText,
@@ -54,12 +55,14 @@ struct JellyfinServerEditorView: View {
             )
             .textContentType(.URL)
             .autocorrectionDisabled(true)
+            .accessibilityIdentifier(A11y.JellyfinSettings.serverURL)
             Button(L10n.string("Test Server")) {
                 Task { await self.vm.testServer() }
             }
             .disabled(self.vm.isTesting || self.vm.editor.addressProblem != nil)
             .help(L10n.string("Ask the server for its name and version. It needs no sign-in."))
             .accessibilityLabel(L10n.string("Test the connection to this server"))
+            .accessibilityIdentifier(A11y.JellyfinSettings.testServer)
         }
     }
 
@@ -69,6 +72,7 @@ struct JellyfinServerEditorView: View {
                 .help(L10n.string(
                     "For a server whose certificate you issued yourself. It drops the check that you reached the right machine."
                 ))
+                .accessibilityIdentifier(A11y.JellyfinSettings.allowSelfSigned)
             if self.vm.editor.allowSelfSignedTLS {
                 Label(self.selfSignedWarning, systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
@@ -86,7 +90,9 @@ struct JellyfinServerEditorView: View {
             }
             TextField(L10n.string("User name"), text: self.$vm.editor.username)
                 .autocorrectionDisabled(true)
+                .accessibilityIdentifier(A11y.JellyfinSettings.username)
             SecureField(L10n.string("Password"), text: self.$vm.editor.password)
+                .accessibilityIdentifier(A11y.JellyfinSettings.password)
             Text(localized: "Bòcan does not keep the password. It keeps a sign-in token in your Keychain.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -98,6 +104,7 @@ struct JellyfinServerEditorView: View {
                 .keyboardShortcut(self.vm.editor.id == nil ? .defaultAction : nil)
                 .help(L10n.string("Sign in with this user name and password and add the server."))
                 .accessibilityLabel(L10n.string("Sign in to this server"))
+                .accessibilityIdentifier(A11y.JellyfinSettings.signIn)
 
                 Button(L10n.string("Use Quick Connect")) {
                     self.vm.startQuickConnect()
@@ -105,6 +112,7 @@ struct JellyfinServerEditorView: View {
                 .disabled(self.vm.isSigningIn || self.vm.editor.addressProblem != nil)
                 .help(L10n.string("Sign in without a password. You approve a code in a Jellyfin app where you are already signed in."))
                 .accessibilityLabel(L10n.string("Sign in with Quick Connect"))
+                .accessibilityIdentifier(A11y.JellyfinSettings.quickConnect)
             }
             if let code = self.vm.quickConnectCode {
                 self.quickConnectBlock(code: code)
@@ -126,6 +134,7 @@ struct JellyfinServerEditorView: View {
             }
             .help(L10n.string("Stop waiting for the code to be approved."))
             .accessibilityLabel(L10n.string("Cancel Quick Connect"))
+            .accessibilityIdentifier(A11y.JellyfinSettings.quickConnectCancel)
         }
     }
 
@@ -138,6 +147,7 @@ struct JellyfinServerEditorView: View {
             }
             .pickerStyle(.menu)
             .help(L10n.string("The format to ask for. Original plays the file as the server stores it, with no conversion."))
+            .accessibilityIdentifier(A11y.JellyfinSettings.preferredFormat)
 
             Picker(L10n.string("Maximum Bitrate"), selection: self.$vm.editor.bitrateKind) {
                 Text(localized: "No limit").tag(JellyfinSettingsViewModel.BitrateKind.original)
@@ -146,6 +156,7 @@ struct JellyfinServerEditorView: View {
             .pickerStyle(.segmented)
             .disabled(!self.vm.editor.isBitrateEnabled)
             .help(L10n.string("Asks the server to convert down to this ceiling. It needs a format other than Original."))
+            .accessibilityIdentifier(A11y.JellyfinSettings.bitrateKind)
 
             if self.vm.editor.bitrateKind == .kbps {
                 Picker(L10n.string("Bitrate"), selection: self.$vm.editor.bitrateKbps) {
@@ -156,6 +167,7 @@ struct JellyfinServerEditorView: View {
                 .pickerStyle(.menu)
                 .disabled(!self.vm.editor.isBitrateEnabled)
                 .help(L10n.string("The ceiling the server converts to. Lower values use less of your connection on the move."))
+                .accessibilityIdentifier(A11y.JellyfinSettings.bitrate)
             }
             if !self.vm.editor.isBitrateEnabled {
                 Text(localized: "The bitrate limit applies only when a format other than Original is chosen.")
@@ -167,6 +179,7 @@ struct JellyfinServerEditorView: View {
                 .help(L10n.string(
                     "Fetches the next track in the queue while the current one plays, so a slow connection cannot cause a gap."
                 ))
+                .accessibilityIdentifier(A11y.JellyfinSettings.precacheNext)
         }
     }
 
@@ -174,17 +187,21 @@ struct JellyfinServerEditorView: View {
         Section(L10n.string("Integration")) {
             Toggle(L10n.string("Include in global search"), isOn: self.$vm.editor.includeInGlobalSearch)
                 .help(L10n.string("Lets this server answer the search field, so its music appears alongside your local results."))
+                .accessibilityIdentifier(A11y.JellyfinSettings.includeInSearch)
             Toggle(L10n.string("Show in sidebar"), isOn: self.$vm.editor.showInSidebar)
                 .help(L10n.string("Lists this server in the sidebar. Switch it off to keep the server configured but out of the way."))
+                .accessibilityIdentifier(A11y.JellyfinSettings.showInSidebar)
             Toggle(L10n.string("Scrobble to this server"), isOn: self.$vm.editor.scrobble)
                 .help(L10n.string(
                     "Reports finished plays to this server's own listening history, as well as to any scrobbling service you use."
                 ))
+                .accessibilityIdentifier(A11y.JellyfinSettings.scrobble)
             Toggle(L10n.string("Sync starred items"), isOn: self.$vm.editor.syncStars)
                 .help(L10n
                     .string(
                         "Sends the stars you set here to the server as favourites. With it off, a star is not sent and is lost on quit."
                     ))
+                .accessibilityIdentifier(A11y.JellyfinSettings.syncStars)
         }
     }
 
@@ -198,6 +215,7 @@ struct JellyfinServerEditorView: View {
                     }
                     .help(L10n.string("Remove this server and its saved sign-in. The server is asked to end the sign-in too."))
                     .accessibilityLabel(L10n.string("Remove this server"))
+                    .accessibilityIdentifier(A11y.JellyfinSettings.remove)
 
                     Spacer()
 
@@ -208,6 +226,7 @@ struct JellyfinServerEditorView: View {
                     .disabled(self.vm.editor.saveProblem() != nil)
                     .help(L10n.string("Save changes to this server (\u{2318}\u{21A9})"))
                     .accessibilityLabel(L10n.string("Save server settings"))
+                    .accessibilityIdentifier(A11y.JellyfinSettings.save)
                 }
             }
         }

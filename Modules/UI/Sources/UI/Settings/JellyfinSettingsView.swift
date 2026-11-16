@@ -75,6 +75,7 @@ public struct JellyfinSettingsView: View {
                 }
                 .help(L10n.string("Add a new Jellyfin server"))
                 .accessibilityLabel(L10n.string("Add new Jellyfin server"))
+                .accessibilityIdentifier(A11y.JellyfinSettings.addServer)
 
                 Spacer()
 
@@ -84,6 +85,7 @@ public struct JellyfinSettingsView: View {
                 .disabled(self.vm.servers.isEmpty || self.vm.isTesting)
                 .help(L10n.string("Ping every configured server"))
                 .accessibilityLabel(L10n.string("Test all configured source connections"))
+                .accessibilityIdentifier(A11y.JellyfinSettings.testAll)
             }
             .padding(8)
         }
@@ -166,6 +168,7 @@ private struct JellyfinEmptyState: View {
             }
             .keyboardShortcut(.defaultAction)
             .help(L10n.string("Adds a Jellyfin server. You can add more than one and browse them side by side."))
+            .accessibilityIdentifier(A11y.JellyfinSettings.addServerEmpty)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()

@@ -45,6 +45,7 @@ struct SourcesSettingsPage: View {
                 .padding(10)
                 .help(L10n.string("Choose which kind of music server to set up."))
                 .accessibilityLabel(L10n.string("Server Type"))
+                .accessibilityIdentifier(A11y.JellyfinSettings.kindPicker)
                 Divider()
             }
             self.editor

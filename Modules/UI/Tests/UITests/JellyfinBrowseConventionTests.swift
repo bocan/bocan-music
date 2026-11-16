@@ -36,6 +36,26 @@ struct JellyfinBrowseConventionTests {
         }
     }
 
+    @Test("every Settings control for Jellyfin carries its identifier, the Sources switch included (ADR-097 slice 7)")
+    func settingsIdentifiersAreUsed() throws {
+        let files = [
+            "Settings/SourcesSettingsPage.swift",
+            "Settings/JellyfinSettingsView.swift",
+            "Settings/JellyfinServerEditorView.swift",
+        ]
+        let settings = try files.map { try self.source($0) }.joined(separator: "\n")
+        let ids = try self.source("Accessibility/A11yIdentifiers+Jellyfin.swift")
+        let names = ids.split(separator: "\n").compactMap { line -> String? in
+            guard let range = line.range(of: "public static let ") else { return nil }
+            return line[range.upperBound...].split(separator: " ").first.map(String.init)
+        }
+        let settingsNames = names.filter { $0 != "songTable" }
+        #expect(settingsNames.count >= 20)
+        for name in settingsNames {
+            #expect(settings.contains("A11y.JellyfinSettings.\(name))"), "A11y.JellyfinSettings.\(name) is never applied")
+        }
+    }
+
     @Test("no Jellyfin browse file swallows an error with try?")
     func noSwallowedErrors() throws {
         for file in try self.browseFiles() {
