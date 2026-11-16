@@ -21,7 +21,7 @@ struct JellyfinSongListTable: View {
             hasMorePages: self.hasMorePages,
             coverArtProvider: self.coverArtProvider,
             showsSource: false,
-            nowPlayingRowID: nil,
+            nowPlayingRowID: self.library.nowPlaying.jellyfinRowID,
             actions: JellyfinSongTableActions(
                 playNow: { index in
                     let songs = self.model.songs
@@ -31,6 +31,19 @@ struct JellyfinSongListTable: View {
                 loadMore: self.loadMore
             )
         )
+    }
+}
+
+// MARK: - Now playing
+
+extension NowPlayingViewModel {
+    /// The Jellyfin song table's row id for the song that is playing, or `nil`
+    /// when the current item is not a Jellyfin stream. The table moves its
+    /// selection onto that row, as the local library and Subsonic lists do.
+    var jellyfinRowID: String? {
+        guard let serverID = self.nowPlayingJellyfinServerID,
+              let itemID = self.nowPlayingJellyfinItemID else { return nil }
+        return JellyfinSongTableRow.id(serverID: serverID, songID: itemID)
     }
 }
 

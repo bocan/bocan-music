@@ -1,4 +1,5 @@
 import AppKit
+import AudioEngine
 import Foundation
 import Jellyfin
 import Observability
@@ -95,6 +96,47 @@ struct JellyfinWiring {
         } catch {
             log.warning("jellyfin.launch.pruneStaleCacheFailed", ["error": String(reflecting: error)])
         }
+    }
+
+    /// Builds the Jellyfin stream cache and its resolver for `QueuePlayer`
+    /// (ADR-097 slice 5), and makes removing a server clear that server's
+    /// cache folder. The cache is a second `SubsonicStreamCache` in its own
+    /// folder, `JellyfinStreams`, beside `SubsonicStreams` in `cachesFolder`,
+    /// with the same budget rules. Without it no Jellyfin song can play this
+    /// session; the reason is logged and `nil` keeps the rest of the app working.
+    func makeStreamResolver(cachesFolder: URL) -> JellyfinStreamResolver? {
+        let log = AppLogger.make(.app)
+        let folder = cachesFolder.appendingPathComponent("JellyfinStreams", isDirectory: true)
+        let cache: SubsonicStreamCache
+        do {
+            cache = try SubsonicStreamCache(
+                configuration: SubsonicStreamCache.Configuration(rootDirectory: folder),
+                loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
+            )
+        } catch {
+            log.error("jellyfin.streamCache.initFailed", [
+                "dir": folder.path,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+        let service = self.service
+        // The graph is built synchronously, so the handler is set a moment
+        // later. No removal can come from the UI before the window exists.
+        Task {
+            await service.setServerRemovedHandler { serverID in
+                do {
+                    try await cache.purge(serverID: serverID)
+                } catch {
+                    // The files stay on disk until the cache evicts them by size.
+                    log.warning("jellyfin.streamCache.purgeFailed", [
+                        "serverID": serverID,
+                        "error": String(reflecting: error),
+                    ])
+                }
+            }
+        }
+        return JellyfinStreamResolver(cache: cache, service: service, store: self.store)
     }
 
     /// Re-pings every monitored server as soon as the Mac wakes, so the status dot

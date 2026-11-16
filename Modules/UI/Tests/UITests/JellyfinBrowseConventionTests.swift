@@ -86,10 +86,32 @@ struct JellyfinBrowseConventionTests {
         #expect(support.contains("@ObservedObject var model: JellyfinSourceModel"))
     }
 
-    @Test("playing a Jellyfin song says plainly that it is not ready until slice 5 replaces the stub")
-    func playbackIsAnHonestStub() throws {
+    @Test("Jellyfin songs play as .jellyfin queue items, never as Subsonic ones")
+    func playbackBuildsJellyfinItems() throws {
         let text = try self.source("ViewModels/LibraryViewModel+Jellyfin.swift")
-        #expect(text.contains("Playing from Jellyfin is not ready yet."))
-        #expect(text.contains("Slice 5 replaces the bodies"))
+        #expect(text.contains("playableSource: .jellyfin(serverID: payload.serverID, itemID: payload.songID)"))
+        #expect(!text.contains(".subsonic("))
+        #expect(!text.contains("not ready yet"))
+    }
+
+    @Test("the Up Next queue accepts Jellyfin drops, and Subsonic drops still reach their own target")
+    func queueAcceptsJellyfinDrops() throws {
+        let queue = try self.source("Browse/QueueView.swift")
+        #expect(queue.contains("SubsonicSongDropTarget"))
+        #expect(queue.contains("JellyfinSongDropTarget"))
+        #expect(queue.contains("addJellyfinSongsToQueue"))
+        // The Jellyfin overlay is on top, so it must step aside for any other drag.
+        let drag = try self.source("Browse/Jellyfin/JellyfinSongDrag.swift")
+        #expect(drag.contains("JellyfinSongDrag.dragInProgressCarriesSongs else { return nil }"))
+    }
+
+    @Test("every Jellyfin song table follows the playing song")
+    func tablesFollowThePlayingSong() throws {
+        let support = try self.source("Browse/Jellyfin/JellyfinBrowseSupport.swift")
+        let songs = try self.source("Browse/Jellyfin/JellyfinSongsView.swift")
+        #expect(support.contains("nowPlayingRowID: self.library.nowPlaying.jellyfinRowID"))
+        #expect(songs.contains("nowPlayingRowID: self.library.nowPlaying.jellyfinRowID"))
+        #expect(!support.contains("nowPlayingRowID: nil"))
+        #expect(!songs.contains("nowPlayingRowID: nil"))
     }
 }

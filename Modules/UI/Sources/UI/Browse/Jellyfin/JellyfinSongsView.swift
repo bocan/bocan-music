@@ -140,7 +140,7 @@ public struct JellyfinSongsView: View {
                     hasMorePages: false,
                     coverArtProvider: self.coverArtProvider,
                     showsSource: true,
-                    nowPlayingRowID: nil,
+                    nowPlayingRowID: self.library.nowPlaying.jellyfinRowID,
                     actions: JellyfinSongTableActions(
                         playNow: { index in
                             let hits = self.search.songs

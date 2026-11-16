@@ -86,6 +86,7 @@ struct QuietRecoveryAppConventionTests {
             ("PhoneSyncController.swift", "sync.pairedDevices.readFailed"),
             ("SubsonicStoreSidebarListing.swift", "subsonic.capabilitiesCache.decodeFailed"),
             ("SubsonicStreamResolver.swift", "subsonic.precache.serverReadFailed"),
+            ("JellyfinStreamResolver.swift", "jellyfin.precache.serverReadFailed"),
         ]
         for (path, event) in cases {
             let source = try self.source(path)

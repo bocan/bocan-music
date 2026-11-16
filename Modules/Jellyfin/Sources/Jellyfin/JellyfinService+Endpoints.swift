@@ -199,7 +199,9 @@ public extension JellyfinService {
 
     // MARK: - Media URLs (never log these)
 
-    /// Returns the stream URL for a song.
+    /// Returns the stream URL for a song: the original file for `.original`,
+    /// else a transcode to `format` capped at `bitrate`. The App's stream
+    /// resolver hands it to the stream cache.
     ///
     /// > Warning: Never log this URL; it contains the access token.
     func streamURL(

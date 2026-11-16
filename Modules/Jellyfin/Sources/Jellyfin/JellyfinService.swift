@@ -26,6 +26,9 @@ public actor JellyfinService {
     private let store: JellyfinServerStore
     private let identity: JellyfinClientIdentity
     private let makeClient: ClientFactory
+    /// Runs after a server is removed, for state this module does not own: the
+    /// App clears that server's stream cache folder here (ADR-097 slice 5).
+    private var serverRemovedHandler: (@Sendable (UUID) async -> Void)?
     let log = AppLogger.make(.jellyfin)
 
     // MARK: - Init
@@ -89,6 +92,14 @@ public actor JellyfinService {
         await self.endSession(serverID: id)
         try await self.store.remove(id: id)
         self.removeClient(for: id)
+        await self.serverRemovedHandler?(id)
+    }
+
+    /// Sets the action `removeServer(id:)` runs once the server is gone. Every
+    /// removal path (Settings and the sidebar) goes through `removeServer`, so
+    /// this is the one place to clean up what lives outside this module.
+    public func setServerRemovedHandler(_ handler: @escaping @Sendable (UUID) async -> Void) {
+        self.serverRemovedHandler = handler
     }
 
     // MARK: - System

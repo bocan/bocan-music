@@ -41,7 +41,7 @@ The mini-player and other secondary windows call `.commandsRemoved()` so SwiftUI
 `Scrobble` and `Playback` must not import `Subsonic`, and `UI` reaches its long-lived Subsonic objects through narrow protocols even though it may import the module (the charter table lists the edge). Those modules declare the protocols and `App/` provides the concrete bridges:
 
 - `SubsonicStoreSidebarListing` -> `UI.SubsonicSidebarListing` (sidebar server list, visibility, delete)
-- `JellyfinStoreSidebarListing` -> `UI.JellyfinSidebarListing` and `JellyfinMonitorConnectionObserver` -> `UI.JellyfinConnectionObserving` (ADR-097). `JellyfinWiring` builds the whole Jellyfin graph in one place, runs its launch hydration and installs its wake observer; `BocanApp` only calls it.
+- `JellyfinStoreSidebarListing` -> `UI.JellyfinSidebarListing` and `JellyfinMonitorConnectionObserver` -> `UI.JellyfinConnectionObserving` (ADR-097). `JellyfinWiring` builds the whole Jellyfin graph in one place, runs its launch hydration and installs its wake observer; `BocanApp` only calls it. `JellyfinStreamResolver` -> `Playback.JellyfinStreamResolving` plays `.jellyfin` items from a second `SubsonicStreamCache` in its own `JellyfinStreams` folder, built by `JellyfinWiring.makeStreamResolver`.
 - `SubsonicMonitorConnectionObserver` -> `UI.SubsonicConnectionObserving`
 - `SubsonicCapabilityObserver` -> `UI.SubsonicCapabilityChangeObserving`
 - `SubsonicRepositoryMetadataCache` -> `SubsonicMetadataCaching`; `SubsonicStreamResolver` -> `SubsonicStreamResolving` (the metadata-cache and stream-resolution seams)

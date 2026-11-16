@@ -573,7 +573,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             engine: engine,
             database: database,
             scrobbleRepository: scrobbleRepository,
-            subsonicCoverArtProvider: subsonicCoverArtProvider
+            subsonicCoverArtProvider: subsonicCoverArtProvider,
+            jellyfinCoverArtProvider: jellyfin.coverArtProvider
         )
 
         self.podcastLibrary = podcastLibrary

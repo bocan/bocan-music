@@ -43,8 +43,32 @@ extension QueuePlayer {
             return try await ResolvedPlaybackURL(url: self.resolvePodcastURL(feedURL: feedURL, guid: guid, item: item))
         } else if case let .subsonic(serverID, songID) = item.playableSource {
             return try await ResolvedPlaybackURL(url: self.resolveSubsonicURL(serverID: serverID, songID: songID, item: item))
+        } else if case let .jellyfin(serverID, itemID) = item.playableSource {
+            return try await ResolvedPlaybackURL(url: self.resolveJellyfinURL(serverID: serverID, itemID: itemID, item: item))
         }
         return try await self.resolveLocalURL(for: item)
+    }
+
+    /// Jellyfin song (ADR-097): the resolver returns a local file URL backed
+    /// by the Jellyfin stream cache. Mirrors `resolveSubsonicURL`.
+    private func resolveJellyfinURL(serverID: UUID, itemID: String, item: QueueItem) async throws -> URL {
+        guard let resolver = self.jellyfinResolver else {
+            self.log.error("queueplayer.jellyfin.no_resolver", ["itemID": itemID])
+            throw PlaybackError.bookmarkResolutionFailed(
+                trackID: item.trackID,
+                underlying: URLError(.unsupportedURL)
+            )
+        }
+        self.log.debug("queueplayer.jellyfin.resolve.start", ["serverID": serverID, "itemID": itemID])
+        do {
+            return try await resolver.localFileURL(serverID: serverID, itemID: itemID)
+        } catch {
+            self.log.error(
+                "queueplayer.jellyfin.resolve.failed",
+                ["serverID": serverID, "itemID": itemID, "error": String(reflecting: error)]
+            )
+            throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+        }
     }
 
     /// Podcast episode: the resolver returns a remote https:// enclosure

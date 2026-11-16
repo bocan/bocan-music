@@ -35,7 +35,7 @@ struct JellyfinSongTable: NSViewRepresentable {
     let coverArtProvider: JellyfinCoverArtProvider?
     let showsSource: Bool
     /// Row ID of the song that is playing, or `nil`. The table moves its
-    /// selection onto that row when it changes. Playback arrives in slice 5.
+    /// selection onto that row when it changes.
     var nowPlayingRowID: String?
     let actions: JellyfinSongTableActions
 
@@ -77,7 +77,7 @@ struct JellyfinSongTable: NSViewRepresentable {
         dataSource.coordinator = context.coordinator
         tableView.dataSource = dataSource
         tableView.delegate = context.coordinator
-        // Streamed rows can be dragged out (into the Up Next queue in slice 5).
+        // Streamed rows can be dragged out, into the Up Next queue.
         tableView.setDraggingSourceOperationMask(.copy, forLocal: true)
 
         tableView.target = context.coordinator

@@ -123,15 +123,7 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     /// Drag payload for a row, used to drag a streamed song into the queue.
     func dragPayload(forID id: String) -> JellyfinSongDragPayload? {
         guard let row = self.rowsByID[id] else { return nil }
-        return JellyfinSongDragPayload(
-            serverID: row.serverID,
-            songID: row.song.id,
-            title: row.title,
-            artist: row.artist,
-            album: row.album,
-            genre: row.genre,
-            durationSeconds: row.duration
-        )
+        return JellyfinSongDragPayload(song: row.song, serverID: row.serverID)
     }
 
     // MARK: Cell population

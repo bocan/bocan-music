@@ -18536,16 +18536,6 @@
         }
       }
     },
-    "Playing from Jellyfin is not ready yet." : {
-      "localizations" : {
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ƥĺáýíñĝ ƒŕóḿ Ĵéĺĺýƒíñ íš ñóţ ŕéáđý ýéţ. one two three"
-          }
-        }
-      }
-    },
     "Playing tracks" : {
       "extractionState" : "manual",
       "localizations" : {

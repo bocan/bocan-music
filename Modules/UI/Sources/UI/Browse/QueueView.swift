@@ -184,6 +184,15 @@ private struct QueueContentView: View {
                 await self.refreshQueue()
             }
         })
+        // ADR-097: and Jellyfin songs. This overlay is on top, and it takes
+        // only a drag that carries Jellyfin songs, so a Subsonic drag still
+        // reaches the Subsonic overlay below it.
+        .overlay(JellyfinSongDropTarget { payloads in
+            Task {
+                await self.vm.addJellyfinSongsToQueue(payloads)
+                await self.refreshQueue()
+            }
+        })
         .task { await self.refreshQueue() }
         .task { await self.observeQueueChanges() }
         .task { await self.observeUnavailableChanges() }

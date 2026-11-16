@@ -24,6 +24,8 @@ public actor QueuePlayer: Transport {
     private let database: Database
     let subsonicResolver: (any SubsonicStreamResolving)?
     let podcastResolver: (any PodcastEpisodeResolving)?
+    /// ADR-097: turns a `.jellyfin` item into a local cache-file URL.
+    let jellyfinResolver: (any JellyfinStreamResolving)?
 
     // MARK: - Sub-systems
 
@@ -160,12 +162,14 @@ public actor QueuePlayer: Transport {
         database: Database,
         scrobbleSink: (any ScrobbleSink)? = nil,
         subsonicResolver: (any SubsonicStreamResolving)? = nil,
-        podcastResolver: (any PodcastEpisodeResolving)? = nil
+        podcastResolver: (any PodcastEpisodeResolving)? = nil,
+        jellyfinResolver: (any JellyfinStreamResolving)? = nil
     ) {
         self.engine = engine
         self.database = database
         self.subsonicResolver = subsonicResolver
         self.podcastResolver = podcastResolver
+        self.jellyfinResolver = jellyfinResolver
         self.queue = PlaybackQueue()
         self.historyRecorder = PlayHistoryRecorder(database: database, scrobbleSink: scrobbleSink)
         self.persistence = QueuePersistence(database: database)

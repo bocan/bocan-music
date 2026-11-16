@@ -872,6 +872,8 @@ extension BocanApp {
         let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
+        // ADR-097: the same for Jellyfin, in its own `JellyfinStreams` folder.
+        let jellyfinStreamResolver = jellyfin.makeStreamResolver(cachesFolder: streamCacheDir.deletingLastPathComponent())
 
         // ADR-042: build a PodcastService and adapt it to the player's
         // PodcastEpisodeResolving seam so .podcast queue items can play,
@@ -910,7 +912,8 @@ extension BocanApp {
             database: db,
             scrobbleSink: scrobbleParts.service,
             subsonicResolver: subsonicStreamResolver,
-            podcastResolver: podcastResolver
+            podcastResolver: podcastResolver,
+            jellyfinResolver: jellyfinStreamResolver
         )
         let scanner = LibraryScanner(database: db)
         // Fills tracks.content_hash (the Phone Sync manifest sha256 / ETag) for

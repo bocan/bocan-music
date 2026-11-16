@@ -249,6 +249,15 @@ struct JellyfinServiceTests {
         #expect(try await harness.repository.fetch(id: harness.serverID) == nil)
     }
 
+    @Test("removing a server runs the removal handler once, with that server's id")
+    func removeServerRunsTheHandler() async throws {
+        let harness = try await self.makeHarness()
+        let removed = Locked<[UUID]>([])
+        await harness.service.setServerRemovedHandler { id in removed.update { $0.append(id) } }
+        try await harness.service.removeServer(id: harness.serverID)
+        #expect(removed.value == [harness.serverID])
+    }
+
     // MARK: Flags
 
     @Test("the syncStars and scrobble flags are read from the row")

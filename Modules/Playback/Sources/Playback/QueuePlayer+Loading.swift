@@ -63,6 +63,7 @@ extension QueuePlayer {
         self.log.debug("queueplayer.loaded", ["trackID": item.trackID])
 
         await self.precacheNextSubsonicItem()
+        await self.precacheNextJellyfinItem()
     }
 
     /// ADR-087: load the track's CUE markers. Fewer than two is inert
@@ -129,6 +130,18 @@ extension QueuePlayer {
         }
     }
 
+    /// Fire-and-forget pre-cache of the next item if it is a Jellyfin source
+    /// (ADR-097). The resolver itself checks the server's `precacheNext` flag.
+    private func precacheNextJellyfinItem() async {
+        if let resolver = self.jellyfinResolver,
+           let next = await self.queue.peekNextIgnoringRepeatOne(),
+           case let .jellyfin(nextServerID, nextItemID) = next.playableSource {
+            Task.detached(priority: .utility) {
+                await resolver.precache(serverID: nextServerID, itemID: nextItemID)
+            }
+        }
+    }
+
     /// Resolves the on-disk cover-art path for a track, preferring the
     /// track's own embedded art (unique per-track art, e.g. a single with
     /// distinct artwork) and falling back to the album's cached path.
@@ -172,6 +185,12 @@ extension QueuePlayer {
         // Podcasts are not music tracks and never scrobble to Last.fm /
         // ListenBrainz. Skip the recorder so no scrobble is ever enqueued.
         if case .podcast = item.playableSource {
+            return
+        }
+        // A Jellyfin song has no `tracks` row, so the local path would record
+        // a play against the placeholder id. ADR-097 slice 6 adds the Jellyfin
+        // play context and its scrobble path; until then it is not recorded.
+        if case .jellyfin = item.playableSource {
             return
         }
         if let context = Self.subsonicPlayContext(for: item) {
