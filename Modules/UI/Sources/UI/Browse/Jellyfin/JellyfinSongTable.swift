@@ -13,6 +13,8 @@ struct JellyfinSongTableActions {
     let playNow: (Int) -> Void
     /// Ask for the next page of songs.
     let loadMore: () -> Void
+    /// Flip the favourite of a row (ADR-097 slice 6).
+    let toggleStar: (JellyfinSongTableRow) -> Void
 }
 
 // MARK: - NSViewRepresentable

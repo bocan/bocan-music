@@ -196,6 +196,33 @@ struct JellyfinConnectionMonitorTests {
         harness.reader.cancel()
     }
 
+    @Test("recheck pings one server again at once, and a refused token then shows as authFailed")
+    func recheckPingsAtOnce() async throws {
+        let harness = try await self.makeHarness(timing: .init(pollInterval: .seconds(30), backoff: [.seconds(30)], persistInterval: 3600))
+        await harness.monitor.startMonitoring(serverID: harness.serverID)
+        #expect(await eventually { harness.statuses.value.contains { $0.isOnline } })
+        // The token is refused from now on, as a play report just found.
+        harness.stub.onPing = { throw JellyfinError.unauthorized }
+        await harness.monitor.recheck(serverID: harness.serverID)
+        #expect(await eventually { harness.statuses.value.contains { $0.requiresUserAction } })
+        #expect(self.pings(harness) == 2, "the recheck did not wait for the 30 s poll")
+        harness.reader.cancel()
+    }
+
+    @Test("recheck also checks a server that an earlier refusal stopped")
+    func recheckRestartsAStoppedServer() async throws {
+        let harness = try await self.makeHarness()
+        harness.stub.onPing = { throw JellyfinError.unauthorized }
+        await harness.monitor.startMonitoring(serverID: harness.serverID)
+        #expect(await eventually { harness.statuses.value.contains { $0.requiresUserAction } })
+        // The user signed in again elsewhere; the next check succeeds.
+        harness.stub.onPing = {}
+        await harness.monitor.recheck(serverID: harness.serverID)
+        #expect(await eventually { harness.statuses.value.last?.isOnline == true })
+        await harness.monitor.stopAll()
+        harness.reader.cancel()
+    }
+
     @Test("last_connected_at is written when the server first comes online, and not on every ping")
     func persistsLastConnected() async throws {
         let harness = try await self.makeHarness()

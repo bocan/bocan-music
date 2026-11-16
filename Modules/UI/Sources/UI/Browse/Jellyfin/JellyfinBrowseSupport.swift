@@ -28,9 +28,21 @@ struct JellyfinSongListTable: View {
                     let serverID = self.model.serverID
                     Task { await self.library.play(jellyfinSongs: songs, serverID: serverID, startingAt: index) }
                 },
-                loadMore: self.loadMore
+                loadMore: self.loadMore,
+                toggleStar: self.library.jellyfin.toggleStar
             )
         )
+        .onAppear { self.model.attach(self.library.jellyfin.annotations) }
+    }
+}
+
+// MARK: - Favourites
+
+extension JellyfinSourceModel {
+    /// Flips a row's favourite through the shared coordinator. Without a
+    /// favourites queue (tests, snapshots) the click does nothing.
+    func toggleStar(_ row: JellyfinSongTableRow) {
+        self.annotations?.toggleStar(serverID: row.serverID, itemID: row.song.id, currentlyStarred: row.starred)
     }
 }
 

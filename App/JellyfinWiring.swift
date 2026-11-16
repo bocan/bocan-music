@@ -21,7 +21,7 @@ struct JellyfinWiring {
     let store: JellyfinServerStore
     let service: JellyfinService
     let monitor: JellyfinConnectionMonitor
-    /// Built here so the graph has one owner. Slice 6 hands it to the favourites path.
+    /// The favourites queue behind the star in every Jellyfin song table.
     let annotations: JellyfinAnnotations
     let sourceModel: JellyfinSourceModel
     let settingsViewModel: JellyfinSettingsViewModel
@@ -33,12 +33,14 @@ struct JellyfinWiring {
         let service = JellyfinService(store: store)
         let monitor = JellyfinConnectionMonitor(service: service)
         let listing = JellyfinStoreSidebarListing(store: store, service: service, monitor: monitor)
+        let annotations = JellyfinAnnotations(service: service)
         let sourceModel = JellyfinSourceModel(
             listing: listing,
             connectionObserver: JellyfinMonitorConnectionObserver(monitor: monitor),
             dataSource: service,
             coverArtProvider: JellyfinCoverArtProvider(service: service),
-            metadataCache: JellyfinRepositoryMetadataCache(repository: repository)
+            metadataCache: JellyfinRepositoryMetadataCache(repository: repository),
+            annotationDelivery: annotations
         )
         // A persisted Jellyfin destination must find its client before the window
         // restores it, so RootView runs this ahead of `restoreUIState`.
@@ -62,7 +64,7 @@ struct JellyfinWiring {
             store: store,
             service: service,
             monitor: monitor,
-            annotations: JellyfinAnnotations(service: service),
+            annotations: annotations,
             sourceModel: sourceModel,
             settingsViewModel: settingsViewModel
         )
@@ -96,6 +98,11 @@ struct JellyfinWiring {
         } catch {
             log.warning("jellyfin.launch.pruneStaleCacheFailed", ["error": String(reflecting: error)])
         }
+    }
+
+    /// The play-report bridge for the scrobble service (ADR-097 slice 6).
+    var scrobbleDelivery: JellyfinScrobbleDelivery {
+        JellyfinScrobbleDelivery(service: self.service, store: self.store, monitor: self.monitor)
     }
 
     /// Builds the Jellyfin stream cache and its resolver for `QueuePlayer`

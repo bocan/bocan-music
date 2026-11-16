@@ -96,9 +96,25 @@ public final class JellyfinMultiSourceSearchViewModel: ObservableObject {
         self.currentTask?.cancel()
     }
 
+    /// Shows the user's latest favourite clicks over the servers' values.
+    private weak var annotations: JellyfinAnnotationCoordinator?
+
+    /// Starts following `coordinator`'s favourite overrides.
+    func attach(_ coordinator: JellyfinAnnotationCoordinator?) {
+        guard let coordinator, coordinator !== self.annotations else { return }
+        self.annotations = coordinator
+        coordinator.addObserver(self)
+        self.rebuildRows()
+    }
+
     private func rebuildRows() {
+        let annotations = self.annotations
         self.rows = self.songs.map {
-            JellyfinSongTableRow(song: $0.song, serverID: $0.serverID, serverName: $0.serverName)
+            JellyfinSongTableRow(
+                song: annotations?.applying(to: $0.song, serverID: $0.serverID) ?? $0.song,
+                serverID: $0.serverID,
+                serverName: $0.serverName
+            )
         }
     }
 
@@ -219,5 +235,11 @@ public final class JellyfinMultiSourceSearchViewModel: ObservableObject {
             group.cancelAll()
             return first ?? .failure(CancellationError())
         }
+    }
+}
+
+extension JellyfinMultiSourceSearchViewModel: JellyfinAnnotationObserving {
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 }

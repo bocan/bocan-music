@@ -187,10 +187,10 @@ extension QueuePlayer {
         if case .podcast = item.playableSource {
             return
         }
-        // A Jellyfin song has no `tracks` row, so the local path would record
-        // a play against the placeholder id. ADR-097 slice 6 adds the Jellyfin
-        // play context and its scrobble path; until then it is not recorded.
-        if case .jellyfin = item.playableSource {
+        // A Jellyfin song has no `tracks` row either; it carries its own
+        // context, as a Subsonic song does (ADR-097).
+        if let context = Self.jellyfinPlayContext(for: item) {
+            await self.historyRecorder.trackDidStart(jellyfin: context)
             return
         }
         if let context = Self.subsonicPlayContext(for: item) {
@@ -210,6 +210,22 @@ extension QueuePlayer {
         return SubsonicPlayContext(
             serverID: serverID,
             songID: songID,
+            title: item.title ?? "",
+            artist: item.artistName ?? "",
+            albumArtist: nil,
+            album: item.albumName,
+            duration: item.duration
+        )
+    }
+
+    /// The scrobble payload for a Jellyfin queue item, or nil for any other
+    /// source (ADR-097). The album artist stays nil, as for Subsonic: the
+    /// queue item does not carry one.
+    static func jellyfinPlayContext(for item: QueueItem) -> JellyfinPlayContext? {
+        guard case let .jellyfin(serverID, itemID) = item.playableSource else { return nil }
+        return JellyfinPlayContext(
+            serverID: serverID,
+            itemID: itemID,
             title: item.title ?? "",
             artist: item.artistName ?? "",
             albumArtist: nil,

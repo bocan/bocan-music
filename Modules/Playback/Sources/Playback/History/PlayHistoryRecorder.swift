@@ -56,6 +56,15 @@ public protocol ScrobbleSink: Sendable {
     ) async
     /// Subsonic-sourced now-playing hint. Default implementation is a no-op.
     func nowPlayingSubsonic(context: SubsonicPlayContext) async
+    /// Jellyfin-sourced play (ADR-097). Default implementation is a no-op
+    /// (`JellyfinPlayContext.swift`).
+    func recordJellyfinPlay(
+        context: JellyfinPlayContext,
+        playedAt: Date,
+        durationPlayed: TimeInterval
+    ) async
+    /// Jellyfin-sourced now-playing hint. Default implementation is a no-op.
+    func nowPlayingJellyfin(context: JellyfinPlayContext) async
 }
 
 /// No-op defaults for the optional `ScrobbleSink` requirements.
@@ -104,6 +113,9 @@ public actor PlayHistoryRecorder {
     private var playStartedAt: Date?
     private var hasScrobbled = false
     private var currentSubsonicContext: SubsonicPlayContext?
+    /// Set while a Jellyfin song plays (ADR-097). At most one of this, the
+    /// Subsonic context and `currentTrackID` is set at a time.
+    private var currentJellyfinContext: JellyfinPlayContext?
 
     // MARK: - Init
 
@@ -124,6 +136,7 @@ public actor PlayHistoryRecorder {
         self.playStartedAt = Date()
         self.hasScrobbled = false
         self.currentSubsonicContext = nil
+        self.currentJellyfinContext = nil
         self.log.debug("history.start", ["trackID": trackID, "duration": duration])
         // Fire-and-forget: the Now Playing hint to scrobbling services is best-effort
         // and must never block the playback hot path (engine.play() follows immediately).
@@ -141,6 +154,7 @@ public actor PlayHistoryRecorder {
         self.playStartedAt = Date()
         self.hasScrobbled = false
         self.currentSubsonicContext = context
+        self.currentJellyfinContext = nil
         self.log.debug("history.start.subsonic", [
             "server": context.serverID.uuidString,
             "song": context.songID,
@@ -152,11 +166,35 @@ public actor PlayHistoryRecorder {
         }
     }
 
+    /// Call when a Jellyfin song starts playing (ADR-097). The twin of the
+    /// Subsonic start: the context is kept because the song has no `tracks` row.
+    public func trackDidStart(jellyfin context: JellyfinPlayContext) async {
+        self.currentTrackID = nil
+        self.trackDuration = context.duration
+        self.playStartedAt = Date()
+        self.hasScrobbled = false
+        self.currentSubsonicContext = nil
+        self.currentJellyfinContext = context
+        self.log.debug("history.start.jellyfin", [
+            "server": context.serverID.uuidString,
+            "item": context.itemID,
+            "duration": context.duration,
+        ])
+        if let sink = scrobbleSink {
+            let ctx = context
+            Task { await sink.nowPlayingJellyfin(context: ctx) }
+        }
+    }
+
     /// Call periodically (or at track end) with the elapsed time so far.
     public func update(elapsed: TimeInterval) async {
         guard !self.hasScrobbled else { return }
         let shouldScrobble = self.meetsThreshold(elapsed: elapsed, duration: self.trackDuration)
         guard shouldScrobble else { return }
+        if let jellyfin = self.currentJellyfinContext {
+            await self.scrobbleJellyfin(context: jellyfin, durationPlayed: elapsed)
+            return
+        }
         if let ctx = currentSubsonicContext {
             await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
         } else if let id = currentTrackID {
@@ -169,12 +207,20 @@ public actor PlayHistoryRecorder {
         defer {
             currentTrackID = nil
             currentSubsonicContext = nil
+            currentJellyfinContext = nil
             trackDuration = 0
             playStartedAt = nil
             hasScrobbled = false
         }
 
         let metThreshold = self.meetsThreshold(elapsed: elapsed, duration: self.trackDuration)
+        if let jellyfin = self.currentJellyfinContext {
+            if metThreshold {
+                await self.scrobbleJellyfin(context: jellyfin, durationPlayed: elapsed)
+            }
+            // Jellyfin plays have no local tracks row to bump skip_count against.
+            return
+        }
         if let ctx = currentSubsonicContext {
             if metThreshold {
                 await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
@@ -195,11 +241,16 @@ public actor PlayHistoryRecorder {
         defer {
             currentTrackID = nil
             currentSubsonicContext = nil
+            currentJellyfinContext = nil
             trackDuration = 0
             playStartedAt = nil
             hasScrobbled = false
         }
         if self.hasScrobbled {
+            return
+        }
+        if let jellyfin = self.currentJellyfinContext {
+            await self.scrobbleJellyfin(context: jellyfin, durationPlayed: elapsed)
             return
         }
         if let ctx = currentSubsonicContext {
@@ -284,6 +335,22 @@ public actor PlayHistoryRecorder {
         ])
         if let sink = scrobbleSink {
             await sink.recordSubsonicPlay(context: context, playedAt: playedAt, durationPlayed: durationPlayed)
+        }
+    }
+
+    /// Scrobble path for Jellyfin plays, the twin of `scrobbleSubsonic`: no
+    /// local `play_history` row and no `tracks` update, only the hand-off.
+    private func scrobbleJellyfin(context: JellyfinPlayContext, durationPlayed: TimeInterval) async {
+        guard !self.hasScrobbled else { return }
+        self.hasScrobbled = true
+        let playedAt = Date()
+        self.log.debug("history.scrobbled.jellyfin", [
+            "server": context.serverID.uuidString,
+            "item": context.itemID,
+            "duration": durationPlayed,
+        ])
+        if let sink = scrobbleSink {
+            await sink.recordJellyfinPlay(context: context, playedAt: playedAt, durationPlayed: durationPlayed)
         }
     }
 

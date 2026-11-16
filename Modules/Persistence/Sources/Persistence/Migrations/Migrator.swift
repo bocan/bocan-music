@@ -90,6 +90,7 @@ public struct Migrator {
         M053SyncTranscodes.register(in: &dm)
         M054PodcastEpisodeChapters.register(in: &dm)
         M055JellyfinServers.register(in: &dm)
+        M056JellyfinScrobble.register(in: &dm)
     }
 
     // MARK: - Migration

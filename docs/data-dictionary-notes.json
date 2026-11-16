@@ -125,24 +125,32 @@
     "note": "The user's per-track sync adjustment (LRC convention: positive = lyrics ahead). Written by LyricsService.setUserOffset from LyricsViewModel.commitOffset (debounced slider, popover dismiss); preserved by setLyrics; folded into the document by LyricsService.parse. Not the LRC [offset:] tag, which stays in the text."
   },
   "scrobble_queue.payload_title": {
-    "traces": "M021, ADR-029",
-    "note": "Subsonic-only snapshot; local plays join tracks/albums at submit time."
+    "traces": "M021, ADR-029, ADR-097",
+    "note": "Snapshot for remote rows (Subsonic and Jellyfin); local plays join tracks/albums at submit time."
   },
   "scrobble_queue.payload_artist": {
-    "traces": "M021, ADR-029",
-    "note": "Subsonic-only, see payload_title."
+    "traces": "M021, ADR-029, ADR-097",
+    "note": "Remote rows only (Subsonic and Jellyfin), see payload_title."
   },
   "scrobble_queue.payload_album": {
-    "traces": "M021, ADR-029, #408",
-    "note": "Subsonic-only snapshot (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408; was hardcoded nil before."
+    "traces": "M021, ADR-029, #408, ADR-097",
+    "note": "Remote rows only (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408 (was hardcoded nil before) and via QueuePlayer.jellyfinPlayContext for Jellyfin."
   },
   "scrobble_queue.payload_album_artist": {
-    "traces": "M021, ADR-029, #408",
-    "note": "Subsonic-only. Still nil: the Subsonic Child a queue item is built from has no album-artist field, and the track artist would be wrong for compilations."
+    "traces": "M021, ADR-029, #408, ADR-097",
+    "note": "Remote rows only. Still nil for both: neither the Subsonic Child nor the Jellyfin queue item carries an album artist, and the track artist would be wrong for compilations."
   },
   "scrobble_queue.payload_duration": {
-    "traces": "M021, ADR-029",
-    "note": "Subsonic-only, see payload_title."
+    "traces": "M021, ADR-029, ADR-097",
+    "note": "Remote rows only, see payload_title. For a Jellyfin song with no run time, enqueueJellyfin stores the time played, and JellyfinScrobbleProvider sends it as the stop position."
+  },
+  "scrobble_queue.jellyfin_server_id": {
+    "traces": "M056, ADR-097",
+    "note": "jellyfin_servers.id as text for a Jellyfin play; NULL for local and Subsonic rows. Written by ScrobbleQueueRepository.enqueueJellyfin, read by fetchPending into PlayEvent for JellyfinScrobbleProvider. Unique with jellyfin_item_id and played_at."
+  },
+  "scrobble_queue.jellyfin_item_id": {
+    "traces": "M056, ADR-097",
+    "note": "The Jellyfin item id, opaque. Same writer and readers as jellyfin_server_id; the provider reports the stop for this item."
   },
   "podcasts.itunes_collection_id": {
     "traces": "ADR-040:305, ADR-041:95, #409",

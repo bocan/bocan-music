@@ -135,6 +135,9 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         if colID == "jcol.art" {
             return self.artCell(for: row, in: tableView)
         }
+        if colID == "jcol.starred" {
+            return self.starCell(for: row, in: tableView)
+        }
 
         let cellID = NSUserInterfaceItemIdentifier("jTextCell.\(colID)")
         let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
@@ -167,6 +170,21 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             title: row.title
         )
         return cell
+    }
+
+    /// The star button. The cell is the Subsonic one, reused unchanged: it
+    /// carries nothing Subsonic specific (ADR-097, D1). Its id is the row id.
+    private func starCell(for row: JellyfinSongTableRow, in tableView: NSTableView) -> NSView {
+        let cellID = NSUserInterfaceItemIdentifier("sStarCell")
+        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? SubsonicStarButtonCell)
+            ?? SubsonicStarButtonCell()
+        cell.configure(starred: row.starred, action: { [weak self] rowID in self?.toggleStar(rowID: rowID) }, songID: row.id)
+        return cell
+    }
+
+    private func toggleStar(rowID: String) {
+        guard let row = self.rowsByID[rowID] else { return }
+        self.parent.actions.toggleStar(row)
     }
 
     private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
@@ -328,6 +346,15 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         menu.addItem(ActionMenuItem(L10n.string("Play")) { [weak self] in
             self?.parent.actions.playNow(first)
         })
+
+        // Favourite for a single selection, as the Subsonic table offers.
+        if tv.selectedRowIndexes.count == 1, first < self.rows.count {
+            let row = self.rows[first]
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(ActionMenuItem(row.starred ? L10n.string("Unstar") : L10n.string("Star")) { [weak self] in
+                self?.parent.actions.toggleStar(row)
+            })
+        }
     }
 
     // MARK: Pagination

@@ -574,7 +574,8 @@ struct BocanApp: App {
     private static func makeScrobble(
         database db: Database,
         log: AppLogger,
-        subsonicDelivery: any SubsonicScrobbleDelivering
+        subsonicDelivery: any SubsonicScrobbleDelivering,
+        jellyfinDelivery: any JellyfinScrobbleDelivering
     ) -> ScrobbleParts {
         let credentials = Credentials(service: E2EEnvironment.scrobbleCredentialsService)
         let adapter = CredentialsAdapter(store: credentials)
@@ -590,6 +591,8 @@ struct BocanApp: App {
         providers.append(ListenBrainzProvider(http: http, credentials: adapter))
         providers.append(RockskyProvider(http: http, credentials: adapter))
         providers.append(SubsonicScrobbleProvider(delivery: subsonicDelivery))
+        // ADR-097: Jellyfin play reports.
+        providers.append(JellyfinScrobbleProvider(delivery: jellyfinDelivery))
         let repo = ScrobbleQueueRepository(database: db)
         let reachability = SystemReachability()
         let service = ScrobbleService(providers: providers, repository: repo, reachability: reachability)
@@ -830,7 +833,8 @@ extension BocanApp {
         let scrobbleParts = Self.makeScrobble(
             database: db,
             log: log,
-            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore)
+            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore),
+            jellyfinDelivery: jellyfin.scrobbleDelivery
         )
         let backupSettingsViewModel = BackupSettingsViewModel(database: db)
 

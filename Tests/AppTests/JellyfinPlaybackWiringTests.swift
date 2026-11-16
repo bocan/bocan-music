@@ -3,8 +3,8 @@ import Testing
 
 // MARK: - JellyfinPlaybackWiringTests
 
-/// ADR-097 slice 5: the composition root cannot run host-less, so these pin the
-/// Jellyfin playback wiring in the source.
+/// ADR-097 slices 5 and 6: the composition root cannot run host-less, so these
+/// pin the Jellyfin playback, play-report and favourites wiring in the source.
 @Suite("Jellyfin playback wiring (ADR-097)")
 struct JellyfinPlaybackWiringTests {
     private func source(_ relativePath: String) throws -> String {
@@ -33,6 +33,26 @@ struct JellyfinPlaybackWiringTests {
         #expect(wiring.contains("setServerRemovedHandler"))
         #expect(wiring.contains("try await cache.purge(serverID: serverID)"))
         #expect(wiring.contains("jellyfin.streamCache.purgeFailed"))
+    }
+
+    @Test("Jellyfin play reports are a scrobble provider, and a refused token makes the monitor check again")
+    func playReportsAreWired() throws {
+        let app = try self.source("App/BocanApp.swift")
+        #expect(app.contains("providers.append(JellyfinScrobbleProvider(delivery: jellyfinDelivery))"))
+        #expect(app.contains("jellyfinDelivery: jellyfin.scrobbleDelivery"))
+
+        let delivery = try self.source("App/JellyfinScrobbleDelivery.swift")
+        #expect(delivery.contains("await self.monitor.recheck(serverID: serverID)"))
+        #expect(delivery.contains("throw ScrobbleError.invalidCredentials(provider: \"jellyfin\")"))
+        #expect(delivery.contains("jellyfin.scrobble.serversReadFailed"))
+    }
+
+    @Test("the star in the Jellyfin tables goes through the one favourites queue")
+    func favouritesAreWired() throws {
+        let wiring = try self.source("App/JellyfinWiring.swift")
+        #expect(wiring.contains("let annotations = JellyfinAnnotations(service: service)"))
+        #expect(wiring.contains("annotationDelivery: annotations"))
+        #expect(wiring.contains("annotations: annotations,"))
     }
 
     @Test("the resolver never logs the stream URL, which carries the token")

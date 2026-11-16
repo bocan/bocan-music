@@ -171,7 +171,9 @@ public actor ScrobbleQueueWorker {
                 mbid: row.mbid,
                 playedAt: row.playedAt,
                 subsonicServerID: row.subsonicServerID,
-                subsonicSongID: row.subsonicSongID
+                subsonicSongID: row.subsonicSongID,
+                jellyfinServerID: row.jellyfinServerID,
+                jellyfinItemID: row.jellyfinItemID
             )
         }
 

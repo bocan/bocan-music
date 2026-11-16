@@ -23,14 +23,27 @@ private actor StubJellyfinResolver: JellyfinStreamResolving {
     func precache(serverID _: UUID, itemID _: String) async {}
 }
 
-/// Captures the "now playing" hints the history recorder sends.
+/// Captures what the history recorder sends.
 private actor NowPlayingSink: ScrobbleSink {
     private(set) var nowPlayingTrackIDs: [Int64] = []
+    private(set) var recordedTrackIDs: [Int64] = []
+    private(set) var nowPlayingJellyfin: [JellyfinPlayContext] = []
+    private(set) var recordedJellyfin: [(context: JellyfinPlayContext, played: TimeInterval)] = []
 
-    func recordPlay(trackID _: Int64, playedAt _: Date, durationPlayed _: TimeInterval) async {}
+    func recordPlay(trackID: Int64, playedAt _: Date, durationPlayed _: TimeInterval) async {
+        self.recordedTrackIDs.append(trackID)
+    }
 
     func nowPlaying(trackID: Int64) async {
         self.nowPlayingTrackIDs.append(trackID)
+    }
+
+    func recordJellyfinPlay(context: JellyfinPlayContext, playedAt _: Date, durationPlayed: TimeInterval) async {
+        self.recordedJellyfin.append((context, durationPlayed))
+    }
+
+    func nowPlayingJellyfin(context: JellyfinPlayContext) async {
+        self.nowPlayingJellyfin.append(context)
     }
 }
 
@@ -182,23 +195,90 @@ struct JellyfinQueuePlayerTests {
         #expect(source.contains("guard !item.playableSource.isRemote else { return nil }"))
     }
 
-    @Test("a Jellyfin item is not recorded against the placeholder track id")
-    func noLocalHistoryForJellyfin() async throws {
+    @Test("a Jellyfin start sends the Jellyfin now-playing hint, never the local one")
+    func jellyfinStartUsesItsOwnContext() async throws {
         let db = try await Database(location: .inMemory)
         let sink = NowPlayingSink()
         let player = QueuePlayer(engine: AudioEngine(), database: db, scrobbleSink: sink)
+        let serverID = UUID()
 
-        await player.notifyHistoryStart(for: makeJellyfinItem(serverID: UUID(), itemID: "x"))
-        // A local item after it gives the hint to wait for; the Jellyfin one,
-        // if it were sent, was sent first.
-        let local = QueueItem(trackID: 5, bookmark: nil, fileURL: "/tmp/5.flac", duration: 1, sourceFormat: makeFormat())
-        await player.notifyHistoryStart(for: local)
+        await player.notifyHistoryStart(for: makeJellyfinItem(serverID: serverID, itemID: "x"))
 
         let deadline = ContinuousClock.now + .seconds(20)
-        while await sink.nowPlayingTrackIDs.isEmpty, ContinuousClock.now < deadline {
+        while await sink.nowPlayingJellyfin.isEmpty, ContinuousClock.now < deadline {
             await Task.yield()
         }
-        #expect(await sink.nowPlayingTrackIDs == [5])
+        let hint = try #require(await sink.nowPlayingJellyfin.first)
+        #expect(hint.serverID == serverID)
+        #expect(hint.itemID == "x")
+        #expect(hint.title == "Song")
+        #expect(hint.duration == 200)
+        #expect(await sink.nowPlayingTrackIDs.isEmpty)
+    }
+
+    @Test("jellyfinPlayContext answers only for a Jellyfin item")
+    func playContextOnlyForJellyfin() {
+        let serverID = UUID()
+        let context = QueuePlayer.jellyfinPlayContext(for: makeJellyfinItem(serverID: serverID, itemID: "i"))
+        #expect(context?.serverID == serverID)
+        #expect(context?.artist == "Artist")
+        let local = QueueItem(trackID: 5, bookmark: nil, fileURL: "/tmp/5.flac", duration: 1, sourceFormat: makeFormat())
+        #expect(QueuePlayer.jellyfinPlayContext(for: local) == nil)
+    }
+}
+
+// MARK: - History recorder, Jellyfin path
+
+@Suite("PlayHistoryRecorder Jellyfin plays (ADR-097)")
+struct JellyfinHistoryRecorderTests {
+    private func context(duration: TimeInterval = 200) -> JellyfinPlayContext {
+        JellyfinPlayContext(serverID: UUID(), itemID: "item-1", title: "Song", artist: "Artist", duration: duration)
+    }
+
+    @Test("a play past the threshold is handed to the sink once, with no local history")
+    func countedPlayIsRecordedOnce() async throws {
+        let db = try await Database(location: .inMemory)
+        let sink = NowPlayingSink()
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        let context = self.context()
+
+        await recorder.trackDidStart(jellyfin: context)
+        await recorder.update(elapsed: 120) // past half of 200 s
+        await recorder.update(elapsed: 150)
+        await recorder.trackDidEnd(elapsed: 200)
+
+        let recorded = await sink.recordedJellyfin
+        #expect(recorded.count == 1)
+        #expect(recorded.first?.context == context)
+        #expect(recorded.first?.played == 120)
+        #expect(await sink.recordedTrackIDs.isEmpty)
+        let historyRows = try await db.read { grdb in try Int.fetchOne(grdb, sql: "SELECT COUNT(*) FROM play_history") }
+        #expect(historyRows == 0)
+    }
+
+    @Test("a skip before the threshold sends nothing")
+    func earlySkipSendsNothing() async throws {
+        let db = try await Database(location: .inMemory)
+        let sink = NowPlayingSink()
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
+
+        await recorder.trackDidStart(jellyfin: self.context())
+        await recorder.trackSkipped(elapsed: 20)
+
+        #expect(await sink.recordedJellyfin.isEmpty)
+    }
+
+    @Test("a local track after a Jellyfin one is recorded as local, not as the Jellyfin song")
+    func contextClearsOnNextStart() async throws {
+        let db = try await Database(location: .inMemory)
+        let sink = NowPlayingSink()
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
+
+        await recorder.trackDidStart(jellyfin: self.context())
+        await recorder.trackDidStart(trackID: 9, duration: 100)
+        await recorder.trackSkipped(elapsed: 90)
+
+        #expect(await sink.recordedJellyfin.isEmpty)
     }
 }
 

@@ -127,6 +127,17 @@ public actor JellyfinConnectionMonitor {
         self.log.info("jellyfin.monitor.wake", ["count": self.tasks.count])
     }
 
+    /// Pings one server again at once. Another path calls it when the server
+    /// refused its token (a play report answered 401), so the status follows
+    /// from the monitor's own authenticated ping, not from that one answer:
+    /// a 401 is not always a revoked token (docs/GOTCHAS.md, "Jellyfin").
+    /// A server stopped by an earlier 401 is checked again too.
+    public func recheck(serverID: UUID) {
+        self.tasks[serverID]?.cancel()
+        self.tasks[serverID] = Task { await self.runLoop(serverID: serverID) }
+        self.log.info("jellyfin.monitor.recheck", ["id": serverID.uuidString])
+    }
+
     /// Called when `NWPathMonitor` reports the path is no longer satisfied.
     /// Cancels the ping loops and emits `.unreachable` at once, so the UI does
     /// not wait up to 60 s for the next poll.

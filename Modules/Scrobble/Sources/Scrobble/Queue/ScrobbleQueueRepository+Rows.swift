@@ -24,6 +24,11 @@ public extension ScrobbleQueueRepository {
         /// local plays.
         public let subsonicServerID: UUID?
         public let subsonicSongID: String?
+
+        /// Set for Jellyfin plays (ADR-097), the twin of the Subsonic pair.
+        /// Both nil for local and Subsonic plays.
+        public let jellyfinServerID: UUID?
+        public let jellyfinItemID: String?
     }
 
     struct Stats: Sendable, Equatable {

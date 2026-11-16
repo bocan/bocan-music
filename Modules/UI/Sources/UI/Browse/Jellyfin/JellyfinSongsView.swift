@@ -146,7 +146,8 @@ public struct JellyfinSongsView: View {
                             let hits = self.search.songs
                             Task { await self.library.play(jellyfinMultiSource: hits, startingAt: index) }
                         },
-                        loadMore: {}
+                        loadMore: {},
+                        toggleStar: self.library.jellyfin.toggleStar
                     )
                 )
                 .id("search")

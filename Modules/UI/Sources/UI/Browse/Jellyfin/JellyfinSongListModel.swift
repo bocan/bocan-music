@@ -118,15 +118,40 @@ public class JellyfinSongListModel: ObservableObject {
         self.serverName = serverName
     }
 
+    /// Shows the user's latest favourite clicks over the server's values.
+    private weak var annotations: JellyfinAnnotationCoordinator?
+
+    /// Starts following `coordinator`'s favourite overrides. The song table
+    /// calls it when it appears; a second call with the same one does nothing.
+    func attach(_ coordinator: JellyfinAnnotationCoordinator?) {
+        guard let coordinator, coordinator !== self.annotations else { return }
+        self.annotations = coordinator
+        coordinator.addObserver(self)
+        self.rebuildRows()
+    }
+
     private func rebuildRows() {
         let serverID = self.serverID
         let serverName = self.serverName
-        self.rows = self.songs.map { JellyfinSongTableRow(song: $0, serverID: serverID, serverName: serverName) }
+        let annotations = self.annotations
+        self.rows = self.songs.map { song in
+            JellyfinSongTableRow(
+                song: annotations?.applying(to: song, serverID: serverID) ?? song,
+                serverID: serverID,
+                serverName: serverName
+            )
+        }
     }
 
     /// The text for a failed load: the error's own description when it has one.
     func message(for error: Error, fallback: String) -> String {
         (error as? LocalizedError)?.errorDescription ?? fallback
+    }
+}
+
+extension JellyfinSongListModel: JellyfinAnnotationObserving {
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 }
 

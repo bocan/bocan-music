@@ -26,6 +26,10 @@ public struct PlayEvent: Sendable, Codable, Hashable {
     public let subsonicServerID: UUID?
     /// Source song ID when the play originated from a Subsonic library.
     public let subsonicSongID: String?
+    /// Source server ID when the play came from a Jellyfin server (ADR-097).
+    public let jellyfinServerID: UUID?
+    /// Source item ID when the play came from a Jellyfin server. Opaque.
+    public let jellyfinItemID: String?
 
     // Memberwise initialiser: the parameters keep the stored-property order.
     // swiftlint:disable function_default_parameter_at_end
@@ -40,7 +44,9 @@ public struct PlayEvent: Sendable, Codable, Hashable {
         mbid: String? = nil,
         playedAt: Date,
         subsonicServerID: UUID? = nil,
-        subsonicSongID: String? = nil
+        subsonicSongID: String? = nil,
+        jellyfinServerID: UUID? = nil,
+        jellyfinItemID: String? = nil
     ) {
         self.queueID = queueID
         self.trackID = trackID
@@ -53,6 +59,8 @@ public struct PlayEvent: Sendable, Codable, Hashable {
         self.playedAt = playedAt
         self.subsonicServerID = subsonicServerID
         self.subsonicSongID = subsonicSongID
+        self.jellyfinServerID = jellyfinServerID
+        self.jellyfinItemID = jellyfinItemID
     }
     // swiftlint:enable function_default_parameter_at_end
 }

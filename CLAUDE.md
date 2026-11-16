@@ -50,7 +50,7 @@ Inside a layer the modules are not all independent. `Library` depends on `Metada
 | `Metadata` | TagLib read/write, cover-art extraction, LRC parsing. |
 | `Library` | Folder scanner, FSEvents watcher, conflict resolver, cover-art cache. |
 | `Playback` | `QueuePlayer` actor, queue/history/shuffle, `GaplessScheduler`, `CrossfadeScheduler`, `PlayableSource` (`.localBookmark` / `.subsonic` / `.internetRadio` / `.podcast` / `.jellyfin`), MPNowPlaying, sleep timer, queue persistence v1→v2. |
-| `Scrobble` | Last.fm / ListenBrainz / Rocksky providers + an offline-resilient `ScrobbleService` queue. |
+| `Scrobble` | Last.fm / ListenBrainz / Rocksky providers, plus the Subsonic and Jellyfin play-report providers, + an offline-resilient `ScrobbleService` queue. |
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Jellyfin` | ADR-097. A sibling of `Subsonic` that mirrors it and never imports it: `JellyfinService` actor over the official `jellyfin-sdk-swift` (confined to this module by `Scripts/audit-jellyfin-sdk-imports.py`, behind `JellyfinClientProtocol`), password and Quick Connect sign-in, access token in the login Keychain, connection monitor, favourites queue, and its own `Jellyfin*` models. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID, the single `MusicBrainzClient` (recording, artist, release-group; one shared 1 req/s limiter for the whole app) and `WikipediaClient`. |

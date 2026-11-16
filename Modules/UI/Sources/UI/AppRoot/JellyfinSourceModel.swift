@@ -98,6 +98,10 @@ public final class JellyfinSourceModel: ObservableObject {
     /// while the search field has text. `nil` when there is no data source.
     public let search: JellyfinMultiSourceSearchViewModel?
 
+    /// Optimistic favourites for every Jellyfin song table (ADR-097 slice 6).
+    /// `nil` when no favourites queue is wired in: the star then only shows.
+    public let annotations: JellyfinAnnotationCoordinator?
+
     private let listing: (any JellyfinSidebarListing)?
     private let connectionObserver: (any JellyfinConnectionObserving)?
     private var connectionTask: Task<Void, Never>?
@@ -110,14 +114,18 @@ public final class JellyfinSourceModel: ObservableObject {
         connectionObserver: (any JellyfinConnectionObserving)? = nil,
         dataSource: (any JellyfinBrowseDataSource)? = nil,
         coverArtProvider: JellyfinCoverArtProvider? = nil,
-        metadataCache: (any SubsonicMetadataCaching)? = nil
+        metadataCache: (any SubsonicMetadataCaching)? = nil,
+        annotationDelivery: (any JellyfinAnnotationDelivering)? = nil
     ) {
         self.listing = listing
         self.connectionObserver = connectionObserver
         self.dataSource = dataSource
         self.coverArtProvider = coverArtProvider
         self.metadataCache = metadataCache
+        let annotations = annotationDelivery.map { JellyfinAnnotationCoordinator(delivery: $0) }
+        self.annotations = annotations
         self.search = dataSource.map { JellyfinMultiSourceSearchViewModel(dataSource: $0) }
+        self.search?.attach(annotations)
         self.observeConnectionChanges()
     }
 

@@ -45,7 +45,7 @@ The mini-player and other secondary windows call `.commandsRemoved()` so SwiftUI
 - `SubsonicMonitorConnectionObserver` -> `UI.SubsonicConnectionObserving`
 - `SubsonicCapabilityObserver` -> `UI.SubsonicCapabilityChangeObserving`
 - `SubsonicRepositoryMetadataCache` -> `SubsonicMetadataCaching`; `SubsonicStreamResolver` -> `SubsonicStreamResolving` (the metadata-cache and stream-resolution seams)
-- `SubsonicScrobbleDelivery` -> `Scrobble.SubsonicScrobbleDelivering`
+- `SubsonicScrobbleDelivery` -> `Scrobble.SubsonicScrobbleDelivering`; `JellyfinScrobbleDelivery` -> `Scrobble.JellyfinScrobbleDelivering` (ADR-097: a refused token makes the Jellyfin monitor check that server again)
 
 When you need module A to call into module B that it cannot import, add a protocol in A and an adapter here, then inject it through the graph. That is the established seam, not a new cross-module dependency.
 
