@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.1.0
+## swift-crypto 5.1.1
 
 <https://github.com/apple/swift-crypto>
 
@@ -485,6 +485,6 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.23.0. The FFmpeg and Chromaprint
+*This file was generated for Bòcan 2.24.0. The FFmpeg and Chromaprint
 versions are pinned in `.ffmpeg-source` and `.chromaprint-source`; the Swift
 package versions are pinned in the workspace `Package.resolved`.*
