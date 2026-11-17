@@ -612,6 +612,16 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Canonical file:** `Makefile` (`WORKSPACE_RESOLVED`)
 
+### Regenerate the project after a rebase or merge, even with no conflict
+
+**Problem:** `ci/xcode-27-2` rebased onto the Jellyfin merge with no conflict, but the result had two `Secrets.xcconfig` file references, two `baseConfigurationReference` lines in Debug and Release, and a group cut in half in `project.pbxproj`.
+
+**Rule:** after any rebase or merge where both sides changed `Bocan.xcodeproj`, run `make generate` and commit the result. Before you push, check that `xcodebuild -list -project Bocan.xcodeproj` still reads the project.
+
+**Why:** XcodeGen gives the `Secrets.xcconfig` reference a new random `TEMP_<UUID>` id on every run. Two branches that each regenerated the project change neighbouring lines with different ids, and git's line merge can keep both sides without seeing a conflict.
+
+**Canonical file:** `project.yml`
+
 ### Snapshot references follow the macOS version that recorded them
 
 **Problem:** after a macOS upgrade, a full local `make test-ui` fails a group of snapshot tests with "does not match reference", although no view changed. On macOS 27 these were the 13 views built on `ContentUnavailableView` (Phone Sync pane, Identify Track no-match and error, Radio empty), because the system draws its title smaller and moves the layout. CI does not catch it: the whole `UISnapshotTests` suite is disabled there.
