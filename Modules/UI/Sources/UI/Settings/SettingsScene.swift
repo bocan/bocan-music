@@ -18,19 +18,25 @@ public struct SettingsScene: View {
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
     private let subsonicViewModel: SubsonicSettingsViewModel?
+    private let jellyfinViewModel: JellyfinSettingsViewModel?
     private let phoneSyncViewModel: PhoneSyncViewModel?
+    /// Which kind of server the Sources page shows (ADR-097). `@State`, seeded
+    /// from the router's pending server id, never `@AppStorage`.
+    @State private var sourcesKind: SourcesKind = .subsonic
 
     public init(
         router: SettingsRouter,
         backupViewModel: BackupSettingsViewModel,
         scrobbleViewModel: ScrobbleSettingsViewModel? = nil,
         subsonicViewModel: SubsonicSettingsViewModel? = nil,
+        jellyfinViewModel: JellyfinSettingsViewModel? = nil,
         phoneSyncViewModel: PhoneSyncViewModel? = nil
     ) {
         self.router = router
         self.scrobbleViewModel = scrobbleViewModel
         self.backupViewModel = backupViewModel
         self.subsonicViewModel = subsonicViewModel
+        self.jellyfinViewModel = jellyfinViewModel
         self.phoneSyncViewModel = phoneSyncViewModel
     }
 
@@ -73,11 +79,29 @@ public struct SettingsScene: View {
     private func consumePendingNavigation() {
         guard let page = self.router.pendingPage else { return }
         self.selection = page
-        if page == .sources, let id = self.router.pendingServerID, let vm = self.subsonicViewModel {
-            Task { await vm.selectServer(id) }
+        if page == .sources, let id = self.router.pendingServerID {
+            Task { await self.selectSource(id) }
         }
         self.router.pendingPage = nil
         self.router.pendingServerID = nil
+    }
+
+    /// Opens the editor for server `id`: the Jellyfin one when the id is a
+    /// Jellyfin server, the Subsonic one otherwise.
+    private func selectSource(_ id: UUID) async {
+        if let jellyfin = self.jellyfinViewModel {
+            await jellyfin.reload()
+            let kind = SourcesKind.kind(forServer: id, jellyfinServerIDs: jellyfin.servers.map(\.id))
+            if kind == .jellyfin {
+                self.sourcesKind = .jellyfin
+                jellyfin.selectServer(id)
+                return
+            }
+        }
+        self.sourcesKind = .subsonic
+        if let subsonic = self.subsonicViewModel {
+            await subsonic.selectServer(id)
+        }
     }
 
     @ViewBuilder
@@ -90,15 +114,11 @@ public struct SettingsScene: View {
             LibrarySettingsView()
 
         case .sources:
-            if let subsonicViewModel = self.subsonicViewModel {
-                SubsonicSettingsView(viewModel: subsonicViewModel)
-            } else {
-                ContentUnavailableView(
-                    L10n.string("Sources Unavailable"),
-                    systemImage: "server.rack",
-                    description: Text(localized: "Music server sources can't be configured right now.")
-                )
-            }
+            SourcesSettingsPage(
+                kind: self.$sourcesKind,
+                subsonicViewModel: self.subsonicViewModel,
+                jellyfinViewModel: self.jellyfinViewModel
+            )
 
         case .playback:
             PlaybackSettingsView()

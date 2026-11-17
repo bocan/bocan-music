@@ -35,13 +35,14 @@ Current internal-module dependencies:
 | Acoustics     | Observability                                                                             |                                              |
 | Persistence   | Observability                                                                             |                                              |
 | Subsonic      | Observability, Persistence                                                                |                                              |
+| Jellyfin      | Observability, Persistence (never Subsonic: ADR-097 mirrors it, it does not share code)   | `JellyfinAPI` and `Get` (the SDK; confined here by `Scripts/audit-jellyfin-sdk-imports.py`) |
 | Podcasts      | Observability, Persistence                                                                |                                              |
 | SyncServer    | Observability, Persistence, AudioEngine, Library, Metadata, Podcasts (AudioEngine edge: ADR-088 transcoding) |                           |
 | Library       | Observability, Persistence, Metadata, Acoustics                                           | GRDB (playlists, smart-playlist SQL compiler) |
 | Playback      | Observability, Persistence, AudioEngine                                                   |                                              |
 | Scrobble      | Observability, Persistence, Playback                                                      | GRDB (the scrobble queue repository)         |
-| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
-| App           | UI, Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics, Podcasts, SyncServer (all declared in `project.yml`; UI does not pull in Podcasts or SyncServer) | Metadata (the E2E fixture seeder only)       |
+| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Jellyfin, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
+| App           | UI, Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Jellyfin, Acoustics, Podcasts, SyncServer (all declared in `project.yml`; UI does not pull in Podcasts or SyncServer) | Metadata (the E2E fixture seeder only)       |
 
 The first column lists direct manifest edges only. A module may also import a package that one of its declared dependencies owns: GRDB through `Persistence`, `Metadata` through `Library`. The version floor stays in the owning module's manifest and nowhere else, so a dependency bump has one place to change. Such an import is recorded in the second column; an import that no declared dependency owns is an error.
 
@@ -75,7 +76,7 @@ UI is the only module that imports `AppKit`. A lower module that wants an AppKit
 ## Logging
 
 - Use the `AppLogger` facade from `Observability`, never `print`, never raw `os_log`.
-- Categories (create the module's category on first use): `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `sync`.
+- Categories (create the module's category on first use): `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `jellyfin`, `sync`.
 - Every async op: `log.debug("op.start", [...])` / `log.debug("op.end", ["ms": duration])`.
 - Every caught error: `log.error("op.failed", ["reason": ..., "error": String(reflecting: err)])`.
 - **Redact** anything matching keys in `Observability.sensitiveKeys` (`apiKey`, `token`, `sessionKey`, `password`, `authorization`). Add to that list as you add integrations.

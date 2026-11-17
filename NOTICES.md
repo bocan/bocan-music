@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.1.0
+## swift-crypto 5.1.1
 
 <https://github.com/apple/swift-crypto>
 
@@ -473,6 +473,124 @@ The Apache 2.0 full text is available at:
 
 ---
 
+## Jellyfin SDK for Swift 3.4.0
+
+<https://github.com/jellyfin/jellyfin-sdk-swift>
+
+The client for Jellyfin music servers. Licensed under the **Mozilla Public
+License, Version 2.0** (MPL 2.0).
+
+Bòcan uses the library unmodified, as a Swift package linked into the app.
+Its source code, including the version named above, is available at
+<https://github.com/jellyfin/jellyfin-sdk-swift>.
+
+The MPL 2.0 full text is available at:
+<https://www.mozilla.org/en-US/MPL/2.0/>
+
+"Jellyfin" is a name of the Jellyfin project. Bòcan is not made or endorsed
+by the Jellyfin project.
+
+---
+
+## Get 2.2.1
+
+<https://github.com/kean/Get>
+
+The HTTP client underneath the Jellyfin SDK.
+
+MIT License
+
+Copyright (c) 2021-2024 Alexander Grebenyuk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## SwiftNIO 2.105.0
+
+<https://github.com/apple/swift-nio>
+
+Networking underneath the Jellyfin SDK. Licensed under the **Apache License,
+Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+The SwiftNIO NOTICE file says:
+
+Copyright 2017, 2018 The SwiftNIO Project. This product is heavily
+influenced by Netty (Apache License 2.0, <https://netty.io>). It contains
+NodeJS's llhttp (MIT), "cpp_magic.h" from Thomas Nixon and Jonathan
+Heathcote's uSHET (MIT), "sha1.c" and "sha1.h" from FreeBSD (BSD 3-Clause,
+Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project), and derivations of
+Fabian Fett's "Base64.swift", of code from AsyncHTTPClient, of
+"_TinyArray.swift" from SwiftCertificates, of the mocking infrastructure from
+Swift System and of "TokenBucket.swift" from Swift Package Manager (all
+Apache License 2.0).
+
+---
+
+## SwiftNIO Transport Services 1.28.0
+
+<https://github.com/apple/swift-nio-transport-services>
+
+SwiftNIO on Apple's Network framework, linked by the Jellyfin SDK. Licensed
+under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## Swift Atomics 1.3.1
+
+<https://github.com/apple/swift-atomics>
+
+Used by SwiftNIO. Licensed under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## Swift Collections 1.7.6
+
+<https://github.com/apple/swift-collections>
+
+Used by SwiftNIO. Licensed under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## Swift System 1.9.0
+
+<https://github.com/apple/swift-system>
+
+Used by SwiftNIO. Licensed under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
 ## Podcast Index API
 
 This product uses the Podcast Index API (<https://podcastindex.org>). Use of the Podcast Index API is subject to the Podcast Index API Terms of Service.
@@ -485,6 +603,6 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.23.0. The FFmpeg and Chromaprint
+*This file was generated for Bòcan 2.24.0. The FFmpeg and Chromaprint
 versions are pinned in `.ffmpeg-source` and `.chromaprint-source`; the Swift
 package versions are pinned in the workspace `Package.resolved`.*

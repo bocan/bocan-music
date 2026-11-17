@@ -2,6 +2,7 @@
 import AppKit
 import AudioEngine
 import Foundation
+import Jellyfin
 import Observability
 import Persistence
 import Playback
@@ -56,6 +57,12 @@ public final class NowPlayingViewModel {
     /// `nowPlayingSubsonicServerID` this lets per-server Songs lists move their
     /// selection onto the playing row, mirroring the local library.
     public private(set) var nowPlayingSubsonicSongID: String?
+    /// The Jellyfin server of the stream currently loaded, or `nil` when the
+    /// current item is not a Jellyfin stream (ADR-097).
+    public private(set) var nowPlayingJellyfinServerID: UUID?
+    /// The Jellyfin item currently loaded, or `nil`. With the server id it lets
+    /// a Jellyfin song table move its selection onto the playing row.
+    public private(set) var nowPlayingJellyfinItemID: String?
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
     public private(set) var isPaused = false
@@ -99,6 +106,7 @@ public final class NowPlayingViewModel {
     private let engine: any Transport
     private let database: Database
     private let subsonicCoverArtProvider: SubsonicCoverArtProvider?
+    private let jellyfinCoverArtProvider: JellyfinCoverArtProvider?
     // nonisolated(unsafe): assigned only from @MainActor methods and read once
     // from the nonisolated `deinit`, which has exclusive access, never
     // concurrently. Task handles are themselves Sendable. See #279.
@@ -154,6 +162,7 @@ public final class NowPlayingViewModel {
         self.nowPlayingTrackID != nil
             || self.nowPlayingRadioStreamURL != nil
             || self.nowPlayingSubsonicSongID != nil
+            || self.nowPlayingJellyfinItemID != nil
             || self.isPodcast
     }
 
@@ -167,11 +176,13 @@ public final class NowPlayingViewModel {
         engine: any Transport,
         database: Database,
         scrobbleRepository: ScrobbleQueueRepository? = nil,
-        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil
+        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil,
+        jellyfinCoverArtProvider: JellyfinCoverArtProvider? = nil
     ) {
         self.engine = engine
         self.database = database
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
+        self.jellyfinCoverArtProvider = jellyfinCoverArtProvider
         self.startObservingState()
         if let qp = engine as? QueuePlayer {
             self.startObservingCurrentTrack(qp)
@@ -249,6 +260,8 @@ public final class NowPlayingViewModel {
         // A local track is not a Subsonic stream; drop any stale stream identity.
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
+        self.nowPlayingJellyfinServerID = nil
+        self.nowPlayingJellyfinItemID = nil
         self.nowPlayingRadioStreamURL = nil
         self.nowPlayingRadioStationName = nil
         self.nowPlayingIsLoved = track.loved
@@ -322,8 +335,13 @@ public final class NowPlayingViewModel {
         self.album = item.albumName ?? ""
         self.duration = item.duration
         self.artwork = nil
+        // Only the Jellyfin branch below sets these again.
+        self.nowPlayingJellyfinServerID = nil
+        self.nowPlayingJellyfinItemID = nil
 
-        if case let .podcast(feedURL, episodeGUID) = item.playableSource {
+        if case let .jellyfin(serverID, itemID) = item.playableSource {
+            await self.applyJellyfinItem(serverID: serverID, itemID: itemID)
+        } else if case let .podcast(feedURL, episodeGUID) = item.playableSource {
             self.nowPlayingRadioStreamURL = nil
             self.nowPlayingRadioStationName = nil
             await self.applyPodcastItem(feedURL: feedURL, episodeGUID: episodeGUID)
@@ -365,6 +383,8 @@ public final class NowPlayingViewModel {
         self.nowPlayingArtistID = nil
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
+        self.nowPlayingJellyfinServerID = nil
+        self.nowPlayingJellyfinItemID = nil
         self.nowPlayingRadioStreamURL = nil
         self.nowPlayingRadioStationName = nil
         self.isPodcast = false
@@ -799,6 +819,43 @@ private extension NowPlayingViewModel {
         }
     }
 
+    /// Fills the stream identity of a Jellyfin song and loads its cover
+    /// (ADR-097). Every other source's identity is cleared.
+    private func applyJellyfinItem(serverID: UUID, itemID: String) async {
+        self.isPodcast = false
+        self.podcastID = nil
+        self.podcastFeedURL = nil
+        self.podcastGUID = nil
+        self.nowPlayingSubsonicServerID = nil
+        self.nowPlayingSubsonicSongID = nil
+        self.nowPlayingRadioStreamURL = nil
+        self.nowPlayingRadioStationName = nil
+        self.nowPlayingJellyfinServerID = serverID
+        self.nowPlayingJellyfinItemID = itemID
+        await self.loadJellyfinArtwork(serverID: serverID, itemID: itemID)
+    }
+
+    /// Loads the cover of a playing Jellyfin song (ADR-097). The song id is the
+    /// image owner here: the queue item does not carry the album's image id,
+    /// and a 12.2.0 server gives every song its own copy of the album picture.
+    /// The URL carries the access token, so only the item id is logged.
+    func loadJellyfinArtwork(serverID: UUID, itemID: String) async {
+        guard let provider = self.jellyfinCoverArtProvider else { return }
+        do {
+            guard let url = try await provider.coverArtURL(serverID: serverID, itemID: itemID, tag: nil, size: 600) else {
+                return
+            }
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = NSImage(data: data) else { return }
+            // Only apply if the same Jellyfin song is still current.
+            if self.nowPlayingJellyfinServerID == serverID, self.nowPlayingJellyfinItemID == itemID {
+                self.artwork = image
+            }
+        } catch {
+            self.log.warning("nowplaying.jellyfin.artwork.failed", ["itemID": itemID, "error": String(reflecting: error)])
+        }
+    }
+
     func resolveMetadata(for track: Track) async {
         let trackID = track.id
         var artworkPath: String?
@@ -984,13 +1041,24 @@ private extension NowPlayingViewModel {
     func refreshSourceFacts() async {
         let details = await self.engine.currentStreamDetails
         let codec = await self.engine.currentCodec
-        self.applySourceFacts(NowPlayingSourceFacts(details: details, codec: codec))
+        // A streamed song has no library columns, only the downloaded copy:
+        // its facts stand in for the columns (ADR-097 slice 7).
+        let fileFacts = self.isStreamedSong ? await self.engine.currentFileFacts : nil
+        self.applySourceFacts(NowPlayingSourceFacts(details: details, codec: codec), fileFacts: fileFacts)
+    }
+
+    /// True while a Subsonic or Jellyfin song is current: no library row, but
+    /// a whole local file in the stream cache. Radio and podcasts are left out.
+    var isStreamedSong: Bool {
+        self.nowPlayingSubsonicSongID != nil || self.nowPlayingJellyfinItemID != nil
     }
 
     /// Merges live decoder facts over the current item's columns, and leaves
-    /// `sourceFacts` nil when the two together say nothing.
-    func applySourceFacts(_ live: NowPlayingSourceFacts) {
-        let merged = (self.trackSourceFacts ?? NowPlayingSourceFacts()).merging(live)
+    /// `sourceFacts` nil when the two together say nothing. For a streamed
+    /// song `fileFacts` fills the place of the columns.
+    func applySourceFacts(_ live: NowPlayingSourceFacts, fileFacts: LoadedFileFacts? = nil) {
+        let base = self.trackSourceFacts ?? fileFacts.map(NowPlayingSourceFacts.init(file:)) ?? NowPlayingSourceFacts()
+        let merged = base.merging(live)
         self.sourceFacts = merged.isEmpty ? nil : merged
     }
 }

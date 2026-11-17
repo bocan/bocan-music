@@ -29,7 +29,7 @@ extension QueuePlayer {
         let url = resolved.url
 
         // Fetch track metadata (for NowPlaying).
-        let track = await self.nowPlayingTrack(item.trackID)
+        let track = await self.nowPlayingTrack(for: item)
         self.emitCurrentTrack(track)
 
         await self.loadMarkers(for: item)
@@ -63,6 +63,7 @@ extension QueuePlayer {
         self.log.debug("queueplayer.loaded", ["trackID": item.trackID])
 
         await self.precacheNextSubsonicItem()
+        await self.precacheNextJellyfinItem()
     }
 
     /// ADR-087: load the track's CUE markers. Fewer than two is inert
@@ -129,6 +130,18 @@ extension QueuePlayer {
         }
     }
 
+    /// Fire-and-forget pre-cache of the next item if it is a Jellyfin source
+    /// (ADR-097). The resolver itself checks the server's `precacheNext` flag.
+    private func precacheNextJellyfinItem() async {
+        if let resolver = self.jellyfinResolver,
+           let next = await self.queue.peekNextIgnoringRepeatOne(),
+           case let .jellyfin(nextServerID, nextItemID) = next.playableSource {
+            Task.detached(priority: .utility) {
+                await resolver.precache(serverID: nextServerID, itemID: nextItemID)
+            }
+        }
+    }
+
     /// Resolves the on-disk cover-art path for a track, preferring the
     /// track's own embedded art (unique per-track art, e.g. a single with
     /// distinct artwork) and falling back to the album's cached path.
@@ -174,6 +187,12 @@ extension QueuePlayer {
         if case .podcast = item.playableSource {
             return
         }
+        // A Jellyfin song has no `tracks` row either; it carries its own
+        // context, as a Subsonic song does (ADR-097).
+        if let context = Self.jellyfinPlayContext(for: item) {
+            await self.historyRecorder.trackDidStart(jellyfin: context)
+            return
+        }
         if let context = Self.subsonicPlayContext(for: item) {
             await self.historyRecorder.trackDidStart(subsonic: context)
         } else {
@@ -199,15 +218,36 @@ extension QueuePlayer {
         )
     }
 
+    /// The scrobble payload for a Jellyfin queue item, or nil for any other
+    /// source (ADR-097). The album artist stays nil, as for Subsonic: the
+    /// queue item does not carry one.
+    static func jellyfinPlayContext(for item: QueueItem) -> JellyfinPlayContext? {
+        guard case let .jellyfin(serverID, itemID) = item.playableSource else { return nil }
+        return JellyfinPlayContext(
+            serverID: serverID,
+            itemID: itemID,
+            title: item.title ?? "",
+            artist: item.artistName ?? "",
+            albumArtist: nil,
+            album: item.albumName,
+            duration: item.duration
+        )
+    }
+
     /// The track row behind the now-playing metadata, or nil with a log line:
     /// a failed read otherwise leaves the strip, the lock screen and the menu
     /// bar showing nothing, as though no track were loaded (#494).
-    func nowPlayingTrack(_ trackID: Int64) async -> Track? {
+    ///
+    /// A remote item (Subsonic, Jellyfin, podcast, radio) has no `tracks` row,
+    /// only the placeholder id -1, so it is not looked up: the read could only
+    /// fail, and its log line would be noise on every remote track.
+    func nowPlayingTrack(for item: QueueItem) async -> Track? {
+        guard !item.playableSource.isRemote else { return nil }
         do {
-            return try await self.trackRepo.fetch(id: trackID)
+            return try await self.trackRepo.fetch(id: item.trackID)
         } catch {
             self.log.warning("queueplayer.nowPlaying.trackLookupFailed", [
-                "trackID": trackID,
+                "trackID": item.trackID,
                 "error": String(reflecting: error),
             ])
             return nil

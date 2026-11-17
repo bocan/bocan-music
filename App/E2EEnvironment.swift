@@ -86,6 +86,25 @@ enum E2EEnvironment {
         self.isActive ? "io.cloudcauldron.bocan.scrobble.e2e" : Credentials.defaultService
     }
 
+    /// The Keychain service Jellyfin sign-in tokens are stored under in E2E
+    /// mode (ADR-097 slice 9), or nil for the store's own production name.
+    /// The server rows live in the per-run database, but the token is a
+    /// login-Keychain item, so without this a journey that signs in would
+    /// write beside the developer's real Jellyfin tokens. One fixed name is
+    /// enough: the journey removes its server, which deletes the item, and
+    /// the store's launch sweep deletes any item a failed run left behind,
+    /// because the next run's fresh database has no row for it.
+    static var jellyfinKeychainService: String? {
+        self.isActive ? "io.cloudcauldron.bocan.jellyfin.e2e" : nil
+    }
+
+    /// Where the Jellyfin stream cache goes in E2E mode: this run's home, so
+    /// streamed fixture songs never land in the real Caches folder. Nil in
+    /// normal operation.
+    static var jellyfinCachesFolder: URL? {
+        self.home
+    }
+
     /// When set, `E2ESeeder` adds the ADR-087 cue fixture (a third tone plus
     /// a sidecar cue sheet) to the seed library. Opt-in per journey: the rest
     /// of the suite is calibrated to the two-tone world (selection counts,

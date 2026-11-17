@@ -22,6 +22,12 @@ public struct SubsonicSidebarSection: View {
     public var onDisableServerInSidebar: ((UUID) -> Void)?
     public var onEnableServerInSidebar: ((UUID) -> Void)?
     public var onRemoveServer: ((SubsonicSidebarServer) -> Void)?
+    /// ADR-097: further server rows, drawn under the Subsonic ones (the Jellyfin servers).
+    public var extraServerRows: AnyView?
+    /// ADR-097: further "Show ..." items for the Hidden Sources menu. `nil` when there are none.
+    public var extraHiddenMenuItems: AnyView?
+    /// ADR-097: `true` when servers of another kind exist, so the empty-state button stays hidden.
+    public var hasOtherServers: Bool
 
     public init(
         sectionExpanded: Binding<Bool>,
@@ -36,7 +42,10 @@ public struct SubsonicSidebarSection: View {
         onEditServer: ((UUID) -> Void)? = nil,
         onDisableServerInSidebar: ((UUID) -> Void)? = nil,
         onEnableServerInSidebar: ((UUID) -> Void)? = nil,
-        onRemoveServer: ((SubsonicSidebarServer) -> Void)? = nil
+        onRemoveServer: ((SubsonicSidebarServer) -> Void)? = nil,
+        extraServerRows: AnyView? = nil,
+        extraHiddenMenuItems: AnyView? = nil,
+        hasOtherServers: Bool = false
     ) {
         self._sectionExpanded = sectionExpanded
         self._expandedServers = expandedServers
@@ -51,12 +60,15 @@ public struct SubsonicSidebarSection: View {
         self.onDisableServerInSidebar = onDisableServerInSidebar
         self.onEnableServerInSidebar = onEnableServerInSidebar
         self.onRemoveServer = onRemoveServer
+        self.extraServerRows = extraServerRows
+        self.extraHiddenMenuItems = extraHiddenMenuItems
+        self.hasOtherServers = hasOtherServers
     }
 
     public var body: some View {
         Section {
             if self.sectionExpanded {
-                if self.servers.isEmpty {
+                if self.servers.isEmpty, !self.hasOtherServers {
                     // Tappable empty-state CTA so a first-time user can find server
                     // setup without discovering the header "+" (#309). Falls back to
                     // a plain label only if no add handler was injected.
@@ -80,6 +92,7 @@ public struct SubsonicSidebarSection: View {
                         self.serverRows(for: server, shortcutIndex: index)
                     }
                 }
+                self.extraServerRows
             }
         } header: {
             self.sourcesHeader
@@ -128,7 +141,7 @@ public struct SubsonicSidebarSection: View {
             if let onManageSources {
                 Button(L10n.string("Manage Sources")) { onManageSources() }
             }
-            if !self.hiddenServers.isEmpty, let onEnableServerInSidebar {
+            if !self.hiddenServers.isEmpty || self.extraHiddenMenuItems != nil, let onEnableServerInSidebar {
                 Divider()
                 Menu(L10n.string("Hidden Sources")) {
                     ForEach(self.hiddenServers, id: \.id) { server in
@@ -136,6 +149,7 @@ public struct SubsonicSidebarSection: View {
                             onEnableServerInSidebar(server.id)
                         }
                     }
+                    self.extraHiddenMenuItems
                 }
             }
         }

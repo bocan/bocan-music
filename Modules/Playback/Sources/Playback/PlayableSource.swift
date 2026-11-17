@@ -18,6 +18,7 @@ import Foundation
 /// { "kind": "subsonic", "serverID": "<uuid>", "songID": "tr-1234" }
 /// { "kind": "internetRadio", "streamURL": "<absolute URL>" }
 /// { "kind": "podcast", "feedURL": "<absolute URL>", "episodeGUID": "<guid>" }
+/// { "kind": "jellyfin", "serverID": "<uuid>", "itemID": "<opaque id>" }
 /// ```
 /// Legacy persisted queues (v1 schema) lack this field entirely; the
 /// restore path in `QueuePersistence` upgrades those to
@@ -50,6 +51,13 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// `PodcastEpisodeResolving`; Playback never imports the Podcasts module.
     case podcast(feedURL: URL, episodeGUID: String)
 
+    /// A song that streams from a configured Jellyfin server (ADR-097, D4).
+    /// A sibling of `.subsonic`, not a reuse of it, so a build that reads only
+    /// Subsonic still reads every Subsonic queue. The App-injected
+    /// `JellyfinStreamResolving` turns the pair into a local cache-file URL.
+    /// `itemID` is opaque: never parse it or change its case.
+    case jellyfin(serverID: UUID, itemID: String)
+
     // MARK: - Convenience
 
     /// `true` when the source must be streamed from a remote server.
@@ -58,7 +66,7 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case .localBookmark:
             false
 
-        case .subsonic, .internetRadio, .podcast:
+        case .subsonic, .internetRadio, .podcast, .jellyfin:
             true
         }
     }
@@ -69,7 +77,7 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// are not live streams.
     public var isLiveStream: Bool {
         switch self {
-        case .localBookmark, .subsonic, .podcast:
+        case .localBookmark, .subsonic, .podcast, .jellyfin:
             false
 
         case .internetRadio:
@@ -109,6 +117,22 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         return nil
     }
 
+    /// The server ID, when the source is `.jellyfin`. `nil` otherwise.
+    public var jellyfinServerID: UUID? {
+        if case let .jellyfin(serverID, _) = self {
+            return serverID
+        }
+        return nil
+    }
+
+    /// The Jellyfin item ID, when the source is `.jellyfin`. `nil` otherwise.
+    public var jellyfinItemID: String? {
+        if case let .jellyfin(_, itemID) = self {
+            return itemID
+        }
+        return nil
+    }
+
     // MARK: - Codable
 
     private enum Kind: String, Codable {
@@ -116,6 +140,7 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case subsonic
         case internetRadio
         case podcast
+        case jellyfin
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -126,6 +151,7 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case streamURL
         case feedURL
         case episodeGUID
+        case itemID
     }
 
     public init(from decoder: Decoder) throws {
@@ -149,6 +175,11 @@ public enum PlayableSource: Sendable, Hashable, Codable {
             let feedURL = try container.decode(URL.self, forKey: .feedURL)
             let guid = try container.decode(String.self, forKey: .episodeGUID)
             self = .podcast(feedURL: feedURL, episodeGUID: guid)
+
+        case .jellyfin:
+            let serverID = try container.decode(UUID.self, forKey: .serverID)
+            let itemID = try container.decode(String.self, forKey: .itemID)
+            self = .jellyfin(serverID: serverID, itemID: itemID)
         }
     }
 
@@ -174,6 +205,11 @@ public enum PlayableSource: Sendable, Hashable, Codable {
             try container.encode(Kind.podcast, forKey: .kind)
             try container.encode(feedURL, forKey: .feedURL)
             try container.encode(guid, forKey: .episodeGUID)
+
+        case let .jellyfin(serverID, itemID):
+            try container.encode(Kind.jellyfin, forKey: .kind)
+            try container.encode(serverID, forKey: .serverID)
+            try container.encode(itemID, forKey: .itemID)
         }
     }
 }

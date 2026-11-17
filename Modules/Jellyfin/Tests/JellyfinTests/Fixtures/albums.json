@@ -1,0 +1,24 @@
+{
+  "Items": [
+    {
+      "Name": "The Waves",
+      "Id": "9d8c7b6a5f4e3d2c1b0a998877665544",
+      "RunTimeTicks": 21630000000,
+      "ProductionYear": 2012,
+      "ChildCount": 12,
+      "Genres": ["Folk"],
+      "AlbumArtist": "Lilly Wood and The Prick",
+      "AlbumArtists": [{ "Name": "Lilly Wood and The Prick", "Id": "aa11bb22cc33dd44ee55ff6677889900" }],
+      "ImageTags": { "Primary": "c0ffee00c0ffee00c0ffee00c0ffee00" },
+      "UserData": { "IsFavorite": true, "PlayCount": 0, "PlaybackPositionTicks": 0, "Played": false, "Key": "a1" },
+      "Type": "MusicAlbum"
+    },
+    {
+      "Name": "No cover, no year",
+      "Id": "00000000000000000000000000000001",
+      "Type": "MusicAlbum"
+    }
+  ],
+  "TotalRecordCount": 2,
+  "StartIndex": 0
+}

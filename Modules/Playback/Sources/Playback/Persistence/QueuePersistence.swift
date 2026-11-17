@@ -72,6 +72,30 @@ private struct PersistedQueueItemV2: Codable {
     }
 }
 
+// MARK: - LenientQueueItemV2
+
+/// One saved queue item that is allowed to fail to decode.
+///
+/// A build cannot read a `PlayableSource` kind that a newer build wrote (for
+/// example a `.jellyfin` item, ADR-097, read by a build that has no such case).
+/// Before this, one such item failed the whole payload and the user lost the
+/// entire queue. Now that item is dropped and the reason is kept for the log.
+private struct LenientQueueItemV2: Decodable {
+    let item: PersistedQueueItemV2?
+    /// Why the item did not decode, for the restore log; `nil` when it did.
+    let failure: String?
+
+    init(from decoder: any Decoder) throws {
+        do {
+            self.item = try PersistedQueueItemV2(from: decoder)
+            self.failure = nil
+        } catch {
+            self.item = nil
+            self.failure = String(reflecting: error)
+        }
+    }
+}
+
 // MARK: - PersistedQueueItemV1 (legacy)
 
 /// Legacy queue item shape without `playableSource`. Decoded only during a
@@ -127,20 +151,39 @@ private struct QueuePayloadV2: Codable {
     var currentIndex: Int?
     var repeatMode: RepeatMode
     var shuffleState: ShuffleState
+    /// Why each dropped item did not decode. Never written; filled only by
+    /// the decoder, so `restore()` can log what the user lost.
+    var droppedItemFailures: [String] = []
 
     private enum CodingKeys: String, CodingKey {
         case version, items, currentIndex, repeatMode, shuffleState
     }
 
     /// Forward-compatible decoder: `version` defaults to `2` so blobs written
-    /// before this field was added continue to decode correctly.
+    /// before this field was added continue to decode correctly. An item that
+    /// does not decode is dropped on its own (see `LenientQueueItemV2`), and
+    /// `currentIndex` moves so it still points at the same item, or at the
+    /// next one that survived when the current item itself was dropped.
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 2
-        self.items = try c.decode([PersistedQueueItemV2].self, forKey: .items)
-        self.currentIndex = try c.decodeIfPresent(Int.self, forKey: .currentIndex)
+        let lenient = try c.decode([LenientQueueItemV2].self, forKey: .items)
+        self.items = lenient.compactMap(\.item)
+        self.droppedItemFailures = lenient.compactMap(\.failure)
+        let savedIndex = try c.decodeIfPresent(Int.self, forKey: .currentIndex)
+        self.currentIndex = Self.adjustedIndex(savedIndex, in: lenient.map { $0.item != nil })
         self.repeatMode = try c.decode(RepeatMode.self, forKey: .repeatMode)
         self.shuffleState = try c.decode(ShuffleState.self, forKey: .shuffleState)
+    }
+
+    /// The index of the saved current item among the items that survived.
+    /// `kept[i]` says whether saved item `i` decoded. A dropped current item
+    /// hands over to the next survivor; with none after it, nothing is current.
+    static func adjustedIndex(_ index: Int?, in kept: [Bool]) -> Int? {
+        guard let index, index >= 0, index < kept.count else { return index }
+        let survivorsBefore = kept[..<index].count { $0 }
+        let survivorsTotal = kept.count { $0 }
+        return survivorsBefore < survivorsTotal ? survivorsBefore : nil
     }
 
     init(
@@ -265,6 +308,13 @@ public actor QueuePersistence {
                 }
                 let items = payload.items.map { $0.toQueueItem() }
                 self.log.debug("queue.restore", ["count": items.count, "schema": payload.version])
+                if !payload.droppedItemFailures.isEmpty {
+                    // The rest of the queue restores; these items are gone.
+                    self.log.warning("queue.restore.itemsDropped", [
+                        "dropped": payload.droppedItemFailures.count,
+                        "firstError": payload.droppedItemFailures[0],
+                    ])
+                }
                 return RestoredQueue(
                     items: items,
                     currentIndex: payload.currentIndex,

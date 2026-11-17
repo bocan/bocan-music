@@ -1,0 +1,31 @@
+{
+  "Items": [
+    {
+      "Name": "Road trip",
+      "Id": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+      "ChildCount": 25,
+      "RunTimeTicks": 54000000000,
+      "ImageTags": { "Primary": "abababababababababababababababab" },
+      "MediaType": "Audio",
+      "Type": "Playlist"
+    },
+    {
+      "Name": "Imported from an M3U file",
+      "Id": "c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4",
+      "ChildCount": 12,
+      "RunTimeTicks": 27489333340,
+      "ImageTags": {},
+      "MediaType": "Unknown",
+      "Type": "Playlist"
+    },
+    {
+      "Name": "Films to watch",
+      "Id": "d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5d5",
+      "ChildCount": 3,
+      "MediaType": "Video",
+      "Type": "Playlist"
+    }
+  ],
+  "TotalRecordCount": 3,
+  "StartIndex": 0
+}

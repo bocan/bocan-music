@@ -574,7 +574,8 @@ struct BocanApp: App {
     private static func makeScrobble(
         database db: Database,
         log: AppLogger,
-        subsonicDelivery: any SubsonicScrobbleDelivering
+        subsonicDelivery: any SubsonicScrobbleDelivering,
+        jellyfinDelivery: any JellyfinScrobbleDelivering
     ) -> ScrobbleParts {
         let credentials = Credentials(service: E2EEnvironment.scrobbleCredentialsService)
         let adapter = CredentialsAdapter(store: credentials)
@@ -590,6 +591,8 @@ struct BocanApp: App {
         providers.append(ListenBrainzProvider(http: http, credentials: adapter))
         providers.append(RockskyProvider(http: http, credentials: adapter))
         providers.append(SubsonicScrobbleProvider(delivery: subsonicDelivery))
+        // ADR-097: Jellyfin play reports.
+        providers.append(JellyfinScrobbleProvider(delivery: jellyfinDelivery))
         let repo = ScrobbleQueueRepository(database: db)
         let reachability = SystemReachability()
         let service = ScrobbleService(providers: providers, repository: repo, reachability: reachability)
@@ -625,6 +628,8 @@ struct AppGraph {
     let subsonicStore: SubsonicServerStore
     let subsonicService: SubsonicService
     let subsonicSettingsViewModel: SubsonicSettingsViewModel
+    /// ADR-097: the Settings -> Sources -> Jellyfin view model.
+    let jellyfinSettingsViewModel: JellyfinSettingsViewModel
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
     let logConsoleViewModel: LogConsoleViewModel
@@ -821,12 +826,15 @@ extension BocanApp {
         let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
         let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
         let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore, service: subsonicService)
+        // ADR-097: the whole Jellyfin graph, built in one place.
+        let jellyfin = JellyfinWiring.make(database: db)
 
         // Build the scrobble service before the player so the sink can be wired in.
         let scrobbleParts = Self.makeScrobble(
             database: db,
             log: log,
-            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore)
+            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore),
+            jellyfinDelivery: jellyfin.scrobbleDelivery
         )
         let backupSettingsViewModel = BackupSettingsViewModel(database: db)
 
@@ -868,6 +876,11 @@ extension BocanApp {
         let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
+        // ADR-097: the same for Jellyfin, in its own `JellyfinStreams` folder.
+        // An E2E run puts it in the run's own home instead (slice 9).
+        let jellyfinStreamResolver = jellyfin.makeStreamResolver(
+            cachesFolder: E2EEnvironment.jellyfinCachesFolder ?? streamCacheDir.deletingLastPathComponent()
+        )
 
         // ADR-042: build a PodcastService and adapt it to the player's
         // PodcastEpisodeResolving seam so .podcast queue items can play,
@@ -906,7 +919,8 @@ extension BocanApp {
             database: db,
             scrobbleSink: scrobbleParts.service,
             subsonicResolver: subsonicStreamResolver,
-            podcastResolver: podcastResolver
+            podcastResolver: podcastResolver,
+            jellyfinResolver: jellyfinStreamResolver
         )
         let scanner = LibraryScanner(database: db)
         // Fills tracks.content_hash (the Phone Sync manifest sha256 / ETag) for
@@ -960,6 +974,7 @@ extension BocanApp {
             subsonicAnnotationDelivery: subsonicAnnotations,
             subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor),
+            jellyfin: jellyfin.sourceModel,
             podcastLibrary: podcastService,
             podcastActions: podcastActions,
             podcastSearch: podcastSearch,
@@ -1067,6 +1082,7 @@ extension BocanApp {
         // ADR-004 audit H1: re-open FSEvent streams after the system wakes.
         Self.installLibraryWakeObserver(scanner: scanner)
         Self.installSubsonicWakeObserver(monitor: subsonicMonitor)
+        jellyfin.installWakeObserver()
 
         // ADR-004 audit M1: kick off the FSEvents watcher at app launch (gated on
         // the `library.watchForChanges` preference).
@@ -1128,6 +1144,9 @@ extension BocanApp {
                 lvm: lvm
             )
         }
+        // ADR-097: the same for Jellyfin. The sidebar reload at its end is the
+        // idempotent catch-all that `JellyfinSourceModel.bootstrapServers` also runs.
+        Task { await jellyfin.hydrate() }
 
         return AppGraph(
             database: db,
@@ -1147,6 +1166,7 @@ extension BocanApp {
             subsonicStore: subsonicStore,
             subsonicService: subsonicService,
             subsonicSettingsViewModel: subsonicSettingsViewModel,
+            jellyfinSettingsViewModel: jellyfin.settingsViewModel,
             settingsRouter: SettingsRouter(),
             logConsoleViewModel: LogConsoleViewModel(),
             syncServer: syncServer,

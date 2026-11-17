@@ -9,11 +9,16 @@ import SwiftUI
 /// Each row sends a `SidebarDestination` to `LibraryViewModel.selectDestination(_:)`.
 public struct Sidebar: View {
     @ObservedObject public var vm: LibraryViewModel
+    /// ADR-097: observed directly. `LibraryViewModel` does not forward the
+    /// Jellyfin model's changes, so reading it through `vm` would leave the
+    /// Jellyfin rows stale.
+    @ObservedObject private var jellyfin: JellyfinSourceModel
     @Environment(\.openSettings) private var openSettings
     @Environment(\.settingsRouter) private var settingsRouter
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
+        self.jellyfin = vm.jellyfin
     }
 
     public var body: some View {
@@ -80,7 +85,12 @@ public struct Sidebar: View {
                 onEditServer: self.editServer,
                 onDisableServerInSidebar: self.disableServerInSidebar,
                 onEnableServerInSidebar: self.enableServerInSidebar,
-                onRemoveServer: self.removeServer
+                onRemoveServer: self.removeServer,
+                extraServerRows: AnyView(self.jellyfinRows),
+                extraHiddenMenuItems: self.jellyfin.hiddenServers.isEmpty ? nil : AnyView(
+                    JellyfinHiddenServerMenuItems(model: self.jellyfin, onEnable: self.enableJellyfinServerInSidebar)
+                ),
+                hasOtherServers: !self.jellyfin.servers.isEmpty
             )
 
             Section {
@@ -147,14 +157,61 @@ public struct Sidebar: View {
             ),
             titleVisibility: .visible,
             presenting: self.vm.subsonicServerPendingRemoval
-        ) { _ in
+        ) { server in
             Button(L10n.string("Remove Server"), role: .destructive) {
-                Task { await self.vm.confirmRemoveSubsonicServer() }
+                Task { await self.vm.confirmRemoveSubsonicServer(server) }
             }
             Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { _ in
             Text(localized: "This removes the server and its saved credentials from this Mac. Your music on the server isn't affected.")
         }
+        .confirmationDialog(
+            self.jellyfin.serverPendingRemoval.map { L10n.string("Remove \u{201C}\($0.name)\u{201D}?") } ?? L10n.string("Remove Server?"),
+            isPresented: Binding(
+                get: { self.jellyfin.serverPendingRemoval != nil },
+                set: {
+                    if !$0 {
+                        self.jellyfin.serverPendingRemoval = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible,
+            presenting: self.jellyfin.serverPendingRemoval
+        ) { server in
+            Button(L10n.string("Remove Server"), role: .destructive) {
+                Task { await self.jellyfin.confirmRemoveServer(server) }
+            }
+            Button(L10n.string("Cancel"), role: .cancel) {}
+        } message: { _ in
+            Text(localized: "This removes the server and its saved credentials from this Mac. Your music on the server isn't affected.")
+        }
+    }
+
+    // MARK: - Jellyfin rows (ADR-097)
+
+    private var jellyfinRows: some View {
+        JellyfinSidebarRows(
+            model: self.jellyfin,
+            expandedServers: Binding(
+                get: { self.vm.sectionExpansion.expandedServers },
+                set: { self.vm.sectionExpansion.expandedServers = $0 }
+            ),
+            firstShortcutIndex: self.vm.subsonicServers.count,
+            onRefreshServer: { _ in Task { await self.jellyfin.reloadServers() } },
+            onTestServerConnection: { id in Task { await self.jellyfin.retryConnection(serverID: id) } },
+            onEditServer: self.editServer,
+            onDisableServerInSidebar: { id in
+                Task { await self.jellyfin.setServerSidebarVisible(id: id, visible: false) }
+            },
+            onRemoveServer: { server in
+                // Stage the server for the confirm dialog, as the Subsonic rows do (#306).
+                self.jellyfin.serverPendingRemoval = server
+            }
+        )
+    }
+
+    private func enableJellyfinServerInSidebar(_ id: UUID) {
+        Task { await self.jellyfin.setServerSidebarVisible(id: id, visible: true) }
     }
 
     // MARK: - Row builder

@@ -1,0 +1,14 @@
+{
+  "User": {
+    "Name": "listener",
+    "ServerId": "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+    "Id": "7f3b1c0e9d2a4e5f8a6b0c1d2e3f4a5b",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "HasConfiguredEasyPassword": false,
+    "EnableAutoLogin": false
+  },
+  "SessionInfo": {},
+  "AccessToken": "REDACTED-TEST-TOKEN-0123456789abcdef",
+  "ServerId": "0a1b2c3d4e5f60718293a4b5c6d7e8f9"
+}

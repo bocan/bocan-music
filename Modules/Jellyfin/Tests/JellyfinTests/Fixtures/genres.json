@@ -1,0 +1,9 @@
+{
+  "Items": [
+    { "Name": "Folk", "Id": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0", "SongCount": 180, "AlbumCount": 14, "Type": "Genre" },
+    { "Name": "A genre with no counts", "Id": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1", "Type": "Genre" },
+    { "Id": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2", "Type": "Genre" }
+  ],
+  "TotalRecordCount": 3,
+  "StartIndex": 0
+}

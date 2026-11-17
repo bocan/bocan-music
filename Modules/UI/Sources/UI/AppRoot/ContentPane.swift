@@ -61,6 +61,8 @@ public struct ContentPane: View {
                         state: state
                     ) { Task { await self.vm.retrySubsonicConnection(serverID: serverID) } }
                 }
+                // ADR-097: the same for a Jellyfin server, with "Sign in again" for a refused token.
+                JellyfinOfflineBannerHost(model: self.vm.jellyfin, destination: self.vm.selectedDestination)
             }
             .environment(\.subsonicAnnotationCoordinator, self.vm.subsonicAnnotations)
     }
@@ -363,6 +365,12 @@ public struct ContentPane: View {
 
         case .radio:
             RadioView(library: self.vm, searchQuery: self.vm.searchQuery)
+
+        case .jellyfinRoot, .jellyfinSongs, .jellyfinAlbums, .jellyfinArtists, .jellyfinGenres,
+             .jellyfinPlaylists, .jellyfinStarred, .jellyfinRandom, .jellyfinRecentlyAdded,
+             .jellyfinMostPlayed, .jellyfinPlaylist, .jellyfinArtist, .jellyfinAlbum:
+            // ADR-097: every Jellyfin destination goes to one switch in its own file.
+            JellyfinDestinationView(destination: self.vm.selectedDestination, library: self.vm)
         }
     }
 

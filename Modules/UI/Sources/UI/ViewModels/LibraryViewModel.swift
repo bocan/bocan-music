@@ -474,6 +474,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `nil` when no annotation delivery was supplied.
     public let subsonicAnnotations: SubsonicAnnotationCoordinator?
 
+    /// ADR-097: everything the window knows about Jellyfin servers. Its own
+    /// `ObservableObject`; this view model does not forward its changes, so the
+    /// Sidebar and the content pane observe it directly.
+    public let jellyfin: JellyfinSourceModel
+
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -492,6 +497,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
         subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
         subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil,
+        jellyfin: JellyfinSourceModel = JellyfinSourceModel(),
         podcastLibrary: (any PodcastLibraryDataSource)? = nil,
         podcastActions: (any PodcastActions)? = nil,
         podcastSearch: (any PodcastSearchProviding)? = nil,
@@ -509,6 +515,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicSidebarListing = subsonicSidebarListing
         self.subsonicCapabilityObserver = subsonicCapabilityObserver
         self.subsonicConnectionObserver = subsonicConnectionObserver
+        self.jellyfin = jellyfin
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.subsonicMetadataCache = subsonicMetadataCache
@@ -566,7 +573,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             engine: engine,
             database: database,
             scrobbleRepository: scrobbleRepository,
-            subsonicCoverArtProvider: subsonicCoverArtProvider
+            subsonicCoverArtProvider: subsonicCoverArtProvider,
+            jellyfinCoverArtProvider: jellyfin.coverArtProvider
         )
 
         self.podcastLibrary = podcastLibrary
@@ -784,18 +792,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Permanently removes the server currently queued in
-    /// `subsonicServerPendingRemoval` (set when the user confirms the sidebar's
-    /// "Remove…" dialog), then clears the pending state and reloads the sidebar.
+    /// Permanently removes `server`, the one the sidebar's "Remove…" dialog
+    /// presented, then clears the pending state and reloads the sidebar.
     /// Deletes the server, its in-memory client, and its Keychain credential via
     /// the injected listing (#306).
-    public func confirmRemoveSubsonicServer() async {
-        guard let server = self.subsonicServerPendingRemoval,
-              let listing = self.subsonicSidebarListing else {
-            self.subsonicServerPendingRemoval = nil
-            return
-        }
+    ///
+    /// The dialog passes the server in. It must not be read back from
+    /// `subsonicServerPendingRemoval`: the dialog's dismissal clears that before
+    /// the button's task runs, so the removal silently did nothing (docs/GOTCHAS.md).
+    public func confirmRemoveSubsonicServer(_ server: SubsonicSidebarServer) async {
         self.subsonicServerPendingRemoval = nil
+        guard let listing = self.subsonicSidebarListing else { return }
         do {
             try await listing.removeServer(id: server.id)
             await self.reloadSubsonicServers()
@@ -848,6 +855,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 guard let self else { return }
                 Task { await self.loadCurrentDestination() }
                 self.subsonicSearch?.search(query: query, servers: self.subsonicServers)
+                self.jellyfin.search?.search(query: query, servers: self.jellyfin.servers)
             }
     }
 
@@ -1126,7 +1134,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         switch destination {
         case .album, .artist, .playlist, .smartPlaylist, .folder,
              .genre, .composer, .podcastShow,
-             .subsonicAlbum, .subsonicArtist:
+             .subsonicAlbum, .subsonicArtist,
+             .jellyfinAlbum, .jellyfinArtist, .jellyfinPlaylist:
             self.searchQuery = ""
 
         default:

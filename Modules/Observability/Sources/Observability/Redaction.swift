@@ -11,6 +11,9 @@ public enum Redaction {
     public static let sensitiveKeys: Set = [
         "apikey", "token", "sessionkey", "password", "authorization",
         "cookie", "set-cookie", "secret", "refreshtoken", "accesstoken",
+        // Jellyfin (ADR-097): the access token travels as `ApiKey` or
+        // `api_key` in a stream or image URL, and as `X-Emby-Token` in a header.
+        "api_key", "x-emby-token",
     ]
 
     /// Lower-cased URL query-parameter names whose values are scrubbed when
@@ -22,7 +25,7 @@ public enum Redaction {
     public static let sensitiveQueryParams: Set = [
         "token", "salt", "api_key", "apikey", "password", "secret",
         "authorization", "access_token", "refresh_token", "sessionkey",
-        "client_secret",
+        "client_secret", "x-emby-token",
         "u", "t", "s", "p", "sk", "api_sig",
     ]
 

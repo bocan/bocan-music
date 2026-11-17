@@ -222,6 +222,17 @@ struct MenuInvoker {
         } else {
             NSPredicate(format: "label == %@", "Playlist: \(title)")
         }
+        self.clickSidebarRow(matching: predicate, name: title)
+    }
+
+    /// Clicks the sidebar row with this accessibility identifier, the same
+    /// way as `selectSidebar(_:)`: for rows the title map does not hold,
+    /// such as a Jellyfin server's disclosure and its rows (ADR-097).
+    func selectSidebar(identifier: String) {
+        self.clickSidebarRow(matching: NSPredicate(format: "identifier == %@", identifier), name: identifier)
+    }
+
+    private func clickSidebarRow(matching predicate: NSPredicate, name title: String) {
         let deadline = Date().addingTimeInterval(8)
         while Date() < deadline {
             let matches = self.app.descendants(matching: .any).matching(predicate)

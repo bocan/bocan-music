@@ -1,4 +1,4 @@
-.PHONY: help bootstrap ffmpeg-lgpl bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale website-check format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
+.PHONY: help bootstrap ffmpeg-lgpl bundle-fpcalc embed-deps check-licence brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-jellyfin test-podcasts test-sync-server test-observability uitest lint format pseudolocale website-check format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -298,6 +298,13 @@ test-subsonic:
 	@echo "=============================="
 	cd Modules/Subsonic && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
+## test-jellyfin: Run Jellyfin SPM package tests
+test-jellyfin:
+	@echo "=============================="
+	@echo "= Executing Jellyfin Test"
+	@echo "=============================="
+	cd Modules/Jellyfin && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
+
 ## test-podcasts: Run Podcasts SPM package tests
 test-podcasts:
 	@echo "=============================="
@@ -336,6 +343,7 @@ lint: check-swiftlint-version
 	@python3 Scripts/audit-help-text.py --summary
 	@python3 Scripts/audit-try-optional.py --summary
 	@python3 Scripts/audit-appkit-imports.py --summary
+	@python3 Scripts/audit-jellyfin-sdk-imports.py --summary
 	@test -f $(WORKSPACE_RESOLVED) && git ls-files --error-unmatch $(WORKSPACE_RESOLVED) >/dev/null 2>&1 \
 		|| { echo "error: $(WORKSPACE_RESOLVED) is missing or untracked; without it every build resolves unpinned (restore it from git history)"; exit 1; }
 

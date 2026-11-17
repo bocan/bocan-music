@@ -26,6 +26,9 @@ public struct BocanRootView: View {
     /// same preference key through `lyricsPaneVisible` below.
     private let lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
+    /// ADR-097: observed directly, because `LibraryViewModel` does not forward
+    /// its changes. Read only by `libraryHasContent`.
+    @ObservedObject private var jellyfin: JellyfinSourceModel
     /// Plain reference (not @ObservedObject) so `BocanRootView` skips
     /// scrobble-settings re-renders; only `RecentScrobblesView` subscribes.
     private let scrobbleSettingsVM: ScrobbleSettingsViewModel?
@@ -65,6 +68,7 @@ public struct BocanRootView: View {
         scrobbleSettingsVM: ScrobbleSettingsViewModel? = nil
     ) {
         _vm = StateObject(wrappedValue: vm)
+        self.jellyfin = vm.jellyfin
         self.lyricsVM = lyricsVM
         self.visualizerVM = visualizerVM
         self.scrobbleSettingsVM = scrobbleSettingsVM
@@ -77,6 +81,7 @@ public struct BocanRootView: View {
         !self.vm.libraryRoots.isEmpty
             || !self.vm.subsonicServers.isEmpty
             || !self.vm.hiddenSubsonicServers.isEmpty
+            || self.jellyfin.hasServers
     }
 
     /// `true` while any modal sheet is presented over the main window.
@@ -171,6 +176,8 @@ public struct BocanRootView: View {
             // .subsonicSongs) can load immediately without racing against the
             // background hydration task that calls reloadClients() in BocanApp.
             await self.vm.bootstrapSubsonic()
+            // ADR-097: the same for a persisted Jellyfin destination.
+            await self.vm.jellyfin.bootstrapServers()
             await self.vm.restoreUIState()
             self.windowMode.restoreIfNeeded()
             // Immersive Mode left open last time reopens after bootstrap

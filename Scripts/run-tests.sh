@@ -57,6 +57,7 @@ run_stage "ui"             make -s test-ui
 run_stage "playback"       make -s test-playback
 run_stage "scrobble"       make -s test-scrobble
 run_stage "subsonic"       make -s test-subsonic
+run_stage "jellyfin"       make -s test-jellyfin
 run_stage "podcasts"       make -s test-podcasts
 run_stage "sync-server"    make -s test-sync-server
 run_stage "observability"  make -s test-observability

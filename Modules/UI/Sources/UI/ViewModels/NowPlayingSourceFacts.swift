@@ -77,6 +77,17 @@ public struct NowPlayingSourceFacts: Sendable, Equatable {
         )
     }
 
+    /// What a streamed song's downloaded file says about itself (ADR-097
+    /// slice 7). No bit depth: like a decoder, the file header cannot give it
+    /// for a compressed codec, and no codec: only the decoder names that.
+    public init(file: LoadedFileFacts) {
+        self.init(
+            bitrateKbps: file.bitrateKbps,
+            sampleRateHz: file.sampleRateHz,
+            channelCount: file.channelCount
+        )
+    }
+
     /// `live` wins wherever it has something to say; everything else stays.
     /// The decoder is looking at the bytes, the columns are a scan-time
     /// memory of them.

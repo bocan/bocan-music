@@ -41,14 +41,21 @@ public actor ScrobbleQueueRepository {
                 arguments: [trackID, Int(playedAt.timeIntervalSince1970)]
             )
             guard let queueID else { return nil }
-            for pid in providerIDs {
-                try db.execute(sql: """
-                INSERT OR IGNORE INTO scrobble_submissions
-                  (queue_id, provider_id, status, attempts)
-                VALUES (?, ?, 'pending', 0)
-                """, arguments: [queueID, pid])
-            }
+            try Self.insertPendingSubmissions(db, queueID: queueID, providerIDs: providerIDs)
             return queueID
+        }
+    }
+
+    /// Adds a `pending` submission row per provider for one queue row. `OR
+    /// IGNORE` keeps a repeated enqueue of the same play from adding a second
+    /// row. Every enqueue (local, Subsonic, Jellyfin) ends with this.
+    static func insertPendingSubmissions(_ db: GRDB.Database, queueID: Int64, providerIDs: [String]) throws {
+        for pid in providerIDs {
+            try db.execute(sql: """
+            INSERT OR IGNORE INTO scrobble_submissions
+              (queue_id, provider_id, status, attempts)
+            VALUES (?, ?, 'pending', 0)
+            """, arguments: [queueID, pid])
         }
     }
 
@@ -93,13 +100,7 @@ public actor ScrobbleQueueRepository {
                 arguments: [serverIDString, songID, playedAtEpoch]
             )
             guard let queueID else { return nil }
-            for pid in providerIDs {
-                try db.execute(sql: """
-                INSERT OR IGNORE INTO scrobble_submissions
-                  (queue_id, provider_id, status, attempts)
-                VALUES (?, ?, 'pending', 0)
-                """, arguments: [queueID, pid])
-            }
+            try Self.insertPendingSubmissions(db, queueID: queueID, providerIDs: providerIDs)
             return queueID
         }
     }
@@ -115,6 +116,7 @@ public actor ScrobbleQueueRepository {
                 sql: """
                 SELECT q.id, q.track_id, q.played_at, q.duration_played,
                        q.subsonic_server_id, q.subsonic_song_id,
+                       q.jellyfin_server_id, q.jellyfin_item_id,
                        q.payload_title, q.payload_artist, q.payload_album,
                        q.payload_album_artist, q.payload_duration,
                        s.attempts, s.next_attempt_at,
@@ -166,10 +168,12 @@ public actor ScrobbleQueueRepository {
     }
 
     /// Maps one `fetchPending` result row. The local-track columns win; the
-    /// `payload_*` columns fill in for Subsonic-sourced rows.
+    /// `payload_*` columns fill in for Subsonic and Jellyfin rows.
     private static func pendingRow(from row: Row) -> PendingRow {
         let subsonicServerID = (row["subsonic_server_id"] as String?).flatMap(UUID.init(uuidString:))
         let subsonicSongID = row["subsonic_song_id"] as String?
+        let jellyfinServerID = (row["jellyfin_server_id"] as String?).flatMap(UUID.init(uuidString:))
+        let jellyfinItemID = row["jellyfin_item_id"] as String?
         let title = (row["track_title"] as String?) ?? (row["payload_title"] as String?) ?? ""
         let artist = (row["artist_name"] as String?) ?? (row["payload_artist"] as String?) ?? ""
         let albumArtist = (row["album_artist_name"] as String?) ?? (row["payload_album_artist"] as String?)
@@ -189,7 +193,9 @@ public actor ScrobbleQueueRepository {
             duration: duration,
             mbid: row["musicbrainz_recording_id"],
             subsonicServerID: subsonicServerID,
-            subsonicSongID: subsonicSongID
+            subsonicSongID: subsonicSongID,
+            jellyfinServerID: jellyfinServerID,
+            jellyfinItemID: jellyfinItemID
         )
     }
 
@@ -385,7 +391,9 @@ public actor ScrobbleQueueRepository {
                 duration: row["duration"] ?? 0,
                 mbid: row["musicbrainz_recording_id"],
                 subsonicServerID: nil,
-                subsonicSongID: nil
+                subsonicSongID: nil,
+                jellyfinServerID: nil,
+                jellyfinItemID: nil
             )
         }
     }

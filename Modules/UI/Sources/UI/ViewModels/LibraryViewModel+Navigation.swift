@@ -59,9 +59,12 @@ extension LibraryViewModel {
              .subsonicPlaylists, .subsonicPlaylist, .subsonicStarred,
              .subsonicRandom, .subsonicRecentlyAdded, .subsonicMostPlayed,
              .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks,
-             .subsonicArtist, .subsonicAlbum:
-            // Per-server Subsonic destinations manage their own loading via
-            // dedicated view models. Nothing to fan out here.
+             .subsonicArtist, .subsonicAlbum,
+             .jellyfinRoot, .jellyfinSongs, .jellyfinAlbums, .jellyfinArtists, .jellyfinGenres,
+             .jellyfinPlaylists, .jellyfinStarred, .jellyfinRandom, .jellyfinRecentlyAdded,
+             .jellyfinMostPlayed, .jellyfinPlaylist, .jellyfinArtist, .jellyfinAlbum:
+            // Per-server Subsonic and Jellyfin (ADR-097) destinations manage their
+            // own loading via dedicated view models. Nothing to fan out here.
             break
 
         case .podcasts, .podcastDownloads:
@@ -104,6 +107,15 @@ extension LibraryViewModel {
         case let .subsonicPlaylist(server, _):
             .subsonicPlaylists(server)
 
+        case let .jellyfinArtist(server, _):
+            .jellyfinArtists(server)
+
+        case let .jellyfinAlbum(server, _):
+            .jellyfinAlbums(server)
+
+        case let .jellyfinPlaylist(server, _):
+            .jellyfinPlaylists(server)
+
         default:
             nil
         }
@@ -145,6 +157,30 @@ extension LibraryViewModel {
 
         case let .subsonicPlaylist(server, _):
             candidate == .subsonicPlaylists(server)
+
+        case let .jellyfinAlbum(server, _):
+            self.isJellyfinAlbumContainer(candidate, server: server)
+
+        case let .jellyfinArtist(server, _):
+            candidate == .jellyfinArtists(server)
+
+        case let .jellyfinPlaylist(server, _):
+            candidate == .jellyfinPlaylists(server)
+
+        default:
+            false
+        }
+    }
+
+    /// The containers a Jellyfin album is opened from: the Albums list, an artist
+    /// page, or the Recently Added grid, on the same server.
+    private nonisolated static func isJellyfinAlbumContainer(
+        _ candidate: SidebarDestination,
+        server: UUID
+    ) -> Bool {
+        switch candidate {
+        case .jellyfinAlbums(server), .jellyfinArtist(server, _), .jellyfinRecentlyAdded(server):
+            true
 
         default:
             false

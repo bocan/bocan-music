@@ -117,7 +117,7 @@ struct BocanCommands: Commands {
                 self.settingsRouter.open(.sources)
                 self.openSettings()
             }
-            .help("Add or manage streaming music servers (Subsonic-compatible)")
+            .help("Add or manage streaming music servers (Subsonic and Jellyfin)")
 
             Divider()
 

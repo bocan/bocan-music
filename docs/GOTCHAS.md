@@ -150,6 +150,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Scripts/smoke-launch.sh` (the playback check that catches it) and `Modules/UI/Package.swift`
 
+### A confirmation dialog's button must use the item the dialog presents
+
+**Problem:** "Remove Server" in the sidebar's Jellyfin removal dialog closed the dialog and did nothing: the server, its token and its row all stayed. No error was logged. The unit tests passed, because they set the pending item and called the confirm method directly.
+
+**Rule:** in `.confirmationDialog(_:isPresented:presenting:actions:)`, take the item from the `actions` closure parameter and pass it to the action (`{ server in Button(...) { Task { await model.confirmRemoveServer(server) } } }`). Never read it back from the pending property that drives `isPresented`.
+
+**Why:** the button's action runs, then SwiftUI dismisses the dialog through the `isPresented` binding, whose setter clears the pending property. The action only starts a `Task`, and that task runs after the setter, so a confirm method that reads the pending property finds nil and returns. Found by the ADR-097 slice 9 E2E journey. The Subsonic removal dialog had the same defect and is fixed the same way (`LibraryViewModel.confirmRemoveSubsonicServer(_:)`).
+
+**Canonical file:** `Modules/UI/Sources/UI/AppRoot/Sidebar.swift`
+
 ### A toolbar control must survive the overflow menu
 
 **Problem:** in a narrow window a segmented picker in the toolbar moves into the » overflow menu and shows there as bare checkmarks with no labels. Or it works once from the menu, and then the menu comes back without it.
@@ -362,6 +372,38 @@ Reading defaults reads the release app's preferences only.
 **Canonical file:** `Scripts/embed-deps.sh` (the deep re-sign, with no `--entitlements`), entitlements in `Resources/Bocan.entitlements`
 
 ---
+
+## Jellyfin (ADR-097)
+
+### A Jellyfin ping must be an authenticated call
+
+**Problem:** a revoked access token never showed "Sign in again": the status dot stayed green.
+
+**Rule:** the connection monitor's ping is `GET /Users/Me`, never `GET /System/Ping`. Keep it behind `JellyfinClientProtocol.ping()` and keep a test that a 401 reaches `JellyfinError.unauthorized`.
+
+**Why:** `/System/Ping` needs no token, so it answers 200 whatever the token's state. Only an authenticated call can notice a revoked token, and the monitor stops pinging and shows `authFailed` only on a 401.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinSDKClient.swift`
+
+### The Jellyfin SDK is confined to one module and needs `Get` named beside it
+
+**Problem:** a view or the App imports `JellyfinAPI`, and the SDK can no longer be replaced by a thin client without touching the UI.
+
+**Rule:** only `Modules/Jellyfin` imports `JellyfinAPI` or `Get`. `Scripts/audit-jellyfin-sdk-imports.py` (run by `make lint`) enforces it. Everything above the module sees `Jellyfin*` models and `JellyfinService`.
+
+**Why:** the SDK does not re-export `Get`, but `APIError.unacceptableStatusCode` is the only place the HTTP status of a failure lives, so the module declares `Get` itself. The SDK also marks `/Artists/AlbumArtists` deprecated; the request for it is built by hand in one place (`JellyfinSDKClient+Browse.swift`), so there is one line to change when the SDK or the server moves it. It sends a list parameter as a repeated name (`sortBy=A&sortBy=B`), which the request tests read back.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinSDKClient.swift`
+
+### Every value in the Jellyfin `Authorization` header must be plain ASCII
+
+**Problem:** a Jellyfin server "lost" its sign-in: the status dot turned orange a minute after signing in, after a restart, and while browsing, with "Sign-in no longer accepted". The server had not revoked anything. A script with the same token got 200 for minutes.
+
+**Rule:** every value the module hands the SDK for the header (client name, device name, device id, version) goes through `JellyfinClientIdentity.headerSafe`: typographic characters become ASCII ("’" becomes "'"), and anything else outside printable ASCII, plus `,`, `=` and `"`, is dropped. Keep the wire test in `JellyfinAuthorizationHeaderTests` that makes 25 requests and checks that every header holds all five fields in ASCII.
+
+**Why:** the SDK builds the header from a Swift dictionary (`PassthroughAPIClientDelegate.authorizationHeaders`), with unquoted values and a new field order on every request. CFNetwork cuts a header off at its first non-ASCII byte. A computer name such as "Chris’s MacBook Pro" (U+2019) therefore dropped whichever fields followed it on that request: the token on about half of all requests (401), and `Client` on some sign-ins (400). The monitor takes one 401 as a revoked token and stops, so one unlucky ping was enough. Images kept loading because they carry the token in the URL. To see what really goes on the wire, point a client at `nc -l 127.0.0.1 8999` with a fake user; the opt-in `JellyfinLiveProbeTests` checks a real server.
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinClientProtocol.swift`
 
 ## Testing
 

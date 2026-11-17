@@ -27,6 +27,7 @@ public struct RecentScrobblesView: View {
         case listenbrainz = "ListenBrainz"
         case rocksky = "Rocksky"
         case subsonic = "Subsonic"
+        case jellyfin = "Jellyfin"
 
         /// Localized segment label; provider names are proper nouns and stay
         /// verbatim (#314).
@@ -54,6 +55,9 @@ public struct RecentScrobblesView: View {
 
             case .subsonic:
                 "subsonic"
+
+            case .jellyfin:
+                "jellyfin"
             }
         }
     }
@@ -149,7 +153,7 @@ public struct RecentScrobblesView: View {
     @ViewBuilder
     private func rowView(_ row: ScrobbleQueueRepository.RecentRow) -> some View {
         let visibleProviderIDs: [String] = self.filter.providerID.map { [$0] }
-            ?? ["lastfm", "listenbrainz", "rocksky", "subsonic"]
+            ?? ["lastfm", "listenbrainz", "rocksky", "subsonic", "jellyfin"]
 
         HStack(alignment: .center, spacing: 10) {
             // Track info
@@ -227,6 +231,9 @@ public struct RecentScrobblesView: View {
 
         case "subsonic":
             "Subsonic"
+
+        case "jellyfin":
+            "Jellyfin"
 
         default:
             providerID
