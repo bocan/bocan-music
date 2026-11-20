@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- With a Subsonic server added, the main window no longer redraws itself once a minute when the server's status has not changed.
+
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 
 - Bòcan now plays your music from a Jellyfin server, side by side with your local library and any Subsonic servers. Add one under Settings, Sources: sign in with your password or with Quick Connect, and Bòcan keeps only a sign-in token in your Keychain. Each server gets its own sidebar section with Songs, Albums, Artists, Genres, Playlists, Starred, Random, Recently Added and Most Played, and you can search all your Jellyfin servers at once. Play the original files or ask the server for MP3, Opus, AAC or FLAC at a bitrate you choose. A star you set becomes a favourite on the server, and finished plays count there as well as on Last.fm, ListenBrainz and Rocksky.
