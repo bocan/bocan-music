@@ -122,19 +122,29 @@ public actor SubsonicConnectionMonitor {
 
     // MARK: - Loop
 
+    /// One server's loop. Every `await` lets `stopMonitoring` or `wakeAll` run
+    /// on this actor, and they cancel this loop and may start another for the
+    /// same server. So after each one, a cancelled loop returns before it
+    /// touches any state. Otherwise a stopped server's status could come back,
+    /// and a refused ping deleted the new loop's entry, leaving that loop
+    /// running untracked. `JellyfinConnectionMonitor` has the same guards.
     private func runLoop(serverID: UUID) async {
         var backoffIndex = 0
+        // A stop can run between `startMonitoring` and this task's first step.
+        guard !Task.isCancelled else { return }
         self.emit(serverID: serverID, status: .connecting)
 
         while !Task.isCancelled {
             do {
                 try await self.service.ping(serverID: serverID)
+                guard !Task.isCancelled else { return }
                 let now = Date()
                 self.emit(serverID: serverID, status: .online(lastPing: now))
                 backoffIndex = 0
                 self.log.debug("subsonic.monitor.ping.ok", ["id": serverID.uuidString])
                 try await Task.sleep(nanoseconds: UInt64(Self.pollInterval * 1_000_000_000))
             } catch let error as SubsonicError {
+                guard !Task.isCancelled else { return }
                 if error.isAuthenticationFailure {
                     let msg = error.localizedDescription
                     self.emit(serverID: serverID, status: .authFailed(msg))

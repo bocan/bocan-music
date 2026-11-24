@@ -161,6 +161,63 @@ struct JellyfinConnectionMonitorTests {
         harness.reader.cancel()
     }
 
+    // MARK: A loop that was replaced while its ping ran
+
+    @Test("a stop during a ping in flight leaves no status, whatever the ping returns")
+    func stopDuringPing() async throws {
+        let harness = try await self.makeHarness()
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        // Holds the ping open until the loop is cancelled, then answers as if the
+        // server replied: the late answer must not bring the status back.
+        harness.stub.onPing = {
+            for await _ in gate {
+                break
+            }
+        }
+        await harness.monitor.startMonitoring(serverID: harness.serverID)
+        #expect(await eventually { self.pings(harness) >= 1 })
+        await harness.monitor.stopMonitoring(serverID: harness.serverID)
+        let updatesAtStop = harness.statuses.value.count
+        open.finish()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(await harness.monitor.currentStatuses()[harness.serverID] == nil)
+        #expect(harness.statuses.value.count == updatesAtStop, "no update after the stop")
+        harness.reader.cancel()
+    }
+
+    @Test("a recheck during a ping that is refused keeps the new loop tracked, so a stop ends it")
+    func recheckDuringRefusedPing() async throws {
+        let harness = try await self.makeHarness()
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        let first = Locked(true)
+        harness.stub.onPing = {
+            var isFirst = false
+            first.update {
+                isFirst = $0
+                $0 = false
+            }
+            guard isFirst else { return }
+            // The old loop's ping: held open, then refused after the recheck.
+            for await _ in gate {
+                break
+            }
+            throw JellyfinError.unauthorized
+        }
+        await harness.monitor.startMonitoring(serverID: harness.serverID)
+        #expect(await eventually { self.pings(harness) >= 1 })
+        await harness.monitor.recheck(serverID: harness.serverID)
+        #expect(await eventually { self.pings(harness) >= 3 }, "the new loop polls")
+
+        await harness.monitor.stopMonitoring(serverID: harness.serverID)
+        open.finish()
+        try await Task.sleep(for: .milliseconds(60))
+        let pingsAfterStop = self.pings(harness)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(self.pings(harness) == pingsAfterStop, "the stop must end the new loop")
+        #expect(await harness.monitor.currentStatuses()[harness.serverID] == nil)
+        harness.reader.cancel()
+    }
+
     @Test("starting a server twice runs one loop")
     func startTwice() async throws {
         let harness = try await self.makeHarness(timing: .init(pollInterval: .seconds(30), backoff: [.seconds(30)], persistInterval: 3600))

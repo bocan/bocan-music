@@ -14,6 +14,11 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
     /// loop never starves the stub.
     private var perpetual: (Data, Int)?
 
+    /// When set, the first request waits here until the stream ends or its
+    /// task is cancelled, then answers: a ping still in flight when the loop
+    /// is stopped or replaced.
+    var firstRequestGate: AsyncStream<Void>?
+
     func enqueue(json: String, statusCode: Int = 200) {
         self.responses.append((Data(json.utf8), statusCode))
     }
@@ -24,6 +29,12 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
 
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         self.pingCount += 1
+        if let gate = self.firstRequestGate {
+            self.firstRequestGate = nil
+            for await _ in gate {
+                break
+            }
+        }
         let (data, status): (Data, Int)
         if !self.responses.isEmpty {
             (data, status) = self.responses.removeFirst()
@@ -114,6 +125,17 @@ private func awaitStatus(
         group.cancelAll()
         return first
     }
+}
+
+/// Polls `condition` every 5 ms for up to 2 s.
+private func pollUntil(_ condition: @Sendable () -> Bool) async -> Bool {
+    for _ in 0 ..< 400 {
+        if condition() {
+            return true
+        }
+        try? await Task.sleep(nanoseconds: 5_000_000)
+    }
+    return condition()
 }
 
 /// True when a status is `.online`.
@@ -291,6 +313,55 @@ struct SubsonicConnectionMonitorTests {
         await monitor.stopAll()
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot.isEmpty)
+    }
+
+    // MARK: A loop that was replaced while its ping ran
+
+    @Test("a stop during a ping in flight leaves no status, whatever the ping returns")
+    func stopDuringPing() async throws {
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
+        transport.setPerpetual(json: okEnvelope)
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        transport.firstRequestGate = gate
+        let monitor = SubsonicConnectionMonitor(service: service)
+
+        await monitor.startMonitoring(serverID: id)
+        #expect(await pollUntil { transport.pingCount >= 1 })
+        await monitor.stopMonitoring(serverID: id)
+        open.finish()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(await monitor.currentStatuses()[id] == nil)
+    }
+
+    @Test("a wake during a ping that is refused keeps the new loop tracked")
+    func wakeDuringRefusedPing() async throws {
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
+        transport.enqueue(json: authFailEnvelope)
+        transport.setPerpetual(json: okEnvelope)
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        transport.firstRequestGate = gate
+        let monitor = SubsonicConnectionMonitor(service: service)
+        let updates = await monitor.updates
+
+        await monitor.startMonitoring(serverID: id)
+        #expect(await pollUntil { transport.pingCount >= 1 })
+        // The old loop's ping is refused after the wake has replaced the loop.
+        await monitor.wakeAll()
+        open.finish()
+        _ = await awaitStatus(for: id, on: updates, matching: isOnline)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // The woken loop is still tracked, so starting again is a no-op. If the
+        // old loop had dropped its entry, this would start a second loop.
+        let pingsBefore = transport.pingCount
+        await monitor.startMonitoring(serverID: id)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(transport.pingCount == pingsBefore, "a second loop started")
+        let status = await monitor.currentStatuses()[id]
+        #expect(status.map(isOnline) == true, "the refused old ping must not overwrite the status: \(String(describing: status))")
+        await monitor.stopAll()
     }
 
     @Test("startMonitoring twice for the same server is a no-op")
