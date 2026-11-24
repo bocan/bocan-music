@@ -102,6 +102,12 @@ enum HelpContent {
                 + " drilled into: an album returns to the artist you opened it from, then to Artists."
         ),
         HelpTopic(
+            title: "Recently added albums",
+            body: "Recently Added lists the songs you added in the last 30 days. Switch its toolbar"
+                + " from Songs to Albums to see one cover per album instead, newest addition first."
+                + " The Albums grid can sort by Date Added too."
+        ),
+        HelpTopic(
             title: "Lyrics",
             body: "Toggle the lyrics panel with ⌘⌥L."
                 + " Bòcan displays embedded LRC timestamps when available and scrolls in sync with playback."
