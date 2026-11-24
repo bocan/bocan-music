@@ -153,6 +153,9 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
 
     /// When non-nil, the data source participates in intra-table reorder.
     var onMove: ((IndexSet, Int) -> Void)?
+    /// When non-nil, songs dragged from another table in the app drop here,
+    /// above the row under the pointer (#709).
+    var onDropTracks: (([Int64], Int) -> Void)?
 
     @objc func tableView(
         _ tableView: NSTableView,
@@ -182,45 +185,117 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
 
     // MARK: - Drag-reorder (intra-table)
 
-    /// Validate a drop: only allow intra-table reorder when `onMove` is set.
+    /// Validate a drop: a reorder from this table, or songs from another one.
     @objc func tableView(
         _ tableView: NSTableView,
         validateDrop info: any NSDraggingInfo,
         proposedRow row: Int,
         proposedDropOperation dropOperation: NSTableView.DropOperation
     ) -> NSDragOperation {
-        guard self.onMove != nil,
-              info.draggingSource as? NSTableView === tableView else { return [] }
+        let kind = self.dropKind(for: info, in: tableView)
+        guard kind != .refuse else { return [] }
         // Only allow drop between rows, not onto a row.
         if dropOperation == .on {
             tableView.setDropRow(row, dropOperation: .above)
         }
-        return .move
+        return kind == .reorder ? .move : .copy
     }
 
-    /// Accept the drop and call `onMove` with SwiftUI-style indices.
+    /// Accept the drop: `onMove` with SwiftUI-style indices for a reorder,
+    /// `onDropTracks` with the dropped IDs for songs from another table.
     @objc func tableView(
         _ tableView: NSTableView,
         acceptDrop info: any NSDraggingInfo,
         row: Int,
         dropOperation: NSTableView.DropOperation
     ) -> Bool {
-        guard let onMove = self.onMove,
-              info.draggingSource as? NSTableView === tableView else { return false }
+        let trackIDs = TrackDropRules.trackIDs(in: info.draggingPasteboard)
+        switch self.dropKind(for: info, in: tableView) {
+        case .reorder:
+            // Each dragged track ID's current index in the snapshot.
+            let sourceIndices = IndexSet(trackIDs.compactMap { self.row(forItemIdentifier: $0) }.filter { $0 >= 0 })
+            guard let onMove = self.onMove, !sourceIndices.isEmpty else { return false }
+            onMove(sourceIndices, row)
+            return true
 
-        // Collect the dragged row indices by looking up each pasteboard item's
-        // track-ID string and finding its current index in the snapshot.
-        var sourceIndices = IndexSet()
-        info.draggingPasteboard.pasteboardItems?.forEach { item in
-            guard let str = item.string(forType: .string),
-                  let trackID = Int64(str) else { return }
-            if let idx = self.row(forItemIdentifier: trackID), idx >= 0 {
-                sourceIndices.insert(idx)
-            }
+        case .insert:
+            guard let onDropTracks = self.onDropTracks else { return false }
+            onDropTracks(trackIDs, row)
+            return true
+
+        case .refuse:
+            return false
         }
-        guard !sourceIndices.isEmpty else { return false }
+    }
 
-        onMove(sourceIndices, row)
-        return true
+    private func dropKind(for info: any NSDraggingInfo, in tableView: NSTableView) -> TrackDropRules.Kind {
+        TrackDropRules.kind(
+            fromThisTable: info.draggingSource as? NSTableView === tableView,
+            fromThisApp: info.draggingSource != nil,
+            canReorder: self.onMove != nil,
+            acceptsTracks: self.onDropTracks != nil,
+            hasTrackIDs: !TrackDropRules.trackIDs(in: info.draggingPasteboard).isEmpty
+        )
+    }
+}
+
+// MARK: - TrackDropRules
+
+/// What a drop on a songs table does (#709). Pure, so the rules are testable
+/// without a live drag session.
+enum TrackDropRules {
+    enum Kind: Equatable {
+        /// Rows dragged within this table: move them.
+        case reorder
+        /// Songs dragged from another table in the app: insert them.
+        case insert
+        /// Anything else, including text dragged in from another app.
+        case refuse
+    }
+
+    static func kind(
+        fromThisTable: Bool,
+        fromThisApp: Bool,
+        canReorder: Bool,
+        acceptsTracks: Bool,
+        hasTrackIDs: Bool
+    ) -> Kind {
+        guard hasTrackIDs else { return .refuse }
+        // A drag inside the table only ever reorders. It never adds copies,
+        // which is what the playlist overlay used to do with it (#709).
+        if fromThisTable {
+            return canReorder ? .reorder : .refuse
+        }
+        // `draggingSource` is nil for a drag from another app, whose plain
+        // text could otherwise parse as track IDs.
+        return fromThisApp && acceptsTracks ? .insert : .refuse
+    }
+
+    /// The track IDs on a drag's pasteboard, one per item, as
+    /// `pasteboardWriterForRow` writes them. Items that are not IDs are skipped.
+    static func trackIDs(in pasteboard: NSPasteboard) -> [Int64] {
+        (pasteboard.pasteboardItems ?? []).compactMap { $0.string(forType: .string) }.compactMap { Int64($0) }
+    }
+}
+
+// MARK: - TrackTable + dragging
+
+extension TrackTable {
+    /// Sets the drag masks and the drop registration for the current handlers.
+    /// Called from `makeNSView` and from every `updateNSView`, because a
+    /// playlist's handlers can arrive after the table is built (#709). Cheap
+    /// and idempotent.
+    static func configureDragging(_ tableView: NSTableView, canReorder: Bool, acceptsDrops: Bool) {
+        // Move for a reorder, copy for a drop on a sidebar playlist row.
+        tableView.setDraggingSourceOperationMask(canReorder ? [.move, .copy] : .copy, forLocal: true)
+        tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        let registered = tableView.registeredDraggedTypes.contains(.string)
+        if canReorder || acceptsDrops {
+            if !registered {
+                tableView.registerForDraggedTypes([.string])
+            }
+        } else if registered {
+            tableView.unregisterDraggedTypes()
+        }
     }
 }

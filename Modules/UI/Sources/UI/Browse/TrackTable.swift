@@ -96,6 +96,9 @@ public struct TrackTable: NSViewRepresentable {
     /// When non-nil the table allows intra-table drag-reorder and calls this
     /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
     let onMove: ((IndexSet, Int) -> Void)?
+    /// When non-nil the table accepts songs dragged from another table in the
+    /// app and calls this with their IDs and the row they land above (#709).
+    var onDropTracks: (([Int64], Int) -> Void)?
     @AppStorage("appearance.rowDensity") private var rowDensity = "spacious"
 
     // MARK: NSViewRepresentable
@@ -125,16 +128,7 @@ public struct TrackTable: NSViewRepresentable {
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         tableView.refusesFirstResponder = false // Ensure Tab key can reach the table.
 
-        // When reorder is enabled, allow move locally and copy externally.
-        if self.onMove != nil {
-            tableView.setDraggingSourceOperationMask([.move], forLocal: true)
-        } else {
-            tableView.setDraggingSourceOperationMask(.copy, forLocal: true)
-        }
-        tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
-        if self.onMove != nil {
-            tableView.registerForDraggedTypes([.string])
-        }
+        Self.configureDragging(tableView, canReorder: self.onMove != nil, acceptsDrops: self.onDropTracks != nil)
 
         tableView.delegate = coordinator
         tableView.doubleAction = #selector(TrackTableCoordinator.doubleClickAction(_:))
@@ -170,6 +164,7 @@ public struct TrackTable: NSViewRepresentable {
         coordinator.dataSource = dataSource
         dataSource.coordinator = coordinator
         dataSource.onMove = self.onMove
+        dataSource.onDropTracks = self.onDropTracks
         coordinator.tableView = tableView
 
         return self.makeScrollView(wrapping: tableView)
@@ -268,8 +263,12 @@ public struct TrackTable: NSViewRepresentable {
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
         }
 
-        // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
+        // 6 — Drag handlers changed (e.g. playlist loaded, kind toggled, or a
+        // column sort suspended reorder). The registration follows them too:
+        // a table built before its playlist loaded never accepted a drop (#709).
         dataSource.onMove = self.onMove
+        dataSource.onDropTracks = self.onDropTracks
+        Self.configureDragging(tableView, canReorder: self.onMove != nil, acceptsDrops: self.onDropTracks != nil)
 
         // 7 — Scroll to the now-playing track when requested.
         self.applyScrollIfNeeded(coordinator: coordinator, tableView: tableView)

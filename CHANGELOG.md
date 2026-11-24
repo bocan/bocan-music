@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recently Added can now show albums instead of songs: switch it from Songs to Albums in the toolbar and you get one cover per album you added to in the last 30 days, newest first, whatever year the record came out. Album grids can also sort by date added. Thanks for the idea @v0ntr0l.
 - With a Subsonic server added, the main window no longer redraws itself once a minute when the server's status has not changed.
 - VoiceOver now tells you which song in the list is playing, and which songs in your play history have a missing file.
+- You can now drag songs up and down a playlist to change their order, and the new order stays after a restart. Before, the drag did not move them and added copies of them to the end of the playlist instead. Songs dragged onto an open playlist now land where you drop them. Thanks for reporting this one @v0ntr0l.
 
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 
