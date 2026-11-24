@@ -3,7 +3,7 @@
     "name": "FFmpeg",
     "url": "https://ffmpeg.org",
     "license": "LGPL 2.1+ (built by the project from source, without GPL or non-free parts)",
-    "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+    "source": "https://ffmpeg.org/releases/ffmpeg-9.1.tar.xz",
     "purpose": "Decoding for OGG/Opus/WavPack/APE/DSD."
   },
   {
