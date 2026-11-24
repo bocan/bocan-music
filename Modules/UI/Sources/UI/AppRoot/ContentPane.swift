@@ -21,6 +21,8 @@ public struct ContentPane: View {
     /// toggle writes the key.
     @AppStorage("genres.detailMode") private var genreDetailMode: CollectionDetailMode = .songs
     @AppStorage("composers.detailMode") private var composerDetailMode: CollectionDetailMode = .songs
+    /// The same Songs / Albums choice for Recently Added (#700).
+    @AppStorage("recentlyAdded.detailMode") private var recentlyAddedDetailMode: CollectionDetailMode = .songs
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
@@ -89,7 +91,10 @@ public struct ContentPane: View {
         case .composers:
             ComposersView(library: self.vm, searchQuery: self.vm.searchQuery)
 
-        case .recentlyAdded, .recentlyPlayed, .mostPlayed:
+        case .recentlyAdded:
+            RecentlyAddedView(mode: self.$recentlyAddedDetailMode, library: self.vm)
+
+        case .recentlyPlayed, .mostPlayed:
             SmartFolderView(vm: self.vm.tracks, library: self.vm, destination: self.vm.selectedDestination)
 
         case .history:

@@ -142,6 +142,89 @@ struct AlbumsViewModelTests {
         #expect(second.sortOrder == .yearNewest)
     }
 
+    // MARK: - Date added and Recently Added albums (#700)
+
+    /// Inserts a song on `albumID` added `daysAgo` days before now.
+    private func insertTrack(_ db: Database, albumID: Int64, daysAgo: Int64) async throws {
+        let addedAt = Int64(Date().timeIntervalSince1970) - daysAgo * 86400
+        try await db.write { db in
+            var track = Track(
+                fileURL: "file:///tmp/\(UUID().uuidString).flac",
+                title: "Song",
+                albumID: albumID,
+                addedAt: addedAt,
+                updatedAt: addedAt
+            )
+            try track.insert(db)
+        }
+    }
+
+    private func insertAlbum(_ db: Database, title: String, year: Int? = nil) async throws -> Int64 {
+        try await db.write { db in
+            var album = Album(title: title, year: year)
+            try album.insert(db)
+            return try #require(album.id)
+        }
+    }
+
+    @Test("dateAdded sort orders by each album's newest song, not its year")
+    func sortByDateAdded() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let classic = try await self.insertAlbum(db, title: "Abbey Road", year: 1969)
+        let modern = try await self.insertAlbum(db, title: "Zebra", year: 2024)
+        _ = try await self.insertAlbum(db, title: "No Songs")
+        try await self.insertTrack(db, albumID: modern, daysAgo: 50)
+        try await self.insertTrack(db, albumID: classic, daysAgo: 2)
+
+        let vm = AlbumsViewModel(repository: repo)
+        await vm.load()
+        vm.setSortOrder(.dateAdded)
+        // An album with no songs has no date, so it sorts last.
+        #expect(vm.albums.map(\.title) == ["Abbey Road", "Zebra", "No Songs"])
+        vm.setSortOrder(.albumName)
+    }
+
+    @Test("Recently Added albums lists only albums with a song added inside the window")
+    func loadRecentlyAdded() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let fresh = try await self.insertAlbum(db, title: "Fresh")
+        let stale = try await self.insertAlbum(db, title: "Stale")
+        let newest = try await self.insertAlbum(db, title: "Newest")
+        try await self.insertTrack(db, albumID: fresh, daysAgo: 5)
+        try await self.insertTrack(db, albumID: stale, daysAgo: 45)
+        try await self.insertTrack(db, albumID: newest, daysAgo: 1)
+
+        let key = AlbumsViewModel.recentlyAddedSortOrderKey
+        UserDefaults.standard.removeObject(forKey: key)
+        defer { UserDefaults.standard.removeObject(forKey: key) }
+        let vm = AlbumsViewModel(repository: repo, sortOrderKey: key, defaultSortOrder: .dateAdded)
+        await vm.load(addedWithinDays: 30)
+        #expect(vm.albums.map(\.title) == ["Newest", "Fresh"])
+    }
+
+    @Test("Recently Added's album sort starts newest first and never moves the main grid's sort")
+    func recentlyAddedSortIsSeparate() async throws {
+        let mainKey = AlbumsViewModel.sortOrderKey
+        let recentKey = AlbumsViewModel.recentlyAddedSortOrderKey
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: mainKey)
+        defaults.removeObject(forKey: recentKey)
+        defer {
+            defaults.removeObject(forKey: mainKey)
+            defaults.removeObject(forKey: recentKey)
+        }
+
+        let repo = try await AlbumRepository(database: makeDatabase())
+        let recent = AlbumsViewModel(repository: repo, sortOrderKey: recentKey, defaultSortOrder: .dateAdded)
+        #expect(recent.sortOrder == .dateAdded)
+        recent.setSortOrder(.albumArtist)
+
+        #expect(AlbumsViewModel(repository: repo).sortOrder == .albumName)
+        #expect(AlbumsViewModel(repository: repo, sortOrderKey: recentKey, defaultSortOrder: .dateAdded).sortOrder == .albumArtist)
+    }
+
     // MARK: - Keyboard focus (Accessibility ADR-006)
 
     @Test("Persisted albums have non-nil IDs for FocusState tracking")

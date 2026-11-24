@@ -33,24 +33,39 @@ public final class AlbumsViewModel: ObservableObject {
     /// Current grid sort order. Owned here (not via `@AppStorage` in the view)
     /// because album loading is navigation-driven on the view model, so the
     /// persisted preference must be known at load time to sort the first result
-    /// without a flash. Persisted in UserDefaults under ``sortOrderKey``.
+    /// without a flash. Persisted in UserDefaults under the key given at init.
     @Published public private(set) var sortOrder: AlbumSortOrder
+
+    /// Album ID to the newest `added_at` among its songs, loaded with the
+    /// albums. Read only by the `.dateAdded` sort, so it is not published.
+    private var latestAddedAt: [Int64: Int64] = [:]
 
     // MARK: - Internal
 
+    /// The main Albums grid's sort key, also used by the genre and composer
+    /// album grids.
+    public static let sortOrderKey = "albums.sortOrder"
+    /// Recently Added's album grid remembers its own sort, newest first by
+    /// default, so choosing one never re-sorts the main Albums grid (#700).
+    public static let recentlyAddedSortOrderKey = "recentlyAdded.albums.sortOrder"
+
     /// UserDefaults key backing ``sortOrder`` (read at init, written by
     /// ``setSortOrder(_:)``).
-    public static let sortOrderKey = "albums.sortOrder"
-
+    private let sortOrderStorageKey: String
     private let repository: AlbumRepository
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
-    public init(repository: AlbumRepository) {
+    public init(
+        repository: AlbumRepository,
+        sortOrderKey: String = AlbumsViewModel.sortOrderKey,
+        defaultSortOrder: AlbumSortOrder = .albumName
+    ) {
         self.repository = repository
-        let raw = UserDefaults.standard.string(forKey: Self.sortOrderKey)
-        self.sortOrder = raw.flatMap(AlbumSortOrder.init(rawValue:)) ?? .albumName
+        self.sortOrderStorageKey = sortOrderKey
+        let raw = UserDefaults.standard.string(forKey: sortOrderKey)
+        self.sortOrder = raw.flatMap(AlbumSortOrder.init(rawValue:)) ?? defaultSortOrder
     }
 
     // MARK: - Public API
@@ -63,6 +78,7 @@ public final class AlbumsViewModel: ObservableObject {
             async let albumsTask = self.repository.fetchAll()
             async let artistNamesTask = self.artistNameMap(op: "load")
             async let trackCountsTask = self.trackCountMap(op: "load")
+            async let latestAddedTask = self.latestAddedMap(op: "load")
             // Await all results before any assignment so SwiftUI coalesces the
             // three @Published writes into one render pass.  Without this,
             // `albums` lands first (year now visible) while `trackCounts` is
@@ -70,7 +86,8 @@ public final class AlbumsViewModel: ObservableObject {
             let albums = try await albumsTask
             let artistNames = await artistNamesTask
             let trackCounts = await trackCountsTask
-            // artistNames first: sortedAlbums(.albumArtist) reads it.
+            // artistNames and latestAddedAt first: sortedAlbums reads them.
+            self.latestAddedAt = await latestAddedTask
             self.artistNames = artistNames
             self.trackCounts = trackCounts
             self.albums = self.sortedAlbums(albums)
@@ -111,6 +128,12 @@ public final class AlbumsViewModel: ObservableObject {
         await self.loadFiltered { try await self.repository.fetchAll(composer: composer) }
     }
 
+    /// Loads the albums with a song added in the last `days` days: Recently
+    /// Added's Albums mode (#700). Same window as the Songs mode.
+    public func load(addedWithinDays days: Int) async {
+        await self.loadFiltered { try await self.repository.fetchRecentlyAdded(days: days) }
+    }
+
     /// The artist-name map the grid cells need, recovered to an empty map when
     /// the read fails: the grid then shows rows without artist names, which is
     /// the right recovery but must not be silent (#491).
@@ -138,6 +161,18 @@ public final class AlbumsViewModel: ObservableObject {
         }
     }
 
+    /// Each album's newest song date, for the `.dateAdded` sort. Recovered to
+    /// an empty map on a read failure: that sort then falls back to title
+    /// order. See ``artistNameMap(op:)`` for why this is `nonisolated`.
+    private nonisolated func latestAddedMap(op: String) async -> [Int64: Int64] {
+        do {
+            return try await self.repository.fetchLatestAddedAt()
+        } catch {
+            self.log.warning("albums.latestAdded.failed", ["op": op, "error": String(reflecting: error)])
+            return [:]
+        }
+    }
+
     /// Shared body for the filtered destination loads: fetch albums via `fetch`,
     /// plus the artist-name and track-count maps the cells need, then assign.
     private func loadFiltered(_ fetch: @Sendable () async throws -> [Album]) async {
@@ -145,9 +180,11 @@ public final class AlbumsViewModel: ObservableObject {
         do {
             async let artistNamesTask = self.artistNameMap(op: "loadFiltered")
             async let trackCountsTask = self.trackCountMap(op: "loadFiltered")
+            async let latestAddedTask = self.latestAddedMap(op: "loadFiltered")
             let albums = try await fetch()
             let artistNames = await artistNamesTask
             let trackCounts = await trackCountsTask
+            self.latestAddedAt = await latestAddedTask
             self.artistNames = artistNames
             self.trackCounts = trackCounts
             self.albums = self.sortedAlbums(albums)
@@ -184,7 +221,7 @@ public final class AlbumsViewModel: ObservableObject {
     public func setSortOrder(_ order: AlbumSortOrder) {
         guard order != self.sortOrder else { return }
         self.sortOrder = order
-        UserDefaults.standard.set(order.rawValue, forKey: Self.sortOrderKey)
+        UserDefaults.standard.set(order.rawValue, forKey: self.sortOrderStorageKey)
         self.albums = self.sortedAlbums(self.albums)
     }
 
@@ -216,6 +253,16 @@ public final class AlbumsViewModel: ObservableObject {
                 }
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
+
+        case .dateAdded:
+            items.sorted { lhs, rhs in
+                let ladded = lhs.id.flatMap { self.latestAddedAt[$0] } ?? Int64.min
+                let radded = rhs.id.flatMap { self.latestAddedAt[$0] } ?? Int64.min
+                if ladded != radded {
+                    return ladded > radded
+                }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
         }
     }
 }
@@ -230,6 +277,8 @@ public enum AlbumSortOrder: String, CaseIterable, Sendable {
     case albumArtist
     /// Release year, newest first, then title.
     case yearNewest
+    /// The newest song's date added, newest first, then title (#700).
+    case dateAdded
 
     /// Localized label shown in the grid's sort menu.
     public var displayName: String {
@@ -242,6 +291,9 @@ public enum AlbumSortOrder: String, CaseIterable, Sendable {
 
         case .yearNewest:
             L10n.string("Year (Newest First)")
+
+        case .dateAdded:
+            L10n.string("Date Added (Newest First)")
         }
     }
 }

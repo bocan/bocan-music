@@ -26,7 +26,7 @@ public struct SmartFolderView: View {
                 do {
                     switch self.destination {
                     case .recentlyAdded:
-                        result = try await repo.recentlyAdded(days: 30)
+                        result = try await repo.recentlyAdded(days: RecentlyAddedView.windowDays)
 
                     case .recentlyPlayed:
                         result = try await repo.recentlyPlayed(days: 90)

@@ -8134,6 +8134,16 @@
         }
       }
     },
+    "Date Added (Newest First)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đáţé Áđđéđ (Ñéŵéšţ Ƒíŕšţ) one two"
+          }
+        }
+      }
+    },
     "Date Modified" : {
       "localizations" : {
         "en-XA" : {
@@ -19722,6 +19732,17 @@
         }
       }
     },
+    "Recently Added lists the songs you added in the last 30 days. Switch its toolbar from Songs to Albums to see one cover per album instead, newest addition first. The Albums grid can sort by Date Added too." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéçéñţĺý Áđđéđ ĺíšţš ţĥé šóñĝš ýóú áđđéđ íñ ţĥé ĺášţ 30 đáýš. Šŵíţçĥ íţš ţóóĺƀáŕ ƒŕóḿ Šóñĝš ţó Áĺƀúḿš ţó šéé óñé çóvéŕ ƥéŕ áĺƀúḿ íñšţéáđ, ñéŵéšţ áđđíţíóñ ƒíŕšţ. Ţĥé Áĺƀúḿš ĝŕíđ çáñ šóŕţ ƀý Đáţé Áđđéđ ţóó. one two three four five six seven eight nine ten one two three"
+          }
+        }
+      }
+    },
     "Recently Played" : {
       "localizations" : {
         "en" : {
@@ -19734,6 +19755,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕéçéñţĺý Ƥĺáýéđ one two"
+          }
+        }
+      }
+    },
+    "Recently added albums" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéçéñţĺý áđđéđ áĺƀúḿš one two"
           }
         }
       }
