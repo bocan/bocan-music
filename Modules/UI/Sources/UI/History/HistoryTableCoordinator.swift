@@ -53,11 +53,7 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         guard let row = self.rowsByID[key] else { return nil }
         let colID = column.identifier.rawValue
         let cellID = NSUserInterfaceItemIdentifier("hTextCell.\(colID)")
-        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
-            reused
-        } else {
-            self.makeTextCell(cellID: cellID)
-        }
+        let cell = TableCells.text(cellID, in: tableView)
         let value = Self.displayValue(colID: colID, row: row)
         cell.textField?.stringValue = value
         // A listen of a song whose file has gone stays listed, greyed, the
@@ -65,22 +61,6 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         cell.textField?.textColor = row.isMissing ? .tertiaryLabelColor : .labelColor
         cell.toolTip = row.isMissing ? L10n.string("The file for this song is missing.") : nil
         cell.setAccessibilityLabel(L10n.string("\(column.title): \(value)"))
-        return cell
-    }
-
-    private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
-        let cell = NSTableCellView()
-        cell.identifier = cellID
-        let tf = NSTextField(labelWithString: "")
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.lineBreakMode = .byTruncatingTail
-        cell.addSubview(tf)
-        cell.textField = tf
-        NSLayoutConstraint.activate([
-            tf.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            tf.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            tf.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
         return cell
     }
 

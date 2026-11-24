@@ -85,26 +85,22 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         }
 
         let cellID = NSUserInterfaceItemIdentifier("sTextCell.\(colID)")
-        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
-            reused
-        } else {
-            self.makeTextCell(cellID: cellID)
-        }
+        let cell = TableCells.text(cellID, in: tableView)
         cell.textField?.stringValue = self.displayValue(colID: colID, row: row)
         cell.setAccessibilityLabel(L10n.string("\(column.title): \(cell.textField?.stringValue ?? "")"))
         return cell
     }
 
     private func artCell(for row: SubsonicSongTableRow, in tableView: NSTableView) -> NSView {
-        let cellID = NSUserInterfaceItemIdentifier("sArtCell")
-        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? SubsonicCoverArtCell)
-            ?? SubsonicCoverArtCell()
+        let cell = TableCells.coverArt(NSUserInterfaceItemIdentifier("sArtCell"), in: tableView)
         cell.configure(
-            provider: self.parent.coverArtProvider,
-            serverID: row.serverID,
-            entityID: row.coverArtEntityID,
-            seed: abs(row.id.hashValue),
-            title: row.title
+            title: row.title,
+            hasArt: row.coverArtEntityID != nil,
+            load: CoverArtTableCell.subsonicLoad(
+                provider: self.parent.coverArtProvider,
+                serverID: row.serverID,
+                entityID: row.coverArtEntityID
+            )
         )
         return cell
     }
@@ -114,22 +110,6 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? SubsonicStarButtonCell)
             ?? SubsonicStarButtonCell()
         cell.configure(starred: row.starred, action: self.parent.actions.toggleStar, songID: row.id)
-        return cell
-    }
-
-    private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
-        let cell = NSTableCellView()
-        cell.identifier = cellID
-        let tf = NSTextField(labelWithString: "")
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.lineBreakMode = .byTruncatingTail
-        cell.addSubview(tf)
-        cell.textField = tf
-        NSLayoutConstraint.activate([
-            tf.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            tf.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            tf.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
         return cell
     }
 

@@ -3,74 +3,31 @@ import Foundation
 import Jellyfin
 import SwiftUI
 
-// MARK: - Cover cell
+// MARK: - Cover art
 
-/// `NSTableCellView` that loads the cover art for a Jellyfin song. It resolves
-/// the URL through `JellyfinCoverArtProvider`, then loads the image through the
-/// shared image cache. It cancels in-flight work when reused.
-final class JellyfinCoverArtCell: NSTableCellView {
-    private let imageContainer = NSView()
-    private let artImageView = NSImageView()
-    private var loadTask: Task<Void, Never>?
-
-    override init(frame: NSRect) {
-        super.init(frame: frame)
-        identifier = NSUserInterfaceItemIdentifier("jArtCell")
-
-        self.imageContainer.translatesAutoresizingMaskIntoConstraints = false
-        self.imageContainer.wantsLayer = true
-        self.imageContainer.layer?.cornerRadius = 3
-        self.imageContainer.layer?.masksToBounds = true
-        addSubview(self.imageContainer)
-
-        self.artImageView.translatesAutoresizingMaskIntoConstraints = false
-        self.artImageView.imageScaling = .scaleProportionallyUpOrDown
-        self.artImageView.imageAlignment = .alignCenter
-        self.artImageView.animates = false
-        self.imageContainer.addSubview(self.artImageView)
-
-        NSLayoutConstraint.activate([
-            self.imageContainer.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-            self.imageContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            self.imageContainer.widthAnchor.constraint(equalTo: self.imageContainer.heightAnchor),
-            self.imageContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
-            self.artImageView.leadingAnchor.constraint(equalTo: self.imageContainer.leadingAnchor),
-            self.artImageView.trailingAnchor.constraint(equalTo: self.imageContainer.trailingAnchor),
-            self.artImageView.topAnchor.constraint(equalTo: self.imageContainer.topAnchor),
-            self.artImageView.bottomAnchor.constraint(equalTo: self.imageContainer.bottomAnchor),
-        ])
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("unavailable")
-    }
-
-    func configure(
+extension CoverArtTableCell {
+    /// Loads a Jellyfin song's cover for the shared cover art cell (#695): it
+    /// resolves the URL through `JellyfinCoverArtProvider`, then loads the
+    /// image through the shared image cache. Nil without a provider or an item.
+    static func jellyfinLoad(
         provider: JellyfinCoverArtProvider?,
         serverID: UUID,
         itemID: String?,
-        tag: String?,
-        title: String
-    ) {
-        self.loadTask?.cancel()
-        self.artImageView.image = nil
-        setAccessibilityLabel(itemID == nil ? L10n.string("No artwork") : L10n.string("\(title) artwork"))
-        guard let provider, let itemID else { return }
-        self.loadTask = Task { @MainActor [weak self] in
+        tag: String?
+    ) -> Load? {
+        guard let provider, let itemID else { return nil }
+        return {
             let url: URL?
             do {
                 url = try await provider.coverArtURL(serverID: serverID, itemID: itemID, tag: tag, size: 64)
             } catch {
                 // The provider has already logged the failure (without the URL).
-                return
+                return nil
             }
-            guard let url, !Task.isCancelled else { return }
+            guard let url, !Task.isCancelled else { return nil }
             // The image cache is shared with the Subsonic table: it holds decoded
             // images by URL and knows nothing about either server kind.
-            let img = await SubsonicImageCache.shared.image(url: url)
-            guard !Task.isCancelled else { return }
-            self?.artImageView.image = img
+            return await SubsonicImageCache.shared.image(url: url)
         }
     }
 }
@@ -140,11 +97,7 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         }
 
         let cellID = NSUserInterfaceItemIdentifier("jTextCell.\(colID)")
-        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
-            reused
-        } else {
-            self.makeTextCell(cellID: cellID)
-        }
+        let cell = TableCells.text(cellID, in: tableView)
         cell.textField?.stringValue = self.displayValue(colID: colID, row: row)
         cell.textField?.textColor = colID == "jcol.starred" && row.starred ? .systemYellow : .labelColor
         cell.setAccessibilityLabel(self.accessibilityText(colID: colID, column: column, row: row, cell: cell))
@@ -159,15 +112,16 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     }
 
     private func artCell(for row: JellyfinSongTableRow, in tableView: NSTableView) -> NSView {
-        let cellID = NSUserInterfaceItemIdentifier("jArtCell")
-        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? JellyfinCoverArtCell)
-            ?? JellyfinCoverArtCell()
+        let cell = TableCells.coverArt(NSUserInterfaceItemIdentifier("jArtCell"), in: tableView)
         cell.configure(
-            provider: self.parent.coverArtProvider,
-            serverID: row.serverID,
-            itemID: row.song.coverArtID,
-            tag: row.song.coverArtTag,
-            title: row.title
+            title: row.title,
+            hasArt: row.song.coverArtID != nil,
+            load: CoverArtTableCell.jellyfinLoad(
+                provider: self.parent.coverArtProvider,
+                serverID: row.serverID,
+                itemID: row.song.coverArtID,
+                tag: row.song.coverArtTag
+            )
         )
         return cell
     }
@@ -185,22 +139,6 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     private func toggleStar(rowID: String) {
         guard let row = self.rowsByID[rowID] else { return }
         self.parent.actions.toggleStar(row)
-    }
-
-    private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
-        let cell = NSTableCellView()
-        cell.identifier = cellID
-        let tf = NSTextField(labelWithString: "")
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.lineBreakMode = .byTruncatingTail
-        cell.addSubview(tf)
-        cell.textField = tf
-        NSLayoutConstraint.activate([
-            tf.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            tf.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            tf.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
-        return cell
     }
 
     private func displayValue(colID: String, row: JellyfinSongTableRow) -> String {
