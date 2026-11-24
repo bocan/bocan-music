@@ -427,6 +427,16 @@ Reading defaults reads the release app's preferences only.
 
 **Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinClientProtocol.swift`
 
+### A cancelled monitor loop must return before it touches state after any `await`
+
+**Problem:** the CI test "stopMonitoring ends the loop and forgets the status" failed now and then: a server's status came back after it had been stopped. Rarer: after a Jellyfin recheck or a wake, a polling loop kept running that nothing could stop, and the next start added a second one.
+
+**Rule:** in `SubsonicConnectionMonitor` and `JellyfinConnectionMonitor`, `runLoop` checks `Task.isCancelled` at its start, after the ping returns and when the ping throws, before it emits a status or edits `tasks`. A new loop of the same kind (a monitor, a refresher, anything an actor restarts) needs the same guards.
+
+**Why:** both monitors are actors. While a loop waits for its ping, `stopMonitoring`, `recheck` or `wakeAll` runs, cancels that loop and may store a new one under the same server. A ping does not always throw `CancellationError` when cancelled: it can return or fail normally. The old loop then wrote a status for a server that was gone, or, on a 401, removed the entry that now held the new loop. The tests hold a ping open to force the order (`stopDuringPing`, `recheckDuringRefusedPing`, `wakeDuringRefusedPing`).
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinConnectionMonitor.swift` (`runLoop`), with the same guards in `Modules/Subsonic/Sources/Subsonic/SubsonicConnectionMonitor.swift`
+
 ## Testing
 
 ### The XCUITest runner is sandboxed no matter what the project says
