@@ -262,6 +262,7 @@ private extension FFmpegDecoder {
         ctx.codecCtx = codecCtx
 
         try self.ffCheck(avcodec_parameters_to_context(codecCtx, codecParams))
+        FFmpegCodecSetup.prepare(codecCtx)
         try self.ffCheck(avcodec_open2(codecCtx, codec, nil))
         // More than two named channels keep their layout, so the engine's one
         // converter folds them exactly as it folds an AVFoundation-decoded

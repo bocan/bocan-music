@@ -1,3 +1,4 @@
+@preconcurrency import AVFoundation
 import Foundation
 import Testing
 @testable import AudioEngine
@@ -111,6 +112,38 @@ struct AudioTranscoderTests {
         #expect(abs(decoder.duration - 3.0) < 0.2)
         #expect(decoder.streamDetails.sampleRateHz == 48000)
         await decoder.close()
+
+        try self.removeIfPresent(destination)
+    }
+
+    /// Phone Sync converts DSD through the transcoder's own resampler, which
+    /// takes the raw DSD stream at 352.8 kHz down to the preset's rate (#706).
+    @Test("a DSD source transcodes through the raw DSD path and stays audible", arguments: [TranscodePreset.opus128, .mp3320])
+    func dsdSourceTranscodes(preset: TranscodePreset) async throws {
+        let source = try fixtureURL("sine-250ms-dsd64-stereo.dsf")
+        let destination = self.makeDestination(for: preset)
+
+        let result = try await AudioTranscoder().transcode(source: source, to: destination, preset: preset)
+        #expect(result.size > 0)
+
+        let decoder = try FFmpegDecoder(url: destination)
+        #expect(abs(decoder.duration - 0.25) < 0.1, "duration drifted: \(decoder.duration)")
+        #expect(decoder.streamDetails.sampleRateHz == Int(preset.outputSampleRate(forSourceRate: 352_800)))
+        var sumSquares: Float = 0
+        var count = 0
+        let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
+        while try await decoder.read(into: buf) > 0 {
+            let channel = try #require(buf.floatChannelData?[0])
+            for index in 0 ..< Int(buf.frameLength) {
+                sumSquares += channel[index] * channel[index]
+            }
+            count += Int(buf.frameLength)
+        }
+        await decoder.close()
+        // A half-scale sine has an RMS of about 0.354; encoder priming and the
+        // DSD filter start-up pull the whole-file figure down a little.
+        let rms = (sumSquares / Float(max(count, 1))).squareRoot()
+        #expect(rms > 0.25, "transcoded DSD is too quiet: RMS \(rms)")
 
         try self.removeIfPresent(destination)
     }

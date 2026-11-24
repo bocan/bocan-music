@@ -94,6 +94,27 @@ struct FFmpegDecoderTests {
         )
     }
 
+    /// The fixture is a sine at half scale, so its RMS is about 0.354. The
+    /// raw DSD path (#706) gave the same samples as FFmpeg's deprecated
+    /// in-decoder conversion, measured on FFmpeg 9.1; this pins the level so
+    /// a change of path or of FFmpeg cannot silently alter it.
+    @Test("DSF: decodes the sine at its level through the raw DSD path")
+    func dsfLevel() async throws {
+        let url = try fixtureURL("sine-250ms-dsd64-stereo.dsf")
+        let decoder = try FFmpegDecoder(url: url)
+        var left: [Float] = []
+        let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
+        while try await decoder.read(into: buf) > 0 {
+            let channel = try #require(buf.floatChannelData?[0])
+            left.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buf.frameLength)))
+        }
+        await decoder.close()
+        // The second half, clear of the DSD filter's start-up.
+        let tail = left[(left.count / 2)...]
+        let rms = (tail.reduce(0) { $0 + $1 * $1 } / Float(tail.count)).squareRoot()
+        #expect(abs(rms - 0.354) < 0.01, "RMS \(rms)")
+    }
+
     // MARK: - Opus
 
     @Test("Opus: reads frames")
