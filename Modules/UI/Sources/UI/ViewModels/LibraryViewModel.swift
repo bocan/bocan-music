@@ -864,15 +864,22 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// status dot and the per-view offline banner stay live.
     private func observeSubsonicConnectionChanges() {
         guard let observer = self.subsonicConnectionObserver else { return }
-        Task { [weak self] in
-            let snapshot = await observer.currentStates()
-            await MainActor.run { self?.subsonicConnectionStates = snapshot }
-        }
         let stream = observer.stateUpdates()
         self.subsonicConnectionTask = Task { [weak self] in
+            let snapshot = await observer.currentStates()
+            // The snapshot is older than any update already queued on the
+            // stream, so it only fills servers that have no state yet.
+            for (id, state) in snapshot where self?.subsonicConnectionStates[id] == nil {
+                self?.subsonicConnectionStates[id] = state
+            }
             for await (serverID, state) in stream {
                 guard let self else { return }
-                self.subsonicConnectionStates[serverID] = state
+                // The monitor reports "online" after every 60 s ping (#693).
+                // Writing the same state would still publish and redraw
+                // every observer of this view model.
+                if self.subsonicConnectionStates[serverID] != state {
+                    self.subsonicConnectionStates[serverID] = state
+                }
             }
         }
     }
