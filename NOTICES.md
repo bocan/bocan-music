@@ -5,7 +5,7 @@ reproduced below as required by each project's terms.
 
 ---
 
-## FFmpeg 9.0.2
+## FFmpeg 9.1
 
 <https://ffmpeg.org>
 
@@ -30,8 +30,8 @@ The LGPL 2.1 full text is available at:
 
 ### Source and build recipe
 
-- Source: <https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz>
-- SHA-256 of that file: `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`
+- Source: <https://ffmpeg.org/releases/ffmpeg-9.1.tar.xz>
+- SHA-256 of that file: `1a4d394ae63d190a526cd052eb4415c156b5c5e2df37efab41a7de0b8fde2433`
 - Build recipe: `Scripts/build-ffmpeg-lgpl.sh` in the Bòcan source
   (<https://github.com/bocan/bocan-music>), run as `make ffmpeg-lgpl`. The
   version, the address and the checksum are pinned in `.ffmpeg-source`.
@@ -407,7 +407,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.10.2
+## FeedKit 10.10.3
 
 <https://github.com/nmdias/FeedKit>
 
@@ -437,7 +437,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 5.1.1
+## swift-crypto 5.1.2
 
 <https://github.com/apple/swift-crypto>
 
@@ -603,6 +603,6 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.24.0. The FFmpeg and Chromaprint
+*This file was generated for Bòcan 2.25.0. The FFmpeg and Chromaprint
 versions are pinned in `.ffmpeg-source` and `.chromaprint-source`; the Swift
 package versions are pinned in the workspace `Package.resolved`.*
