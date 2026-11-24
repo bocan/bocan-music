@@ -188,13 +188,6 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         }
     }
 
-    func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
-        guard row < self.rows.count else { return nil }
-        let r = self.rows[row]
-        let dur = r.duration > 0 ? String(format: "%d:%02d", r.duration / 60, r.duration % 60) : ""
-        return "\(r.title), \(r.artist), \(r.album), \(dur)"
-    }
-
     // MARK: Sort
 
     func handleSortChanged(in tableView: NSTableView) {

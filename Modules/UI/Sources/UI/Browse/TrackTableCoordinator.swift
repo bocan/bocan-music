@@ -92,17 +92,43 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         cell.textField?.font = isNowPlaying
             ? NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
             : baseFont
-        // Prefix the column name for VoiceOver; rating speaks as "3 stars".
+        let spoken = self.spokenLabel(
+            for: column,
+            row: row,
+            shownValue: cell.textField?.stringValue ?? "",
+            isNowPlaying: isNowPlaying,
+            in: tableView
+        )
+        cell.setAccessibilityLabel(spoken)
+        return cell
+    }
+
+    /// The columns whose cells are controls or art, so they cannot carry a
+    /// spoken row status.
+    private static let nonTextColumns: Set<NSUserInterfaceItemIdentifier> = [.albumArt, .shuffleExclude, .loved]
+
+    /// The column name, then the value; rating speaks as "3 stars". One cell
+    /// of the playing row also says so (#300, #694).
+    private func spokenLabel(
+        for column: NSTableColumn,
+        row: TrackRow,
+        shownValue: String,
+        isNowPlaying: Bool,
+        in tableView: NSTableView
+    ) -> String {
         let colTitle = TrackTable.columnSpecs.first { $0.id == column.identifier }?.title ?? column.title
         let spokenValue: String
         if column.identifier == .rating {
             let stars = Formatters.stars(from: row.rating)
             spokenValue = stars == 0 ? L10n.string("Not rated") : L10n.string("\(stars) stars")
         } else {
-            spokenValue = cell.textField?.stringValue ?? ""
+            spokenValue = shownValue
         }
-        cell.setAccessibilityLabel(L10n.string("\(colTitle): \(spokenValue)"))
-        return cell
+        let label = L10n.string("\(colTitle): \(spokenValue)")
+        guard isNowPlaying,
+              TableRowStatus.carrierColumn(in: tableView, title: .title, excluding: Self.nonTextColumns)
+              == column.identifier else { return label }
+        return L10n.string("Now playing, ") + label
     }
 
     private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
@@ -144,18 +170,6 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             ?? LoveButtonCell()
         cell.configure(row: row, action: self.parent.actions.love)
         return cell
-    }
-
-    // MARK: NSTableViewDelegate — accessibility
-
-    /// One spoken sentence per row: "[Now playing, ]Title, Artist, Album, Duration".
-    public func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
-        guard row < self.rows.count else { return nil }
-        let r = self.rows[row]
-        let duration = Formatters.duration(r.duration)
-        let isNowPlaying = self.parent.nowPlayingTrackID == r.id
-        let prefix = isNowPlaying ? L10n.string("Now playing, ") : ""
-        return "\(prefix)\(r.title), \(r.artistName), \(r.albumName), \(duration)"
     }
 
     // MARK: NSTableViewDelegate — sort / selection / layout
@@ -249,6 +263,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         // Persist visibility (autosaveTableColumns only saves width and order).
         if let autosaveName = tableView?.autosaveName {
             TrackTable.saveColumnVisibility(autosaveName: autosaveName, column: col)
+        }
+        // The cell that speaks "Now playing" may have just changed.
+        if let nowPlayingID = self.applied.nowPlayingID, let dataSource = self.dataSource {
+            TrackTable.reload(rows: [nowPlayingID], coordinator: self, dataSource: dataSource)
         }
     }
 

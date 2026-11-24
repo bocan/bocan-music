@@ -140,6 +140,18 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 ---
 
+### An AppKit table row cannot carry a VoiceOver label
+
+**Problem:** a label written for a whole table row never reaches VoiceOver. Four table coordinators implemented `tableView(_:accessibilityLabelForRow:)`, and a unit test called it directly and passed, but AppKit has no such delegate method, so "Now playing" and "file missing" were never spoken (#694).
+
+**Rule:** put a fact about the whole row on exactly one cell, chosen with `TableRowStatus.carrierColumn`, and rebuild the affected rows when a column is shown or hidden. Check an accessibility claim through the real `AXUIElement` tree, not by calling the method that should supply it.
+
+**Why:** the `AXRow` is a private `NSTableRow` object with no `AXDescription` attribute, and it does not read the `NSTableRowView`, so `setAccessibilityLabel` or an `accessibilityLabel()` override on the row view has no effect. The `AXCell` does expose the `NSTableCellView` label. A diffable data source also ignores the delegate's `tableView(_:rowViewForRow:)`; it uses its own `rowViewProvider`. Measured on macOS 27.2 in 2026-11.
+
+**Canonical file:** `Modules/UI/Sources/UI/Browse/TableRowStatus.swift`
+
+---
+
 ### SwiftUI runs some view closures off the main thread on macOS 15, and Swift 6 traps on it
 
 **Problem:** 2.21.0 closed the moment a listener played a song on macOS 15. `EXC_BREAKPOINT` on `com.apple.SwiftUI.DisplayLink`, `dispatch_assert_queue_fail` under `swift_task_isCurrentExecutor`, inside the content closure of a `ForEach` in `SourceBadgesRow`. CI never saw it because every dev machine and every CI job except the smoketest runs macOS 26 or 27.
