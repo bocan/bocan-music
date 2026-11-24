@@ -2,72 +2,26 @@ import AppKit
 import Foundation
 import Subsonic
 
-// MARK: - SubsonicCoverArtCell
+// MARK: - Subsonic cover art
 
-/// `NSTableCellView` that asynchronously loads cover art for a Subsonic entity.
-///
-/// First resolves the `coverArtURL` via `SubsonicCoverArtProvider`, then
-/// downloads and caches the `NSImage`.  Cancels in-flight work when reused.
-final class SubsonicCoverArtCell: NSTableCellView {
-    private let imageContainer = NSView()
-    private let artImageView = NSImageView()
-    private var loadTask: Task<Void, Never>?
-
-    override init(frame: NSRect) {
-        super.init(frame: frame)
-        identifier = NSUserInterfaceItemIdentifier("sArtCell")
-
-        self.imageContainer.translatesAutoresizingMaskIntoConstraints = false
-        self.imageContainer.wantsLayer = true
-        self.imageContainer.layer?.cornerRadius = 3
-        self.imageContainer.layer?.masksToBounds = true
-        addSubview(self.imageContainer)
-
-        self.artImageView.translatesAutoresizingMaskIntoConstraints = false
-        self.artImageView.imageScaling = .scaleProportionallyUpOrDown
-        self.artImageView.imageAlignment = .alignCenter
-        self.artImageView.animates = false
-        self.imageContainer.addSubview(self.artImageView)
-
-        NSLayoutConstraint.activate([
-            self.imageContainer.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-            self.imageContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            self.imageContainer.widthAnchor.constraint(equalTo: self.imageContainer.heightAnchor),
-            self.imageContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
-            self.artImageView.leadingAnchor.constraint(equalTo: self.imageContainer.leadingAnchor),
-            self.artImageView.trailingAnchor.constraint(equalTo: self.imageContainer.trailingAnchor),
-            self.artImageView.topAnchor.constraint(equalTo: self.imageContainer.topAnchor),
-            self.artImageView.bottomAnchor.constraint(equalTo: self.imageContainer.bottomAnchor),
-        ])
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("unavailable")
-    }
-
-    func configure(
+extension CoverArtTableCell {
+    /// Loads a Subsonic entity's cover for the shared cover art cell (#695):
+    /// resolves the URL through `SubsonicCoverArtProvider`, then loads the
+    /// image through the shared cache. Nil without a provider or an entity.
+    static func subsonicLoad(
         provider: SubsonicCoverArtProvider?,
         serverID: UUID,
-        entityID: String?,
-        seed: Int,
-        title: String
-    ) {
-        self.loadTask?.cancel()
-        self.artImageView.image = nil
-        setAccessibilityLabel(entityID == nil ? L10n.string("No artwork") : L10n.string("\(title) artwork"))
-        guard let provider, let entityID else { return }
-        self.loadTask = Task { @MainActor [weak self] in
-            guard let self else { return }
+        entityID: String?
+    ) -> Load? {
+        guard let provider, let entityID else { return nil }
+        return {
             guard let url = try? await provider.coverArtURL(
                 serverID: serverID,
                 entityID: entityID,
                 size: 64
-            ) else { return }
-            guard !Task.isCancelled else { return }
-            let img = await SubsonicImageCache.shared.image(url: url)
-            guard !Task.isCancelled else { return }
-            self.artImageView.image = img
+            ) else { return nil }
+            guard !Task.isCancelled else { return nil }
+            return await SubsonicImageCache.shared.image(url: url)
         }
     }
 }

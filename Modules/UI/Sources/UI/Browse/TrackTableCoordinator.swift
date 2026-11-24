@@ -81,11 +81,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         }
 
         let cellID = NSUserInterfaceItemIdentifier("textCell.\(column.identifier.rawValue)")
-        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
-            reused
-        } else {
-            self.makeTextCell(cellID: cellID)
-        }
+        let cell = TableCells.text(cellID, in: tableView, truncatesLastVisibleLine: true)
         cell.textField?.stringValue = TrackTable.displayValue(for: column.identifier, row: row)
         // preferredFont(forTextStyle:) scales with macOS text size settings.
         let baseFont = NSFont.preferredFont(forTextStyle: .body)
@@ -131,28 +127,15 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         return L10n.string("Now playing, ") + label
     }
 
-    private func makeTextCell(cellID: NSUserInterfaceItemIdentifier) -> NSTableCellView {
-        let cell = NSTableCellView()
-        cell.identifier = cellID
-        let tf = NSTextField(labelWithString: "")
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.lineBreakMode = .byTruncatingTail
-        tf.cell?.truncatesLastVisibleLine = true
-        cell.addSubview(tf)
-        cell.textField = tf
-        NSLayoutConstraint.activate([
-            tf.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            tf.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            tf.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
-        return cell
-    }
-
     private func coverArtCell(for row: TrackRow, in tableView: NSTableView) -> NSView {
-        let cellID = NSUserInterfaceItemIdentifier("artCell.albumArt")
-        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? CoverArtImageCell)
-            ?? CoverArtImageCell()
-        cell.configure(artPath: row.coverArtPath, trackTitle: row.title)
+        let cell = TableCells.coverArt(NSUserInterfaceItemIdentifier("artCell.albumArt"), in: tableView)
+        var load: CoverArtTableCell.Load?
+        if let path = row.coverArtPath {
+            // Track rows show art at roughly row height (~36 pt); request a
+            // matching thumbnail rather than decoding the full-resolution cover.
+            load = { await ArtworkLoader.shared.image(at: path, maxDimensionPoints: 40) }
+        }
+        cell.configure(title: row.title, hasArt: row.coverArtPath != nil, load: load)
         return cell
     }
 
