@@ -1,17 +1,12 @@
-import AppKit
 import Foundation
-import Persistence
-import SwiftUI
 import Testing
-@testable import UI
 
 // MARK: - VoiceOverTests
 
 /// Verifies VoiceOver accessibility support added in Phase 1.
 ///
-/// Tests cover:
-///  - `TrackTableCoordinator.tableView(_:accessibilityLabelForRow:)` label format
-///  - Source-convention checks that key a11y modifiers exist in UI source files
+/// Source-convention checks that key a11y modifiers exist in UI source files.
+/// The cell that speaks a table row's status is covered by `TableRowStatusTests`.
 @Suite("VoiceOver Accessibility")
 struct VoiceOverTests {
     // MARK: - Helpers
@@ -29,147 +24,6 @@ struct VoiceOverTests {
     private func sourceContents(at relativePath: String) throws -> String {
         let url = self.uiSourcesURL.appendingPathComponent(relativePath)
         return try String(contentsOf: url, encoding: .utf8)
-    }
-
-    /// Returns a `TrackContextMenuActions` with all handlers set to no-ops.
-    /// Shared by tests that need a valid `TrackTable` parent but don't exercise actions.
-    private func makeNoopActions() -> TrackContextMenuActions {
-        let noop: (Track) -> Void = { _ in }
-        return TrackContextMenuActions(
-            playNow: noop,
-            playSingle: noop,
-            playAlbum: noop,
-            shuffleAlbum: noop,
-            playArtist: noop,
-            playNext: { _ in },
-            addToQueue: { _ in },
-            addToPlaylist: { _, _ in },
-            newPlaylistFromSelection: { _ in },
-            love: { _ in },
-            goToArtist: { _ in },
-            goToAlbum: { _ in },
-            showInFinder: noop,
-            rescanFile: noop,
-            getInfo: { _ in },
-            identify: noop,
-            removeFromLibrary: { _ in },
-            deleteFromDisk: { _ in },
-            copy: { _ in },
-            toggleShuffle: { _, _ in },
-            computeReplayGain: { _ in },
-            rate: { _, _ in },
-            removeFromPlaylist: nil,
-            editLyrics: nil,
-            fetchLyricsFromLRClib: nil
-        )
-    }
-
-    // MARK: - TrackTableCoordinator
-
-    @MainActor
-    @Test("accessibilityLabelForRow returns Title, Artist, Album, Duration")
-    func trackRowAccessibilityLabel() {
-        let now = Int64(Date().timeIntervalSince1970)
-        let track = Track(
-            fileURL: "file:///tmp/inMyLife.mp3",
-            fileSize: 0,
-            fileMtime: now,
-            fileFormat: "mp3",
-            duration: 167.0, // 2:47
-            title: "In My Life",
-            addedAt: now,
-            updatedAt: now
-        )
-        let row = TrackRow(track: track, artistName: "The Beatles", albumName: "Rubber Soul")
-
-        var selectionStub = Set<Track.ID>()
-        var sortStub = [KeyPathComparator<TrackRow>]()
-        let table = TrackTable(
-            rows: [],
-            rowsVersion: 0,
-            selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
-            sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
-            nowPlayingTrackID: nil,
-            sortable: false,
-            playlistNodes: [],
-            actions: self.makeNoopActions(),
-            scrollRequest: 0,
-            scrollTargetTrackID: nil,
-            onMove: nil
-        )
-        let coordinator = TrackTableCoordinator(parent: table)
-        coordinator.rows = [row]
-
-        let tv = NSTableView()
-        let label = coordinator.tableView(tv, accessibilityLabelForRow: 0)
-        #expect(label == "In My Life, The Beatles, Rubber Soul, 2:47")
-    }
-
-    @MainActor
-    @Test("accessibilityLabelForRow prefixes 'Now playing, ' for the current track (#300)")
-    func trackRowAccessibilityLabelNowPlaying() {
-        let now = Int64(Date().timeIntervalSince1970)
-        let track = Track(
-            fileURL: "file:///tmp/inMyLife.mp3",
-            fileSize: 0,
-            fileMtime: now,
-            fileFormat: "mp3",
-            duration: 167.0,
-            title: "In My Life",
-            addedAt: now,
-            updatedAt: now
-        )
-        let row = TrackRow(track: track, artistName: "The Beatles", albumName: "Rubber Soul")
-        let trackID = row.id
-
-        var selectionStub = Set<Track.ID>()
-        var sortStub = [KeyPathComparator<TrackRow>]()
-        let table = TrackTable(
-            rows: [],
-            rowsVersion: 0,
-            selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
-            sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
-            nowPlayingTrackID: trackID,
-            sortable: false,
-            playlistNodes: [],
-            actions: self.makeNoopActions(),
-            scrollRequest: 0,
-            scrollTargetTrackID: nil,
-            onMove: nil
-        )
-        let coordinator = TrackTableCoordinator(parent: table)
-        coordinator.rows = [row]
-
-        let tv = NSTableView()
-        let label = coordinator.tableView(tv, accessibilityLabelForRow: 0)
-        #expect(
-            label?.hasPrefix("Now playing, ") == true,
-            "Row label for the now-playing track must begin with 'Now playing, '; got: \(label ?? "nil")"
-        )
-    }
-
-    @MainActor
-    @Test("accessibilityLabelForRow returns nil for out-of-bounds row")
-    func trackRowAccessibilityLabelOutOfBounds() {
-        var selectionStub = Set<Track.ID>()
-        var sortStub = [KeyPathComparator<TrackRow>]()
-        let table = TrackTable(
-            rows: [],
-            rowsVersion: 0,
-            selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
-            sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
-            nowPlayingTrackID: nil,
-            sortable: false,
-            playlistNodes: [],
-            actions: self.makeNoopActions(),
-            scrollRequest: 0,
-            scrollTargetTrackID: nil,
-            onMove: nil
-        )
-        let coordinator = TrackTableCoordinator(parent: table)
-        // rows is empty — row 0 is out of bounds
-        let tv = NSTableView()
-        #expect(coordinator.tableView(tv, accessibilityLabelForRow: 0) == nil)
     }
 
     // MARK: - Source convention: album cell hints
@@ -246,15 +100,19 @@ struct VoiceOverTests {
         )
     }
 
-    // MARK: - Source convention: TrackTableCoordinator
+    // MARK: - Source convention: table rows
 
-    @Test("TrackTableCoordinator implements accessibilityLabelForRow delegate method")
-    func coordinatorHasAccessibilityLabelForRow() throws {
-        let source = try self.sourceContents(at: "Browse/TrackTableCoordinator.swift")
-        #expect(
-            source.contains("accessibilityLabelForRow"),
-            "TrackTableCoordinator must implement tableView(_:accessibilityLabelForRow:)"
-        )
+    @Test("No table implements accessibilityLabelForRow, which AppKit never calls (#694)")
+    func noCoordinatorHasDeadRowLabelMethod() throws {
+        for file in [
+            "Browse/TrackTableCoordinator.swift",
+            "History/HistoryTableCoordinator.swift",
+            "Browse/Subsonic/SubsonicSongTableCoordinator.swift",
+            "Browse/Jellyfin/JellyfinSongTableCoordinator.swift",
+        ] {
+            let source = try self.sourceContents(at: file)
+            #expect(!source.contains("accessibilityLabelForRow"), "\(file): put row status on a cell instead")
+        }
     }
 
     // MARK: - Differentiate Without Color (#298)

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - With a Subsonic server added, the main window no longer redraws itself once a minute when the server's status has not changed.
+- VoiceOver now tells you which song in the list is playing, and which songs in your play history have a missing file.
 
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 

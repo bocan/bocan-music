@@ -64,7 +64,13 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         // way Up Next marks a song it cannot find. Reset on reuse.
         cell.textField?.textColor = row.isMissing ? .tertiaryLabelColor : .labelColor
         cell.toolTip = row.isMissing ? L10n.string("The file for this song is missing.") : nil
-        cell.setAccessibilityLabel(L10n.string("\(column.title): \(value)"))
+        let label = L10n.string("\(column.title): \(value)")
+        // A table row has no label of its own, so one cell says the file is
+        // gone (#694). Without it the greying is visible only.
+        let carriesStatus = row.isMissing
+            && TableRowStatus.carrierColumn(in: tableView, title: HistoryTable.columnID("title")) == column.identifier
+        let spoken = carriesStatus ? [label, L10n.string("file missing")].joined(separator: ", ") : label
+        cell.setAccessibilityLabel(spoken)
         return cell
     }
 
@@ -133,19 +139,6 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         }
     }
 
-    func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
-        guard let key = self.dataSource?.itemIdentifier(forRow: row),
-              let r = self.rowsByID[key] else { return nil }
-        return [
-            Formatters.shortDateTime(epochSeconds: r.playedAt),
-            r.title ?? L10n.string("Unknown"),
-            r.artistName ?? "",
-            r.albumName ?? "",
-            Self.sourceName(r.source),
-            r.isMissing ? L10n.string("file missing") : "",
-        ].filter { !$0.isEmpty }.joined(separator: ", ")
-    }
-
     // MARK: Sort
 
     func handleSortChanged(in tableView: NSTableView) {
@@ -194,6 +187,19 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         sender.state = col.isHidden ? .off : .on
         let key = "bocan.col.hidden.bocan.historyTable.v1.\(col.identifier.rawValue)"
         UserDefaults.standard.set(col.isHidden, forKey: key)
+        self.reloadMissingRows()
+    }
+
+    /// Rebuilds the cells of rows whose file is missing, because the cell that
+    /// speaks "file missing" may have just changed.
+    private func reloadMissingRows() {
+        guard let dataSource = self.dataSource else { return }
+        var snapshot = dataSource.snapshot()
+        let shown = Set(snapshot.itemIdentifiers)
+        let missing = self.rows.filter(\.isMissing).map(\.id).filter(shown.contains)
+        guard !missing.isEmpty else { return }
+        snapshot.reloadItems(missing)
+        applyPreservingSelection(snapshot, to: dataSource, in: self.tableView)
     }
 
     // MARK: NSMenuDelegate, context menu

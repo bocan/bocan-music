@@ -333,7 +333,7 @@ public struct TrackTable: NSViewRepresentable {
 
     /// Reloads the given rows in place, ignoring IDs the snapshot does not hold
     /// and duplicates. A no-op for an empty list.
-    private static func reload(
+    static func reload(
         rows changed: [Int64],
         coordinator: TrackTableCoordinator,
         dataSource: TrackDiffableDataSource

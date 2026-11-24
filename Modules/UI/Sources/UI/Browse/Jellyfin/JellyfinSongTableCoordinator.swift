@@ -260,12 +260,6 @@ final class JellyfinSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         }
     }
 
-    func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
-        guard row < self.rows.count else { return nil }
-        let r = self.rows[row]
-        return "\(r.title), \(r.artist), \(r.album), \(Self.formatDuration(r.duration))"
-    }
-
     // MARK: Sort
 
     func handleSortChanged(in tableView: NSTableView) {
