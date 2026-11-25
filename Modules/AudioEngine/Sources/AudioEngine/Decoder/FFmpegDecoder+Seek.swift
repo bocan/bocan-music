@@ -14,8 +14,8 @@ import Foundation
 /// trims the pre-roll itself: trunk already injects that skip after a seek,
 /// and the decoder moves the frame's timestamp past what it trims (which is
 /// why `pkt_timebase` is set at open). A source whose frames carry no
-/// timestamp keeps the behaviour from before: playback starts where the
-/// demuxer landed.
+/// timestamp, and a live stream with no length, keep the behaviour from
+/// before: playback starts where the demuxer landed.
 extension FFmpegDecoder {
     /// `AV_NOPTS_VALUE` (not importable; the C macro casts).
     private static let noTimestamp = Int64.min
@@ -43,7 +43,12 @@ extension FFmpegDecoder {
               let codecCtx = ctx.codecCtx else { return }
 
         let sampleRate = Int64(codecCtx.pointee.sample_rate)
-        let preroll = Self.seekPreroll(stream: stream, codecCtx: codecCtx)
+        let trimTarget = Self.trimTarget(
+            seconds: target,
+            sampleRate: sampleRate,
+            isUnboundedRemoteStream: self.isUnboundedRemoteStream
+        )
+        let preroll = trimTarget == nil ? 0 : Self.seekPreroll(stream: stream, codecCtx: codecCtx)
         let seekFrom = sampleRate > 0 ? max(0, target - TimeInterval(preroll) / TimeInterval(sampleRate)) : target
 
         let tbDen = stream.pointee.time_base.den
@@ -64,8 +69,20 @@ extension FFmpegDecoder {
         }
         self.residualBuffer.removeAll()
         self.positionSeconds = target
-        self.seekTargetSample = sampleRate > 0 ? Int64((target * TimeInterval(sampleRate)).rounded()) : nil
+        self.seekTargetSample = trimTarget
         self.nextFrameSample = nil
+    }
+
+    /// The sample to trim to after a seek to `seconds`, or nil to keep what
+    /// the demuxer lands on.
+    ///
+    /// Nil for a live stream with no length: the engine's reconnect seeks a
+    /// fresh decoder to the listener's elapsed time, which has nothing to do
+    /// with the stream's own timestamps, so a trim could drop audio for as
+    /// long as the listener had been tuned in. Nil too without a sample rate.
+    static func trimTarget(seconds: TimeInterval, sampleRate: Int64, isUnboundedRemoteStream: Bool) -> Int64? {
+        guard !isUnboundedRemoteStream, sampleRate > 0 else { return nil }
+        return Int64((seconds * TimeInterval(sampleRate)).rounded())
     }
 
     /// Samples to decode before the target: the larger of the stream's and

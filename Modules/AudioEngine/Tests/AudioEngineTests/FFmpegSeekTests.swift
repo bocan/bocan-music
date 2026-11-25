@@ -144,6 +144,15 @@ struct FFmpegSeekTests {
 
     // MARK: Trim arithmetic
 
+    @Test("a live stream with no length is never trimmed after a seek")
+    func liveStreamIsNotTrimmed() {
+        // The reconnect seeks a fresh radio decoder to the elapsed listening
+        // time, an hour here; trimming to it would drop an hour of audio.
+        #expect(FFmpegDecoder.trimTarget(seconds: 3600, sampleRate: 48000, isUnboundedRemoteStream: true) == nil)
+        #expect(FFmpegDecoder.trimTarget(seconds: 0.5, sampleRate: 48000, isUnboundedRemoteStream: false) == 24000)
+        #expect(FFmpegDecoder.trimTarget(seconds: 0.5, sampleRate: 0, isUnboundedRemoteStream: false) == nil)
+    }
+
     @Test("leading samples to drop: before, across and after the target")
     func leadingSamplesToDrop() {
         #expect(FFmpegDecoder.leadingSamplesToDrop(frameStart: 0, frameCount: 960, target: 2000) == 960)
