@@ -177,13 +177,18 @@ public final class PlaylistDetailViewModel: ObservableObject {
         await self.remove(at: offsets)
     }
 
-    public func addTracks(_ ids: [Int64], at index: Int? = nil) async {
-        guard let pid = loadedID else { return }
+    /// Adds `ids` at `index` and reloads. Returns what the add did, so the
+    /// view can say when songs were skipped (#720), or nil when it failed.
+    @discardableResult
+    public func addTracks(_ ids: [Int64], at index: Int? = nil) async -> PlaylistAddResult? {
+        guard let pid = loadedID else { return nil }
         do {
-            try await self.service.addTracks(ids, to: pid, at: index)
+            let result = try await self.service.addTracks(ids, to: pid, at: index)
             await self.reload()
+            return result
         } catch {
             self.lastError = String(describing: error)
+            return nil
         }
     }
 }

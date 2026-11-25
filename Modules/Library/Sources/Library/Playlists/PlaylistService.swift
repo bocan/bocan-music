@@ -179,13 +179,28 @@ public actor PlaylistService {
     // MARK: - Membership
 
     /// Appends `trackIDs` to `playlistID` at `index` (or the end when `nil`).
-    public func addTracks(_ trackIDs: [Int64], to playlistID: Int64, at index: Int? = nil) async throws {
-        guard !trackIDs.isEmpty else { return }
+    ///
+    /// A playlist holds each song once (`idx_pt_unique_membership`, M019), so
+    /// a song already in it, or repeated within `trackIDs`, is skipped and
+    /// counted in the result for the caller to report (#720). Filtering here,
+    /// before positions are chosen, also keeps the repack path from writing a
+    /// second copy that the unique index would reject.
+    @discardableResult
+    public func addTracks(_ trackIDs: [Int64], to playlistID: Int64, at index: Int? = nil) async throws
+        -> PlaylistAddResult {
+        guard !trackIDs.isEmpty else { return PlaylistAddResult(added: 0, skipped: 0) }
         let playlist = try await self.requireExisting(id: playlistID)
         guard playlist.kind == .manual else {
             throw PlaylistError.wrongKind(id: playlistID, expected: "manual", actual: playlist.kind.rawValue)
         }
         var current = try await self.repo.fetchMembership(playlistID: playlistID)
+        let newTrackIDs = PlaylistAddResult.newMembers(trackIDs, existing: current.map(\.trackID))
+        let result = PlaylistAddResult(added: newTrackIDs.count, skipped: trackIDs.count - newTrackIDs.count)
+        guard !newTrackIDs.isEmpty else {
+            self.log.debug("playlist.add.allPresent", ["id": playlistID, "skipped": result.skipped])
+            return result
+        }
+        let trackIDs = newTrackIDs
         let destination = index ?? current.count
         let existingPositions = current.map(\.position)
         let insertion = PositionArranger.insertPositions(
@@ -216,7 +231,8 @@ public actor PlaylistService {
             name: playlist.name,
             now: Self.now()
         ) // touch updated_at
-        self.log.debug("playlist.add", ["id": playlistID, "count": trackIDs.count])
+        self.log.debug("playlist.add", ["id": playlistID, "count": trackIDs.count, "skipped": result.skipped])
+        return result
     }
 
     /// Removes the rows at the given `positions` within `playlistID`.
