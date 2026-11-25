@@ -6,9 +6,13 @@ import Testing
 
 // MARK: - File-local stub transport
 
+/// All state sits behind `lock`: when a loop is replaced while its ping is in
+/// flight, the old and the new loop call `data(for:)` at the same time, and an
+/// unguarded `removeFirst()` crashed the test process.
 private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
+    private let lock = NSLock()
     private var responses: [(Data, Int)] = []
-    private(set) var pingCount = 0
+    private var _pingCount = 0
 
     /// Re-supplies the same response indefinitely so the monitor's polling
     /// loop never starves the stub.
@@ -17,32 +21,44 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
     /// When set, the first request waits here until the stream ends or its
     /// task is cancelled, then answers: a ping still in flight when the loop
     /// is stopped or replaced.
-    var firstRequestGate: AsyncStream<Void>?
+    private var _firstRequestGate: AsyncStream<Void>?
+
+    var pingCount: Int {
+        self.lock.withLock { self._pingCount }
+    }
+
+    var firstRequestGate: AsyncStream<Void>? {
+        get { self.lock.withLock { self._firstRequestGate } }
+        set { self.lock.withLock { self._firstRequestGate = newValue } }
+    }
 
     func enqueue(json: String, statusCode: Int = 200) {
-        self.responses.append((Data(json.utf8), statusCode))
+        self.lock.withLock { self.responses.append((Data(json.utf8), statusCode)) }
     }
 
     func setPerpetual(json: String, statusCode: Int = 200) {
-        self.perpetual = (Data(json.utf8), statusCode)
+        self.lock.withLock { self.perpetual = (Data(json.utf8), statusCode) }
     }
 
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        self.pingCount += 1
-        if let gate = self.firstRequestGate {
-            self.firstRequestGate = nil
+        let gate: AsyncStream<Void>? = self.lock.withLock {
+            self._pingCount += 1
+            defer { self._firstRequestGate = nil }
+            return self._firstRequestGate
+        }
+        // Waited outside the lock: the other loop must be able to ping meanwhile.
+        if let gate {
             for await _ in gate {
                 break
             }
         }
-        let (data, status): (Data, Int)
-        if !self.responses.isEmpty {
-            (data, status) = self.responses.removeFirst()
-        } else if let fallback = self.perpetual {
-            (data, status) = fallback
-        } else {
+        let next: (Data, Int)? = self.lock.withLock {
+            self.responses.isEmpty ? self.perpetual : self.responses.removeFirst()
+        }
+        guard let next else {
             throw URLError(.badServerResponse)
         }
+        let (data, status) = next
         let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
