@@ -33,17 +33,29 @@ public actor SubsonicConnectionMonitor {
     private let service: SubsonicService
     private let log = AppLogger.make(.subsonic)
     private var (stream, continuation) = AsyncStream<StatusUpdate>.makeStream()
-    private let pathMonitor: NWPathMonitor
+    private let pathMonitor: NWPathMonitor?
 
     // MARK: - Init
 
     /// Creates a monitor that pings through `service` and starts its network
     /// path monitor. No server is pinged until `startMonitoring(serverID:)`.
     public init(service: SubsonicService) {
+        self.init(service: service, watchesNetwork: true)
+    }
+
+    /// `watchesNetwork: false` is for tests, as in `JellyfinConnectionMonitor`.
+    /// The path monitor's first update calls `wakeAll()` at a moment the test
+    /// does not control, which restarts every loop; on a slow CI runner it
+    /// landed inside a test and added a ping (#722).
+    init(service: SubsonicService, watchesNetwork: Bool) {
         self.service = service
+        guard watchesNetwork else {
+            self.pathMonitor = nil
+            return
+        }
         // All stored properties initialised; safe to capture self.
-        self.pathMonitor = NWPathMonitor()
-        let monitor = self.pathMonitor
+        let monitor = NWPathMonitor()
+        self.pathMonitor = monitor
         monitor.pathUpdateHandler = { [weak self] path in
             guard let self else { return }
             if path.status == .satisfied {
@@ -58,6 +70,10 @@ public actor SubsonicConnectionMonitor {
             label: "io.cloudcauldron.bocan.monitor.path",
             qos: .utility
         ))
+    }
+
+    deinit {
+        self.pathMonitor?.cancel()
     }
 
     // MARK: - Public API

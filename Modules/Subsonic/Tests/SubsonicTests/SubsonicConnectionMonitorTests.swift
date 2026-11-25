@@ -41,19 +41,20 @@ private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
     }
 
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        let gate: AsyncStream<Void>? = self.lock.withLock {
+        // The reply is taken when the request arrives, so replies go out in
+        // request order: the held first ping keeps the first queued reply
+        // even when another loop pings while it is held.
+        let (gate, next): (AsyncStream<Void>?, (Data, Int)?) = self.lock.withLock {
             self._pingCount += 1
             defer { self._firstRequestGate = nil }
-            return self._firstRequestGate
+            let reply = self.responses.isEmpty ? self.perpetual : self.responses.removeFirst()
+            return (self._firstRequestGate, reply)
         }
         // Waited outside the lock: the other loop must be able to ping meanwhile.
         if let gate {
             for await _ in gate {
                 break
             }
-        }
-        let next: (Data, Int)? = self.lock.withLock {
-            self.responses.isEmpty ? self.perpetual : self.responses.removeFirst()
         }
         guard let next else {
             throw URLError(.badServerResponse)
@@ -170,7 +171,7 @@ struct SubsonicConnectionMonitorTests {
     @Test("currentStatuses is empty initially")
     func startsEmpty() async throws {
         let service = try await makeService().service
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot.isEmpty)
     }
@@ -180,7 +181,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
 
@@ -214,7 +215,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: authFailEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
 
@@ -246,7 +247,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
         let updates = await monitor.updates
@@ -304,7 +305,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
@@ -322,7 +323,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
         _ = await awaitStatus(for: id, on: updates, matching: isOnline)
@@ -340,7 +341,7 @@ struct SubsonicConnectionMonitorTests {
         transport.setPerpetual(json: okEnvelope)
         let (gate, open) = AsyncStream<Void>.makeStream()
         transport.firstRequestGate = gate
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
         #expect(await pollUntil { transport.pingCount >= 1 })
@@ -358,13 +359,16 @@ struct SubsonicConnectionMonitorTests {
         transport.setPerpetual(json: okEnvelope)
         let (gate, open) = AsyncStream<Void>.makeStream()
         transport.firstRequestGate = gate
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let updates = await monitor.updates
 
         await monitor.startMonitoring(serverID: id)
         #expect(await pollUntil { transport.pingCount >= 1 })
         // The old loop's ping is refused after the wake has replaced the loop.
+        // The new loop pings before the old one is answered, so the old
+        // loop's refusal is the last thing to arrive.
         await monitor.wakeAll()
+        #expect(await pollUntil { transport.pingCount >= 2 }, "the woken loop pings")
         open.finish()
         _ = await awaitStatus(for: id, on: updates, matching: isOnline)
         try await Task.sleep(nanoseconds: 100_000_000)
@@ -385,7 +389,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
         await monitor.startMonitoring(serverID: id)
