@@ -8,7 +8,6 @@ struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(\.openWindow) private var openWindow
-    @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
@@ -82,22 +81,7 @@ struct MiniPlayerSquare: View {
             }
 
             // Thin scrubber
-            Slider(
-                value: Binding(
-                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
-                    set: { self.dragPosition = $0 }
-                ),
-                in: 0 ... 1
-            ) { editing in
-                if !editing {
-                    Task { await ScrubberDrag.release(self.$dragPosition, nowPlaying: self.np) }
-                }
-            }
-            .controlSize(.mini)
-            .tint(.white)
-            .disabled(self.np.duration == 0)
-            .help(L10n.string("Scrub to position"))
-            .accessibilityLabel(L10n.string("Playback position"))
+            PlaybackPositionSlider(nowPlaying: self.np, style: PositionSliderStyle(tint: .white))
 
             // Transport
             MiniPlayerTransport(

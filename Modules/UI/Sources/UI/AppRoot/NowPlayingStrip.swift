@@ -11,10 +11,9 @@ public struct NowPlayingStrip: View {
     public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
 
-    /// While dragging the scrubber, the fraction is held locally so the Slider
-    /// doesn't fight live `vm.position` updates; seeking happens on release.
+    /// Rebuilds the accent-coloured sliders when the accent changes, which
+    /// AppKit does not redraw on its own.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
-    @State private var scrubDragFraction: Double?
     /// Menu-to-strip signal (BocanCommands sets it); cleared at launch by BocanApp.
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -301,74 +300,49 @@ public struct NowPlayingStrip: View {
     }
 
     private var scrubber: some View {
-        HStack(spacing: 6) {
-            Text(Formatters.duration(self.displayPosition))
-                .font(Typography.caption)
-                .foregroundStyle(Color.textSecondary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .frame(width: self.timeLabelWidth, alignment: .trailing)
-
-            Slider(
-                value: Binding(
-                    get: {
-                        if let drag = self.scrubDragFraction {
-                            return drag
-                        }
-                        return self.vm.duration > 0 ? self.vm.position / self.vm.duration : 0
-                    },
-                    set: { fraction in
-                        // Hold the drag locally; seek once on release, not per move.
-                        self.scrubDragFraction = fraction
-                    }
-                ),
-                in: 0 ... 1
-            ) { editing in
-                if !editing {
-                    Task { await ScrubberDrag.release(self.$scrubDragFraction, nowPlaying: self.vm) }
-                }
-            }
-            .controlSize(.mini)
-            .disabled(self.vm.duration == 0)
-            .id(self.accentColorKey)
-            .help(L10n.string("Scrub to position"))
-            .accessibilityLabel(L10n.string("Playback position"))
-            .accessibilityValue(
-                L10n.string("\(Formatters.duration(self.displayPosition)) of \(Formatters.duration(self.vm.duration))")
+        PlaybackPositionSlider(
+            nowPlaying: self.vm,
+            style: PositionSliderStyle(
+                accessibilityIdentifier: A11y.NowPlaying.scrubber,
+                rebuildKey: self.accentColorKey
             )
-            .accessibilityAdjustableAction { direction in
-                guard direction == .increment || direction == .decrement else { return }
-                let step = max(self.vm.duration * 0.05, 5)
-                let pos = direction == .increment ? min(self.vm.position + step, self.vm.duration) : max(self.vm.position - step, 0)
-                Task { await self.vm.scrub(to: pos) }
-            }
-            .accessibilityIdentifier(A11y.NowPlaying.scrubber)
-            // CUE marker ticks (ADR-087): |------|-----|-|---- along the
-            // slider's bottom edge. Hidden below two markers (inert sets
-            // never load, but the guard keeps the rule in one place).
-            .overlay(alignment: .bottom) {
-                if self.vm.markers.count >= 2, self.vm.duration > 0 {
-                    GeometryReader { geo in
-                        ForEach(self.vm.markers) { marker in
-                            Rectangle()
-                                .fill(Color.textTertiary)
-                                .frame(width: 1, height: 4)
-                                .offset(
-                                    x: geo.size.width * min(1, Double(marker.positionMs) / 1000.0 / self.vm.duration),
-                                    y: geo.size.height - 3
-                                )
+        ) { slider, position in
+            HStack(spacing: 6) {
+                Text(Formatters.duration(position))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .frame(width: self.timeLabelWidth(showing: position), alignment: .trailing)
+
+                slider
+                    // CUE marker ticks (ADR-087): |------|-----|-|---- along the
+                    // slider's bottom edge. Hidden below two markers (inert sets
+                    // never load, but the guard keeps the rule in one place).
+                    .overlay(alignment: .bottom) {
+                        if self.vm.markers.count >= 2, self.vm.duration > 0 {
+                            GeometryReader { geo in
+                                ForEach(self.vm.markers) { marker in
+                                    Rectangle()
+                                        .fill(Color.textTertiary)
+                                        .frame(width: 1, height: 4)
+                                        .offset(
+                                            x: geo.size.width * min(1, Double(marker.positionMs) / 1000.0 / self.vm.duration),
+                                            y: geo.size.height - 3
+                                        )
+                                }
+                            }
+                            .allowsHitTesting(false)
                         }
                     }
-                    .allowsHitTesting(false)
-                }
-            }
 
-            Text(Formatters.duration(self.vm.duration))
-                .font(Typography.caption)
-                .foregroundStyle(Color.textSecondary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .frame(width: self.timeLabelWidth, alignment: .leading)
+                Text(Formatters.duration(self.vm.duration))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .frame(width: self.timeLabelWidth(showing: position), alignment: .leading)
+            }
         }
     }
 
@@ -417,21 +391,12 @@ public struct NowPlayingStrip: View {
 
     // MARK: - Helpers
 
-    /// Position shown under the scrubber — live engine position normally,
-    /// but tracks the drag fraction while the user is scrubbing so the
-    /// time readout mirrors where the thumb currently sits.
-    private var displayPosition: TimeInterval {
-        if let drag = self.scrubDragFraction {
-            return drag * self.vm.duration
-        }
-        return self.vm.position
-    }
-
     /// The width of both labels either side of the scrubber. Sized on the
-    /// longer of the total and the elapsed time, so an hour-long podcast gets
-    /// its wide slot from the first frame, and a live stream (which reports no
-    /// duration) widens once when its clock passes an hour (#563).
-    private var timeLabelWidth: Double {
-        Formatters.timeLabelWidth(longest: max(self.vm.duration, self.displayPosition))
+    /// longer of the total and the elapsed time shown (`position`, the drag's
+    /// while the thumb is held), so an hour-long podcast gets its wide slot
+    /// from the first frame, and a live stream (which reports no duration)
+    /// widens once when its clock passes an hour (#563).
+    private func timeLabelWidth(showing position: TimeInterval) -> Double {
+        Formatters.timeLabelWidth(longest: max(self.vm.duration, position))
     }
 }

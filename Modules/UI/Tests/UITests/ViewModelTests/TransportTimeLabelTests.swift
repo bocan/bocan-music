@@ -98,9 +98,11 @@ struct TransportTimeLabelTests {
                 .appendingPathComponent("Sources/UI/AppRoot/NowPlayingStrip.swift"),
             encoding: .utf8
         )
-        #expect(strip.contains("Formatters.timeLabelWidth(longest: max(self.vm.duration, self.displayPosition))"))
+        // `position` is the elapsed time the shared slider hands the strip:
+        // the live one, or the drag's while the thumb is held (#723).
+        #expect(strip.contains("Formatters.timeLabelWidth(longest: max(self.vm.duration, position))"))
         // Both labels take the computed slot, and neither keeps a literal one.
-        #expect(strip.contains("frame(width: self.timeLabelWidth, alignment: .trailing)"))
-        #expect(strip.contains("frame(width: self.timeLabelWidth, alignment: .leading)"))
+        #expect(strip.contains("frame(width: self.timeLabelWidth(showing: position), alignment: .trailing)"))
+        #expect(strip.contains("frame(width: self.timeLabelWidth(showing: position), alignment: .leading)"))
     }
 }

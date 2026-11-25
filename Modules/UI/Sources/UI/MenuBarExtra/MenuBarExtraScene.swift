@@ -19,9 +19,6 @@ import SwiftUI
 public struct MenuBarExtraScene: View {
     public var vm: NowPlayingViewModel
     @Environment(\.openWindow) private var openWindow
-    /// Holds the slider fraction while the user is dragging; seeking is deferred
-    /// to drag-end so the engine isn't bombarded with a seek per mouse-move event.
-    @State private var scrubDragFraction: Double?
 
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
@@ -63,20 +60,13 @@ public struct MenuBarExtraScene: View {
 
             // Scrubber
             if self.vm.duration > 0 {
-                Slider(
-                    value: Binding(
-                        get: { self.scrubDragFraction ?? (self.vm.position / self.vm.duration) },
-                        set: { self.scrubDragFraction = $0 }
-                    ),
-                    in: 0 ... 1
-                ) { editing in
-                    if !editing {
-                        Task { await ScrubberDrag.release(self.$scrubDragFraction, nowPlaying: self.vm) }
-                    }
-                }
-                .controlSize(.small)
-                .help(L10n.string("Drag to move through the track."))
-                .accessibilityLabel(L10n.string("Playback position"))
+                PlaybackPositionSlider(
+                    nowPlaying: self.vm,
+                    style: PositionSliderStyle(
+                        controlSize: .small,
+                        help: L10n.string("Drag to move through the track.")
+                    )
+                )
             }
 
             // Transport

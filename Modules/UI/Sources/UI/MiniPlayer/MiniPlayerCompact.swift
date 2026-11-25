@@ -10,7 +10,6 @@ struct MiniPlayerCompact: View {
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(\.openWindow) private var openWindow
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
-    @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
@@ -79,38 +78,28 @@ struct MiniPlayerCompact: View {
     }
 
     private var scrubberStack: some View {
-        VStack(spacing: 2) {
-            Slider(
-                value: Binding(
-                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
-                    set: { self.dragPosition = $0 }
-                ),
-                in: 0 ... 1
-            ) { editing in
-                if !editing {
-                    Task { await ScrubberDrag.release(self.$dragPosition, nowPlaying: self.np) }
-                }
-            }
-            .controlSize(.mini)
-            .frame(width: 80)
-            .id(self.accentColorKey)
-            .disabled(self.np.duration == 0)
-            .help(L10n.string("Scrub to position"))
-            .accessibilityLabel(L10n.string("Playback position"))
+        PlaybackPositionSlider(
+            nowPlaying: self.np,
+            style: PositionSliderStyle(rebuildKey: self.accentColorKey)
+        ) { slider, position in
+            VStack(spacing: 2) {
+                slider
+                    .frame(width: 80)
 
-            HStack {
-                Text(Formatters.duration(self.dragPosition.map { $0 * self.np.duration } ?? self.np.position))
-                Spacer()
-                Text(Formatters.duration(self.np.duration))
+                HStack {
+                    Text(Formatters.duration(position))
+                    Spacer()
+                    Text(Formatters.duration(self.np.duration))
+                }
+                .scaledSystemFont(size: 9)
+                .foregroundStyle(Color.textTertiary)
+                .frame(width: 80)
+                .monospacedDigit()
+                // The 80 pt strip holds two h:mm:ss readings at 9 pt with room to
+                // spare; a ten-hour audiobook overruns it. Truncate rather than
+                // wrap the pair onto a second line (#563).
+                .lineLimit(1)
             }
-            .scaledSystemFont(size: 9)
-            .foregroundStyle(Color.textTertiary)
-            .frame(width: 80)
-            .monospacedDigit()
-            // The 80 pt strip holds two h:mm:ss readings at 9 pt with room to
-            // spare; a ten-hour audiobook overruns it. Truncate rather than
-            // wrap the pair onto a second line (#563).
-            .lineLimit(1)
         }
     }
 }
