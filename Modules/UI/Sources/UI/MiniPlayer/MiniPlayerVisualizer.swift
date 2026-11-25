@@ -108,9 +108,8 @@ struct MiniPlayerVisualizer: View {
                 ),
                 in: 0 ... 1
             ) { editing in
-                if !editing, let fraction = self.dragPosition {
-                    self.dragPosition = nil
-                    Task { await self.np.scrub(to: fraction * self.np.duration) }
+                if !editing {
+                    Task { await ScrubberDrag.release(self.$dragPosition, nowPlaying: self.np) }
                 }
             }
             .controlSize(.mini)

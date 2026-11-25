@@ -324,10 +324,8 @@ public struct NowPlayingStrip: View {
                 ),
                 in: 0 ... 1
             ) { editing in
-                if !editing, let fraction = self.scrubDragFraction {
-                    let target = fraction * self.vm.duration
-                    self.scrubDragFraction = nil
-                    Task { await self.vm.scrub(to: target) }
+                if !editing {
+                    Task { await ScrubberDrag.release(self.$scrubDragFraction, nowPlaying: self.vm) }
                 }
             }
             .controlSize(.mini)
