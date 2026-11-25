@@ -13,7 +13,6 @@ struct ImmersiveTransport: View {
 
     /// While dragging the scrubber the fraction is held locally so the
     /// slider does not fight the engine's position ticks.
-    @State private var dragPosition: Double?
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
     var body: some View {
@@ -51,34 +50,27 @@ struct ImmersiveTransport: View {
     // MARK: - Scrubber
 
     private var scrubber: some View {
-        VStack(spacing: 2) {
-            Slider(
-                value: Binding(
-                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
-                    set: { self.dragPosition = $0 }
-                ),
-                in: 0 ... 1
-            ) { editing in
-                if !editing {
-                    Task { await ScrubberDrag.release(self.$dragPosition, nowPlaying: self.np) }
-                }
-            }
-            .controlSize(.small)
-            .id(self.accentColorKey)
-            .disabled(self.np.duration == 0)
-            .help(L10n.string("Scrub to position"))
-            .accessibilityLabel(L10n.string("Playback position"))
-            .accessibilityIdentifier(A11y.Immersive.scrubber)
+        PlaybackPositionSlider(
+            nowPlaying: self.np,
+            style: PositionSliderStyle(
+                controlSize: .small,
+                accessibilityIdentifier: A11y.Immersive.scrubber,
+                rebuildKey: self.accentColorKey
+            )
+        ) { slider, position in
+            VStack(spacing: 2) {
+                slider
 
-            HStack {
-                Text(Formatters.duration(self.dragPosition.map { $0 * self.np.duration } ?? self.np.position))
-                Spacer()
-                Text(Formatters.duration(self.np.duration))
+                HStack {
+                    Text(Formatters.duration(position))
+                    Spacer()
+                    Text(Formatters.duration(self.np.duration))
+                }
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+                .monospacedDigit()
+                .lineLimit(1)
             }
-            .font(Typography.caption)
-            .foregroundStyle(Color.textTertiary)
-            .monospacedDigit()
-            .lineLimit(1)
         }
     }
 

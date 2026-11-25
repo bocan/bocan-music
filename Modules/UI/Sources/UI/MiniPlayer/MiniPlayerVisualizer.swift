@@ -11,7 +11,6 @@ struct MiniPlayerVisualizer: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
-    @State private var dragPosition: Double?
     @State private var overlayTrigger = 0
 
     private var reduceMotion: Bool {
@@ -101,22 +100,7 @@ struct MiniPlayerVisualizer: View {
             }
 
             // Thin scrubber
-            Slider(
-                value: Binding(
-                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
-                    set: { self.dragPosition = $0 }
-                ),
-                in: 0 ... 1
-            ) { editing in
-                if !editing {
-                    Task { await ScrubberDrag.release(self.$dragPosition, nowPlaying: self.np) }
-                }
-            }
-            .controlSize(.mini)
-            .tint(.white)
-            .disabled(self.np.duration == 0)
-            .help(L10n.string("Scrub to position"))
-            .accessibilityLabel(L10n.string("Playback position"))
+            PlaybackPositionSlider(nowPlaying: self.np, style: PositionSliderStyle(tint: .white))
 
             // Transport
             MiniPlayerTransport(
