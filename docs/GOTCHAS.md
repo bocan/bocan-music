@@ -610,6 +610,16 @@ The same applies to cyclomatic complexity, which is capped at 10. The graph buil
 
 **Canonical file:** `.swiftlint.yml` and `Scripts/pre-commit`
 
+### A PR title takes one scope, never a comma list
+
+**Problem:** the "Conventional Commit title" check fails on a PR whose commits all passed the hook, for example `fix(subsonic,jellyfin): ...` (#722).
+
+**Rule:** a PR title has at most one scope, made of `[a-z0-9._-]`. For a change that spans two modules, either drop the scope and name both modules in the subject (`fix: stop a cancelled Subsonic or Jellyfin monitor loop ...`), or split the change into one PR per module.
+
+**Why:** the squash merge uses the PR title as the commit subject on main, so the title is what the workflow checks, and its pattern is `^(feat|fix|...)(\([a-z0-9._-]+\))?!?: [^ ].*$`. Nothing checks commit subjects locally, so a comma scope in a branch commit passes until the PR is opened.
+
+**Canonical file:** `.github/workflows/pr-metadata.yml`
+
 ### A file split can break a test or an audit that names the file
 
 **Problem:** a pure move of code into a `Type+Topic.swift` extension file makes `make lint` fail in the `try?` audit, or makes a convention test fail, although no behaviour changed.
