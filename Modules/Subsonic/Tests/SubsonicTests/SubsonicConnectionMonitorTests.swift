@@ -6,32 +6,60 @@ import Testing
 
 // MARK: - File-local stub transport
 
+/// All state sits behind `lock`: when a loop is replaced while its ping is in
+/// flight, the old and the new loop call `data(for:)` at the same time, and an
+/// unguarded `removeFirst()` crashed the test process.
 private final class MonitorStubTransport: HTTPTransport, @unchecked Sendable {
+    private let lock = NSLock()
     private var responses: [(Data, Int)] = []
-    private(set) var pingCount = 0
+    private var _pingCount = 0
 
     /// Re-supplies the same response indefinitely so the monitor's polling
     /// loop never starves the stub.
     private var perpetual: (Data, Int)?
 
+    /// When set, the first request waits here until the stream ends or its
+    /// task is cancelled, then answers: a ping still in flight when the loop
+    /// is stopped or replaced.
+    private var _firstRequestGate: AsyncStream<Void>?
+
+    var pingCount: Int {
+        self.lock.withLock { self._pingCount }
+    }
+
+    var firstRequestGate: AsyncStream<Void>? {
+        get { self.lock.withLock { self._firstRequestGate } }
+        set { self.lock.withLock { self._firstRequestGate = newValue } }
+    }
+
     func enqueue(json: String, statusCode: Int = 200) {
-        self.responses.append((Data(json.utf8), statusCode))
+        self.lock.withLock { self.responses.append((Data(json.utf8), statusCode)) }
     }
 
     func setPerpetual(json: String, statusCode: Int = 200) {
-        self.perpetual = (Data(json.utf8), statusCode)
+        self.lock.withLock { self.perpetual = (Data(json.utf8), statusCode) }
     }
 
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        self.pingCount += 1
-        let (data, status): (Data, Int)
-        if !self.responses.isEmpty {
-            (data, status) = self.responses.removeFirst()
-        } else if let fallback = self.perpetual {
-            (data, status) = fallback
-        } else {
+        // The reply is taken when the request arrives, so replies go out in
+        // request order: the held first ping keeps the first queued reply
+        // even when another loop pings while it is held.
+        let (gate, next): (AsyncStream<Void>?, (Data, Int)?) = self.lock.withLock {
+            self._pingCount += 1
+            defer { self._firstRequestGate = nil }
+            let reply = self.responses.isEmpty ? self.perpetual : self.responses.removeFirst()
+            return (self._firstRequestGate, reply)
+        }
+        // Waited outside the lock: the other loop must be able to ping meanwhile.
+        if let gate {
+            for await _ in gate {
+                break
+            }
+        }
+        guard let next else {
             throw URLError(.badServerResponse)
         }
+        let (data, status) = next
         let resp = try #require(HTTPURLResponse(
             url: request.url ?? URL(string: "https://test.local")!,
             statusCode: status,
@@ -116,6 +144,17 @@ private func awaitStatus(
     }
 }
 
+/// Polls `condition` every 5 ms for up to 2 s.
+private func pollUntil(_ condition: @Sendable () -> Bool) async -> Bool {
+    for _ in 0 ..< 400 {
+        if condition() {
+            return true
+        }
+        try? await Task.sleep(nanoseconds: 5_000_000)
+    }
+    return condition()
+}
+
 /// True when a status is `.online`.
 private let isOnline: @Sendable (SubsonicConnectionStatus) -> Bool = {
     if case .online = $0 {
@@ -132,7 +171,7 @@ struct SubsonicConnectionMonitorTests {
     @Test("currentStatuses is empty initially")
     func startsEmpty() async throws {
         let service = try await makeService().service
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot.isEmpty)
     }
@@ -142,7 +181,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
 
@@ -176,7 +215,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: authFailEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
 
@@ -208,7 +247,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         await monitor.startMonitoring(serverID: id)
         let updates = await monitor.updates
@@ -266,7 +305,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
 
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
@@ -284,7 +323,7 @@ struct SubsonicConnectionMonitorTests {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
         _ = await awaitStatus(for: id, on: updates, matching: isOnline)
@@ -293,12 +332,64 @@ struct SubsonicConnectionMonitorTests {
         #expect(snapshot.isEmpty)
     }
 
+    // MARK: A loop that was replaced while its ping ran
+
+    @Test("a stop during a ping in flight leaves no status, whatever the ping returns")
+    func stopDuringPing() async throws {
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
+        transport.setPerpetual(json: okEnvelope)
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        transport.firstRequestGate = gate
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
+
+        await monitor.startMonitoring(serverID: id)
+        #expect(await pollUntil { transport.pingCount >= 1 })
+        await monitor.stopMonitoring(serverID: id)
+        open.finish()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(await monitor.currentStatuses()[id] == nil)
+    }
+
+    @Test("a wake during a ping that is refused keeps the new loop tracked")
+    func wakeDuringRefusedPing() async throws {
+        let fixture = try await makeService()
+        let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
+        transport.enqueue(json: authFailEnvelope)
+        transport.setPerpetual(json: okEnvelope)
+        let (gate, open) = AsyncStream<Void>.makeStream()
+        transport.firstRequestGate = gate
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
+        let updates = await monitor.updates
+
+        await monitor.startMonitoring(serverID: id)
+        #expect(await pollUntil { transport.pingCount >= 1 })
+        // The old loop's ping is refused after the wake has replaced the loop.
+        // The new loop pings before the old one is answered, so the old
+        // loop's refusal is the last thing to arrive.
+        await monitor.wakeAll()
+        #expect(await pollUntil { transport.pingCount >= 2 }, "the woken loop pings")
+        open.finish()
+        _ = await awaitStatus(for: id, on: updates, matching: isOnline)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // The woken loop is still tracked, so starting again is a no-op. If the
+        // old loop had dropped its entry, this would start a second loop.
+        let pingsBefore = transport.pingCount
+        await monitor.startMonitoring(serverID: id)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(transport.pingCount == pingsBefore, "a second loop started")
+        let status = await monitor.currentStatuses()[id]
+        #expect(status.map(isOnline) == true, "the refused old ping must not overwrite the status: \(String(describing: status))")
+        await monitor.stopAll()
+    }
+
     @Test("startMonitoring twice for the same server is a no-op")
     func doubleStartIsIdempotent() async throws {
         let fixture = try await makeService()
         let (service, id, transport) = (fixture.service, fixture.id, fixture.transport)
         transport.setPerpetual(json: okEnvelope)
-        let monitor = SubsonicConnectionMonitor(service: service)
+        let monitor = SubsonicConnectionMonitor(service: service, watchesNetwork: false)
         let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
         await monitor.startMonitoring(serverID: id)

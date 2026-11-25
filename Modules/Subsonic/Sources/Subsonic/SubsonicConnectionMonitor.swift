@@ -33,17 +33,29 @@ public actor SubsonicConnectionMonitor {
     private let service: SubsonicService
     private let log = AppLogger.make(.subsonic)
     private var (stream, continuation) = AsyncStream<StatusUpdate>.makeStream()
-    private let pathMonitor: NWPathMonitor
+    private let pathMonitor: NWPathMonitor?
 
     // MARK: - Init
 
     /// Creates a monitor that pings through `service` and starts its network
     /// path monitor. No server is pinged until `startMonitoring(serverID:)`.
     public init(service: SubsonicService) {
+        self.init(service: service, watchesNetwork: true)
+    }
+
+    /// `watchesNetwork: false` is for tests, as in `JellyfinConnectionMonitor`.
+    /// The path monitor's first update calls `wakeAll()` at a moment the test
+    /// does not control, which restarts every loop; on a slow CI runner it
+    /// landed inside a test and added a ping (#722).
+    init(service: SubsonicService, watchesNetwork: Bool) {
         self.service = service
+        guard watchesNetwork else {
+            self.pathMonitor = nil
+            return
+        }
         // All stored properties initialised; safe to capture self.
-        self.pathMonitor = NWPathMonitor()
-        let monitor = self.pathMonitor
+        let monitor = NWPathMonitor()
+        self.pathMonitor = monitor
         monitor.pathUpdateHandler = { [weak self] path in
             guard let self else { return }
             if path.status == .satisfied {
@@ -58,6 +70,10 @@ public actor SubsonicConnectionMonitor {
             label: "io.cloudcauldron.bocan.monitor.path",
             qos: .utility
         ))
+    }
+
+    deinit {
+        self.pathMonitor?.cancel()
     }
 
     // MARK: - Public API
@@ -122,19 +138,29 @@ public actor SubsonicConnectionMonitor {
 
     // MARK: - Loop
 
+    /// One server's loop. Every `await` lets `stopMonitoring` or `wakeAll` run
+    /// on this actor, and they cancel this loop and may start another for the
+    /// same server. So after each one, a cancelled loop returns before it
+    /// touches any state. Otherwise a stopped server's status could come back,
+    /// and a refused ping deleted the new loop's entry, leaving that loop
+    /// running untracked. `JellyfinConnectionMonitor` has the same guards.
     private func runLoop(serverID: UUID) async {
         var backoffIndex = 0
+        // A stop can run between `startMonitoring` and this task's first step.
+        guard !Task.isCancelled else { return }
         self.emit(serverID: serverID, status: .connecting)
 
         while !Task.isCancelled {
             do {
                 try await self.service.ping(serverID: serverID)
+                guard !Task.isCancelled else { return }
                 let now = Date()
                 self.emit(serverID: serverID, status: .online(lastPing: now))
                 backoffIndex = 0
                 self.log.debug("subsonic.monitor.ping.ok", ["id": serverID.uuidString])
                 try await Task.sleep(nanoseconds: UInt64(Self.pollInterval * 1_000_000_000))
             } catch let error as SubsonicError {
+                guard !Task.isCancelled else { return }
                 if error.isAuthenticationFailure {
                     let msg = error.localizedDescription
                     self.emit(serverID: serverID, status: .authFailed(msg))
