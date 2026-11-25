@@ -96,6 +96,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/UI/Sources/UI/Browse/AlbumsGridView.swift`, regression tests in `UITests/Surfaces/BrowseSurfaceTests.swift`
 
+### A drop target over an AppKit table takes the table's own drags
+
+**Problem:** dragging songs inside a manual playlist never reordered it, and the drop most likely added copies of them to the end. Drag-to-reorder had been wired in May and never worked (#709).
+
+**Rule:** never lay a `TrackDropTarget` (or any view registered for drags) over a songs table. Give the table the drop instead: `TrackTable`'s `onDropTracks` inserts songs from another table, and `onMove` reorders. Keep an overlay only where no table is showing, such as an empty state. A table's drop registration follows its handlers through `TrackTable.configureDragging`, which runs on every update.
+
+**Why:** `DropTargetNSView` claims the hit test for the whole area during any drag, so AppKit picks it as the destination even for a drag that starts in the table beneath it. The table's `validateDrop` and `acceptDrop` never run. Separately, the table registered for drops only when it was first built, so one built before its playlist loaded never took a drop at all.
+
+**Canonical file:** `Modules/UI/Sources/UI/Browse/TrackTableHelpers.swift` (`TrackDropRules`, `configureDragging`), with `Modules/UI/Sources/UI/Playlists/PlaylistDetailView.swift` for the overlay placement
+
 ### `Podcast` and `PodcastEpisode` are ambiguous in the UI module
 
 **Problem:** an honest "ambiguous for type lookup" error, followed by a misleading one: `Value of type 'PodcastRepository' has no member 'fetchByFeedURLIgnoringScheme'`. That member does exist, and there is only one `PodcastRepository`.

@@ -41,6 +41,24 @@ public struct TracksView: View {
         return self.sortOrder.isEmpty ? self.onMove : nil
     }
 
+    /// When non-nil, songs dragged from another table drop into this view,
+    /// with the index they land at, or nil to append (#709).
+    public var onDropTracks: (([Int64], Int?) -> Void)?
+
+    /// The table's drop handler. A row index means a place in the manual order
+    /// only while no column sort is showing, so a sorted view appends instead.
+    var effectiveOnDropTracks: (([Int64], Int) -> Void)? {
+        guard let onDropTracks = self.onDropTracks else { return nil }
+        let sorted = self.supportsManualOrder && !self.sortOrder.isEmpty
+        return { ids, row in onDropTracks(ids, Self.dropIndex(row: row, sorted: sorted)) }
+    }
+
+    /// Where a drop above `row` lands in the manual order: that index, or nil
+    /// (append) while a column sort is showing.
+    static func dropIndex(row: Int, sorted: Bool) -> Int? {
+        sorted ? nil : row
+    }
+
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
     /// invalidate this view (`@Observable` tracking handles property-level granularity).
     var nowPlaying: NowPlayingViewModel
@@ -69,7 +87,8 @@ public struct TracksView: View {
         sortable: Bool = true,
         supportsManualOrder: Bool = false,
         removeFromPlaylist: (([Track]) -> Void)? = nil,
-        onMove: ((IndexSet, Int) -> Void)? = nil
+        onMove: ((IndexSet, Int) -> Void)? = nil,
+        onDropTracks: (([Int64], Int?) -> Void)? = nil
     ) {
         self.vm = vm
         self.library = library
@@ -79,6 +98,7 @@ public struct TracksView: View {
         self.supportsManualOrder = supportsManualOrder
         self.removeFromPlaylist = removeFromPlaylist
         self.onMove = onMove
+        self.onDropTracks = onDropTracks
         // A manual-order view starts in its baseline order (no column sort).
         self._sortOrder = State(
             initialValue: supportsManualOrder ? [] : TracksViewModel.defaultSortOrder

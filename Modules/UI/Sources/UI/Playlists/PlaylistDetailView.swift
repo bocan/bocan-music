@@ -45,6 +45,14 @@ public struct PlaylistDetailView: View {
                         message: L10n.string("Drag tracks here, or use \"Add to Playlist\" from the Songs view.")
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Only the empty state needs a separate drop target. Over
+                    // the table it caught every drag, so a reorder never
+                    // reached the table and added copies instead (#709).
+                    .overlay(
+                        TrackDropTarget { ids in
+                            Task { await self.vm.addTracks(ids) }
+                        }
+                    )
                 } else {
                     TracksView(
                         vm: self.library.tracks,
@@ -66,16 +74,17 @@ public struct PlaylistDetailView: View {
                                 guard let vm else { return }
                                 Task { await vm.move(from: source, to: destination) }
                             }
+                            : nil,
+                        onDropTracks: self.vm.playlist?.kind == .manual
+                            ? { [weak vm] ids, index in
+                                guard let vm else { return }
+                                Task { await vm.addTracks(ids, at: index) }
+                            }
                             : nil
                     )
                     .tint(self.accentColour ?? Color.accentColor)
                 }
             }
-            .overlay(
-                TrackDropTarget { ids in
-                    Task { await self.vm.addTracks(ids) }
-                }
-            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(A11y.PlaylistDetail.view)
