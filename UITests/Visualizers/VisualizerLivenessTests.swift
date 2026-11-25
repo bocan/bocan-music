@@ -91,7 +91,19 @@ final class VisualizerLivenessTests: XCTestCase {
 
     // MARK: Full screen: reduced matrix (each mode once, default palette)
 
-    func testFullScreenModeMatrix() {
+    /// Quarantined (#729): on macOS 27.2 an XCUITest hover does not reliably
+    /// bring the fullscreen controls back after they fade (the view reveals
+    /// them only from `.onContinuousHover`), and when it does, they fade 2s
+    /// later, before the first `waitForExistence` poll. A real mouse move
+    /// works. The shared overlay's hover reveal is still covered by the main
+    /// pane and mini player matrices. Flip once #729 lands.
+    static let fullScreenHoverRevealWorks = false
+
+    func testFullScreenModeMatrix() throws {
+        try XCTSkipUnless(
+            Self.fullScreenHoverRevealWorks,
+            "fullscreen visualizer controls cannot be revealed by XCUITest hover on this OS (#729)"
+        )
         let app = self.launch()
         let inv = MenuInvoker(app: app)
         // Deliberately does not open the main pane first: A11y.Visualizer.host

@@ -396,7 +396,7 @@ Class and reason per site. The path is relative to the module's source root.
 | `App/E2ESeeder.swift:38` | `try? fm.removeItem(at: stale)` | a | debug or test tooling |
 | `App/LaunchSanity.swift:54` | `try? FileManager.default.createDirectory(` | a | directory pre-creation; the consumer's write reports the failure |
 | `App/LaunchSanity.swift:81` | `try? FileManager.default.removeItem(at: Self.sentinelURL)` | a | remove-if-present of a cache, temp or sentinel file |
-| `App/Lifecycle.swift:23` | `_ = try? await database.vacuum()` | a | documented best effort at quit, bounded by a 2 s wait |
+| `App/Lifecycle.swift:16` | `_ = try? await database.vacuum()` | a | documented best effort at quit, bounded by `QuitWork.limit` (2 s) |
 | `App/PhoneSyncController.swift:79` | `let all = await (try? self.playlistRepository.fetchAll()) ?? []` | b | phone sync offers no playlists or devices on an error |
 | `App/PhoneSyncController.swift:100` | `await (try? self.server.pairedDevices()) ?? []` | b | phone sync offers no playlists or devices on an error |
 | `App/SingleInstance.swift:110` | `try? FileManager.default.createDirectory(` | a | directory pre-creation; the consumer's write reports the failure |

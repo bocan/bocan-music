@@ -34,6 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     var libraryViewModel: LibraryViewModel?
     var dspViewModel: DSPViewModel?
 
+    /// What must finish before the process exits; filled by `buildGraph`.
+    /// Empty until the graph exists, so a quit during launch is immediate.
+    let quitWork = QuitWork()
+
     // MARK: Lifecycle
 
     func applicationWillFinishLaunching(_: Notification) {
@@ -56,14 +60,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     ///
     /// Returns `.terminateLater` and shows a confirmation alert; the alert
     /// calls `NSApp.reply(toApplicationShouldTerminate:)` when dismissed so
-    /// AppKit can proceed or cancel the quit.  Returns `.terminateNow`
-    /// immediately when nothing is running so normal quits are unaffected.
+    /// AppKit can proceed or cancel the quit. When nothing is running there
+    /// is no alert, only the quit work.
+    ///
+    /// Every quit that goes ahead runs `quitWork` first and replies when it
+    /// is done, without blocking the main thread (see `QuitWork`).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let isInitialScan = self.libraryViewModel?.isInitialScan == true
         let isScanning = isInitialScan || self.libraryViewModel?.isScanning == true
         let isAnalyzing = self.dspViewModel?.isAnalyzing == true
 
-        guard isScanning || isAnalyzing else { return .terminateNow }
+        guard isScanning || isAnalyzing else {
+            if self.quitWork.isEmpty {
+                return .terminateNow
+            }
+            self.quitWork.run { NSApp.reply(toApplicationShouldTerminate: true) }
+            return .terminateLater
+        }
 
         let informativeText = if isInitialScan {
             "Your music library is being built for the first time. "
@@ -86,8 +99,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // Task defers the modal until after applicationShouldTerminate returns
         // .terminateLater; otherwise the nested run loop causes AppKit re-entrancy.
         Task { @MainActor in
-            let reply = alert.runModal() == .alertFirstButtonReturn
-            NSApp.reply(toApplicationShouldTerminate: reply)
+            guard alert.runModal() == .alertFirstButtonReturn else {
+                NSApp.reply(toApplicationShouldTerminate: false)
+                return
+            }
+            self.quitWork.run { NSApp.reply(toApplicationShouldTerminate: true) }
         }
 
         return .terminateLater
@@ -1089,7 +1105,7 @@ extension BocanApp {
         Task { [weak lvm] in await lvm?.startOrStopWatcher() }
 
         // Persist playback position on quit so it can be restored on next launch.
-        registerTerminationObserver(player: qp, database: db)
+        registerPlaybackQuitWork(player: qp, database: db, quitWork: appDelegate.quitWork)
 
         // ADR-067: the Phone Sync server. Constructed unconditionally so the
         // Settings toggle (22-8) can start/stop it, but only started here when
@@ -1116,7 +1132,7 @@ extension BocanApp {
         )
         let phoneSyncViewModel = PhoneSyncViewModel(control: phoneSyncController)
         phoneSyncBridge.receiver = phoneSyncViewModel
-        Self.installSyncServerLifecycleObservers(syncServer: syncServer)
+        Self.installSyncServerLifecycleObservers(syncServer: syncServer, quitWork: appDelegate.quitWork)
         if UserDefaults.standard.bool(forKey: "sync.enabled") {
             Task { [syncServer] in
                 do {
@@ -1183,7 +1199,8 @@ extension BocanApp {
     /// ADR-067: re-advertise Phone Sync after the system wakes (the listener
     /// may drop its Bonjour service across sleep), and withdraw it cleanly on
     /// quit. Only fires effect when the server is running; a no-op while off.
-    private static func installSyncServerLifecycleObservers(syncServer: SyncServer) {
+    @MainActor
+    private static func installSyncServerLifecycleObservers(syncServer: SyncServer, quitWork: QuitWork) {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
@@ -1191,17 +1208,6 @@ extension BocanApp {
         ) { _ in
             Task { await syncServer.reAdvertise() }
         }
-        NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: nil
-        ) { _ in
-            let semaphore = DispatchSemaphore(value: 0)
-            Task.detached {
-                await syncServer.stop()
-                semaphore.signal()
-            }
-            _ = semaphore.wait(timeout: .now() + 1)
-        }
+        quitWork.add { await syncServer.stop() }
     }
 }
