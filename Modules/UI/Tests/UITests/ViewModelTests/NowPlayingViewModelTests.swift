@@ -75,8 +75,19 @@ final class MockTransport: Transport, @unchecked Sendable {
         self.emit(.stopped)
     }
 
+    /// Runs while a seek is on its way, before it lands, so a test can look
+    /// at the view model mid-seek.
+    var onSeek: (@Sendable (TimeInterval) async -> Void)?
+    /// When set, `seek` throws this and the position stays where it was.
+    var seekError: (any Error)?
+
     func seek(to time: TimeInterval) async throws {
         self.seekTarget = time
+        await self.onSeek?(time)
+        if let seekError {
+            throw seekError
+        }
+        self.storedCurrentTime = time
     }
 
     func setVolume(_ vol: Float) async {

@@ -123,6 +123,14 @@ public final class NowPlayingViewModel {
     @ObservationIgnored private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
     @ObservationIgnored private nonisolated(unsafe) var markerTask: Task<Void, Never>?
 
+    /// Seeks sent to the engine that have not come back yet. While one is on
+    /// its way, the engine still reports the old time, so a position poll
+    /// writes nothing and the bar stays on the target (#710).
+    @ObservationIgnored private var seeksInFlight = 0
+    /// Bumped when a seek starts and when it ends, so a poll that read the
+    /// engine before or during a seek cannot write that stale time after it.
+    @ObservationIgnored private var seekEpoch = 0
+
     /// The current track's CUE markers (ADR-087), position-sorted; empty for
     /// tracks without them. Fed by `QueuePlayer.markerUpdates` per load.
     public private(set) var markers: [TrackMarker] = []
@@ -502,12 +510,28 @@ public extension NowPlayingViewModel {
     }
 
     /// Seek to an absolute position.
+    ///
+    /// `position` moves to the target at once. Before #710 it kept the old
+    /// time until the next 0.5 s poll (and while paused, with no poll, until
+    /// play), so a released progress bar jumped back and then forward again.
     func scrub(to time: TimeInterval) async {
         Haptics.positionCommit()
+        self.seeksInFlight += 1
+        self.seekEpoch += 1
+        self.position = time
         do {
             try await self.engine.seek(to: time)
         } catch {
             self.log.error("transport.seek.failed", ["error": String(reflecting: error)])
+        }
+        // The engine has the last word: a refused seek (a live stream) or a
+        // failed one leaves it where it was, and the bar must say so.
+        let settled = await self.engine.currentTime
+        self.seeksInFlight -= 1
+        self.seekEpoch += 1
+        // A later seek that is still on its way owns the position.
+        if self.seeksInFlight == 0 {
+            self.position = settled
         }
     }
 
@@ -695,6 +719,22 @@ extension NowPlayingViewModel {
         let effective = showSpeed ?? (globalRate > 0 ? globalRate : 1.0)
         return Float(max(0.5, min(2.0, effective)))
     }
+
+    /// The seek generation a position poll notes before it reads the engine.
+    var positionPollEpoch: Int {
+        self.seekEpoch
+    }
+
+    /// Publishes one position poll. The duration always lands; the position
+    /// lands only if no seek started or ended since the poll read the engine
+    /// at `epoch`, and none is still on its way (#710).
+    func applyPolledPosition(_ pos: TimeInterval, duration dur: TimeInterval, readAtEpoch epoch: Int) {
+        if dur > 0 {
+            self.duration = dur
+        }
+        guard self.seeksInFlight == 0, epoch == self.seekEpoch else { return }
+        self.position = pos
+    }
 }
 
 private extension NowPlayingViewModel {
@@ -703,6 +743,7 @@ private extension NowPlayingViewModel {
         self.positionTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { break }
+                let epoch = self.positionPollEpoch
                 let pos = await engine.currentTime
                 let dur = await engine.duration
                 // Cancellation can happen while either actor read is suspended.
@@ -710,10 +751,7 @@ private extension NowPlayingViewModel {
                 // by the paused-state handler.
                 guard !Task.isCancelled else { break }
                 await MainActor.run {
-                    self.position = pos
-                    if dur > 0 {
-                        self.duration = dur
-                    }
+                    self.applyPolledPosition(pos, duration: dur, readAtEpoch: epoch)
                 }
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 s
             }
