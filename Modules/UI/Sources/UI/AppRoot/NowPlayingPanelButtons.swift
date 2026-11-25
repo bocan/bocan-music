@@ -25,8 +25,18 @@ struct NowPlayingPanelButtons: View {
 
             SleepTimerMenu(vm: self.vm)
 
-            if self.vm.pendingScrobbleCount > 0, self.scrobbleSettingsVM != nil {
+            // The slot is always there in the main window; only the badge
+            // comes and goes. A play is queued halfway through a song and sent
+            // a moment later, so an `if` here added and removed the slot each
+            // time, and the whole strip moved with it: the progress bar jumped
+            // under the pointer while it was being dragged (#710).
+            if self.scrobbleSettingsVM != nil {
+                let pending = self.vm.pendingScrobbleCount > 0
                 self.scrobblePendingButton
+                    .opacity(pending ? 1 : 0)
+                    .allowsHitTesting(pending)
+                    .disabled(!pending)
+                    .accessibilityHidden(!pending)
             }
 
             self.dspButton
