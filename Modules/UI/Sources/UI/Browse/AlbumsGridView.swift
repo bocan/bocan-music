@@ -163,6 +163,8 @@ public struct AlbumsGridView: View {
     /// the pre-search scroll anchor (#399). The genre/composer album grids
     /// keep the default: their query is cleared on drill-in.
     private let searchQuery: String
+    /// Replaces Add Music Folder for an empty grid with no search (#716).
+    private let emptyState: EmptyStateContent?
     /// ADR-005 audit L3: Cmd-click multi-select for albums.
     @State private var selection: Set<Int64> = []
     /// ADR-006: keyboard focus — which album cell has keyboard focus.
@@ -178,11 +180,18 @@ public struct AlbumsGridView: View {
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
-    public init(vm: AlbumsViewModel, library: LibraryViewModel, title: String? = nil, searchQuery: String = "") {
+    public init(
+        vm: AlbumsViewModel,
+        library: LibraryViewModel,
+        title: String? = nil,
+        searchQuery: String = "",
+        emptyState: EmptyStateContent? = nil
+    ) {
         self.vm = vm
         self.library = library
         self.titleOverride = title
         self.searchQuery = searchQuery
+        self.emptyState = emptyState
     }
 
     private var columns: [GridItem] {
@@ -202,6 +211,8 @@ public struct AlbumsGridView: View {
                         title: L10n.string("No Results"),
                         message: L10n.string("No albums match \u{201C}\(activeQuery)\u{201D}.")
                     )
+                } else if let emptyState = self.emptyState {
+                    emptyState.view
                 } else {
                     EmptyState(
                         symbol: "square.grid.2x2",

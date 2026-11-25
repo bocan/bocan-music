@@ -33,9 +33,14 @@ struct RecentlyAddedView: View {
     var body: some View {
         Group {
             if self.mode == .albums {
-                AlbumsGridView(vm: self.albumsVM, library: self.library, title: L10n.string("Recently Added"))
-                    // Only while Albums mode is on, so Songs mode never fetches albums.
-                    .task { await self.albumsVM.load(addedWithinDays: Self.windowDays) }
+                AlbumsGridView(
+                    vm: self.albumsVM,
+                    library: self.library,
+                    title: L10n.string("Recently Added"),
+                    emptyState: EmptyStateContent.smartFolder(.recentlyAdded)
+                )
+                // Only while Albums mode is on, so Songs mode never fetches albums.
+                .task { await self.albumsVM.load(addedWithinDays: Self.windowDays) }
             } else {
                 SmartFolderView(vm: self.library.tracks, library: self.library, destination: .recentlyAdded)
             }

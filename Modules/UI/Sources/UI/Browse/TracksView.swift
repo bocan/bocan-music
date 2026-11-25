@@ -45,6 +45,11 @@ public struct TracksView: View {
     /// with the index they land at, or nil to append (#709).
     public var onDropTracks: (([Int64], Int?) -> Void)?
 
+    /// Shown instead of the empty-library state (Add Music Folder) when the
+    /// list is empty and no search is active. A smart folder passes its own,
+    /// because it can be empty while the library has music (#716).
+    public var emptyState: EmptyStateContent?
+
     /// The table's drop handler. A row index means a place in the manual order
     /// only while no column sort is showing, so a sorted view appends instead.
     var effectiveOnDropTracks: (([Int64], Int) -> Void)? {
@@ -88,8 +93,10 @@ public struct TracksView: View {
         supportsManualOrder: Bool = false,
         removeFromPlaylist: (([Track]) -> Void)? = nil,
         onMove: ((IndexSet, Int) -> Void)? = nil,
-        onDropTracks: (([Int64], Int?) -> Void)? = nil
+        onDropTracks: (([Int64], Int?) -> Void)? = nil,
+        emptyState: EmptyStateContent? = nil
     ) {
+        self.emptyState = emptyState
         self.vm = vm
         self.library = library
         self.nowPlaying = library.nowPlaying
@@ -125,6 +132,8 @@ public struct TracksView: View {
                         title: L10n.string("No Results"),
                         message: L10n.string("No songs match \u{201C}\(activeQuery)\u{201D}.")
                     )
+                } else if let emptyState = self.emptyState {
+                    emptyState.view
                 } else {
                     EmptyState(
                         symbol: "music.note",
