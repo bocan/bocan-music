@@ -48,6 +48,28 @@ struct QuitWorkTests {
         }
     }
 
+    /// Holds a job until the test opens it, so "hung" does not depend on a
+    /// sleep racing the limit on a loaded CI machine.
+    private actor Gate {
+        private var isOpen = false
+        private var waiters: [CheckedContinuation<Void, Never>] = []
+
+        func wait() async {
+            if self.isOpen {
+                return
+            }
+            await withCheckedContinuation { self.waiters.append($0) }
+        }
+
+        func open() {
+            self.isOpen = true
+            for waiter in self.waiters {
+                waiter.resume()
+            }
+            self.waiters = []
+        }
+    }
+
     @Test("With no jobs the reply still comes")
     func emptyReplies() async {
         let work = QuitWork()
@@ -104,8 +126,9 @@ struct QuitWorkTests {
         let work = QuitWork()
         let log = Log()
         let replies = Replies()
+        let gate = Gate()
         work.add {
-            try? await Task.sleep(for: .milliseconds(300))
+            await gate.wait()
             await log.finish()
         }
         work.run(limit: .milliseconds(20)) { replies.record() }
@@ -113,8 +136,9 @@ struct QuitWorkTests {
         #expect(await log.finished == 0, "the reply came before the hung job ended")
 
         // Let the job end, and its late completion try to reply again.
+        await gate.open()
         while await log.finished == 0 {
-            try await Task.sleep(for: .milliseconds(50))
+            await Task.yield()
         }
         try await Task.sleep(for: .milliseconds(100))
         #expect(replies.count == 1)
