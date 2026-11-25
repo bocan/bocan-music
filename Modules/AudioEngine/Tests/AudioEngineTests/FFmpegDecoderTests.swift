@@ -142,9 +142,9 @@ struct FFmpegDecoderTests {
         let url = try fixtureURL("sine-1s-48000-stereo.ogg")
         let decoder = try FFmpegDecoder(url: url)
         try await decoder.seek(to: 0.5)
-        let pos = await decoder.position
-        // FFmpeg seek is approximate
-        #expect(pos >= 0 && pos <= 1.0)
+        // The seek lands on the sample asked for (#705; FFmpegSeekTests
+        // checks the audio itself).
+        #expect(await decoder.position == 0.5)
 
         let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
         let n = try await decoder.read(into: buf)

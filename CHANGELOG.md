@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VoiceOver now tells you which song in the list is playing, and which songs in your play history have a missing file.
 - You can now drag songs up and down a playlist to change their order, and the new order stays after a restart. Before, the drag did not move them and added copies of them to the end of the playlist instead. Songs dragged onto an open playlist now land where you drop them. Thanks for reporting this one @v0ntr0l.
 - When you drag the progress bar to a new spot and let go, it now stays there. Before, it jumped back to the old spot for a moment and then forward again, and while paused it stayed on the old spot until you pressed play. The bar also no longer slides sideways halfway through a song, when the pending scrobbles icon appears beside it. Thanks for reporting this one @v0ntr0l.
+- Moving to a new spot in an Ogg, Opus, DSD, WavPack, APE or similar file now starts playback exactly where you asked. Before, it could start up to half a second early, and Opus and DSD files could begin with a short burst of noise.
 
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 
