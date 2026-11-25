@@ -61,6 +61,7 @@ extension AudioTranscoder {
         // TranscodeContext.deinit (#295).
         ctx.decodeCtx = decodeCtx
         try checkDecode(avcodec_parameters_to_context(decodeCtx, codecParams))
+        FFmpegCodecSetup.prepare(decodeCtx)
         try checkDecode(avcodec_open2(decodeCtx, codec, nil))
 
         ctx.inSampleRate = decodeCtx.pointee.sample_rate
