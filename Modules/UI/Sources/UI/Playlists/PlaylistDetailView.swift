@@ -50,7 +50,7 @@ public struct PlaylistDetailView: View {
                     // reached the table and added copies instead (#709).
                     .overlay(
                         TrackDropTarget { ids in
-                            Task { await self.vm.addTracks(ids) }
+                            Task { await self.addTracks(ids, at: nil) }
                         }
                     )
                 } else {
@@ -76,9 +76,8 @@ public struct PlaylistDetailView: View {
                             }
                             : nil,
                         onDropTracks: self.vm.playlist?.kind == .manual
-                            ? { [weak vm] ids, index in
-                                guard let vm else { return }
-                                Task { await vm.addTracks(ids, at: index) }
+                            ? { ids, index in
+                                Task { await self.addTracks(ids, at: index) }
                             }
                             : nil
                     )
@@ -98,6 +97,14 @@ public struct PlaylistDetailView: View {
     }
 
     // MARK: - Actions
+
+    /// Adds dropped songs and says when some were already in the playlist
+    /// (#720), instead of leaving the drop to look like it did nothing.
+    private func addTracks(_ ids: [Int64], at index: Int?) async {
+        guard let result = await self.vm.addTracks(ids, at: index),
+              let notice = PlaylistAddNotice.message(for: result) else { return }
+        self.library.showToast(notice)
+    }
 
     private func playAll() async {
         await self.library.play(tracks: self.vm.tracks, fromPlaylistID: self.playlistID, startingAt: 0)

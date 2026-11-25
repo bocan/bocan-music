@@ -52,6 +52,11 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     /// menu. Wire this in `LibraryViewModel` to drive the export sheet.
     public var onRequestExport: ((Int64, String) -> Void)?
 
+    /// Shows a transient message, such as songs an add skipped because the
+    /// playlist already holds them (#720). `LibraryViewModel` wires it to its
+    /// toast.
+    public var onNotice: ((ToastMessage) -> Void)?
+
     // MARK: - Init
 
     public init(service: PlaylistService) {
@@ -325,8 +330,11 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     public func addTracks(_ trackIDs: [Int64], to playlistID: Int64) async {
         do {
-            try await self.service.addTracks(trackIDs, to: playlistID)
+            let result = try await self.service.addTracks(trackIDs, to: playlistID)
             await self.reload()
+            if let notice = PlaylistAddNotice.message(for: result) {
+                self.onNotice?(notice)
+            }
         } catch {
             self.lastError = self.describe(error)
         }

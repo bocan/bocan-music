@@ -950,6 +950,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.playlistSidebar.onRequestExport = { [weak self] id, name in
             self?.playlistExportRequest = .init(id: id, name: name)
         }
+
+        self.playlistSidebar.onNotice = { [weak self] notice in
+            self?.showToast(notice)
+        }
     }
 
     private static func makeFingerprintQueue(database: Database) -> FingerprintQueue? {

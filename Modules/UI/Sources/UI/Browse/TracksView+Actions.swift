@@ -45,7 +45,10 @@ extension TracksView {
                 let ids = tracks.compactMap(\.id)
                 Task {
                     do {
-                        try await lib.playlistService.addTracks(ids, to: playlistID)
+                        let result = try await lib.playlistService.addTracks(ids, to: playlistID)
+                        if let notice = PlaylistAddNotice.message(for: result) {
+                            lib.showToast(notice)
+                        }
                         // The sidebar's counts come from its own snapshot of
                         // the tree, so the badge next to the playlist kept the
                         // old number until something else reloaded it. The

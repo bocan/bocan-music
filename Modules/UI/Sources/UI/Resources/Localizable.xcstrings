@@ -1705,6 +1705,47 @@
         }
       }
     },
+    "%lld songs were already in this playlist." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "That song is already in this playlist."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs were already in this playlist."
+                }
+              }
+            }
+          }
+        },
+        "en-XA" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ţĥáţ šóñĝ íš áĺŕéáđý íñ ţĥíš ƥĺáýĺíšţ. one two three"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld šóñĝš ŵéŕé áĺŕéáđý íñ ţĥíš ƥĺáýĺíšţ. one two three"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld stars" : {
       "localizations" : {
         "en" : {
