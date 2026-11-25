@@ -8,6 +8,9 @@ import SwiftUI
 ///
 /// Supported destinations: `.recentlyAdded`, `.recentlyPlayed`, `.mostPlayed`.
 public struct SmartFolderView: View {
+    /// Recently Played's window, in days.
+    static let recentlyPlayedDays = 90
+
     public var vm: TracksViewModel
     public var library: LibraryViewModel
     public var destination: SidebarDestination
@@ -19,32 +22,37 @@ public struct SmartFolderView: View {
     }
 
     public var body: some View {
-        TracksView(vm: self.vm, library: self.library, title: self.destination.displayTitle)
-            .task {
-                let repo = TrackRepository(database: library.database)
-                let result: [Track]
-                do {
-                    switch self.destination {
-                    case .recentlyAdded:
-                        result = try await repo.recentlyAdded(days: RecentlyAddedView.windowDays)
+        TracksView(
+            vm: self.vm,
+            library: self.library,
+            title: self.destination.displayTitle,
+            emptyState: EmptyStateContent.smartFolder(self.destination)
+        )
+        .task {
+            let repo = TrackRepository(database: library.database)
+            let result: [Track]
+            do {
+                switch self.destination {
+                case .recentlyAdded:
+                    result = try await repo.recentlyAdded(days: RecentlyAddedView.windowDays)
 
-                    case .recentlyPlayed:
-                        result = try await repo.recentlyPlayed(days: 90)
+                case .recentlyPlayed:
+                    result = try await repo.recentlyPlayed(days: Self.recentlyPlayedDays)
 
-                    case .mostPlayed:
-                        result = try await repo.mostPlayed(limit: 100)
+                case .mostPlayed:
+                    result = try await repo.mostPlayed(limit: 100)
 
-                    default:
-                        result = []
-                    }
-                    self.vm.setTracks(result)
-                } catch {
-                    AppLogger.make(.ui).error(
-                        "smartfolder.load.failed",
-                        ["destination": String(describing: self.destination), "error": String(reflecting: error)]
-                    )
+                default:
+                    result = []
                 }
+                self.vm.setTracks(result)
+            } catch {
+                AppLogger.make(.ui).error(
+                    "smartfolder.load.failed",
+                    ["destination": String(describing: self.destination), "error": String(reflecting: error)]
+                )
             }
+        }
     }
 }
 
