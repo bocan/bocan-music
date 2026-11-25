@@ -70,9 +70,8 @@ public struct MenuBarExtraScene: View {
                     ),
                     in: 0 ... 1
                 ) { editing in
-                    if !editing, let fraction = self.scrubDragFraction {
-                        self.scrubDragFraction = nil
-                        Task { await self.vm.scrub(to: fraction * self.vm.duration) }
+                    if !editing {
+                        Task { await ScrubberDrag.release(self.$scrubDragFraction, nowPlaying: self.vm) }
                     }
                 }
                 .controlSize(.small)
