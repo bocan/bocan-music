@@ -42,7 +42,9 @@ public actor FFmpegDecoder: Decoder {
     /// `avcodec_open2` call. The one allocation not owned here until fully
     /// built is the SWR resampler -- `buildSWR` frees it on its own throw
     /// paths and only hands back a live pointer to park on `swrCtx`.
-    private final class FFContext {
+    /// Internal, not private, so the seek in `FFmpegDecoder+Seek.swift` can
+    /// reach it.
+    final class FFContext {
         var formatCtx: UnsafeMutablePointer<AVFormatContext>?
         var codecCtx: UnsafeMutablePointer<AVCodecContext>?
         var swrCtx: OpaquePointer?
@@ -70,7 +72,7 @@ public actor FFmpegDecoder: Decoder {
 
     // MARK: - Properties
 
-    private let ctx: FFContext
+    let ctx: FFContext
     /// Internal so the StreamDetails extension can watch this stream's
     /// metadata events (#386); `FFContext` itself stays private.
     var audioStreamIndex: Int32 {
@@ -103,14 +105,21 @@ public actor FFmpegDecoder: Decoder {
     nonisolated let titleContinuation: AsyncStream<String>.Continuation
     var lastEmittedTitle: String?
 
-    private var _position: TimeInterval = 0
-    private var residualBuffer: [Float] = []
+    // Internal so `FFmpegDecoder+Seek.swift` can reset them.
+    var positionSeconds: TimeInterval = 0
+    var residualBuffer: [Float] = []
+
+    /// The sample a seek asked for, until the first sample at or after it has
+    /// been decoded; output before it is dropped (#705). The frame after one
+    /// with no timestamp starts at `nextFrameSample`.
+    var seekTargetSample: Int64?
+    var nextFrameSample: Int64?
 
     /// Channels the resampler emits and `sourceFormat` carries. The file's own
     /// count when it has more than two named channels the engine can
     /// describe (#522); otherwise two, with swresample folding to stereo as
     /// it always did for mono, stereo and layouts it cannot name.
-    private let outChannels: Int32
+    let outChannels: Int32
 
     /// True for a remote source with no known duration (internet radio, vs.
     /// a finite Subsonic/podcast HTTP track or local file). EOF here only
@@ -119,7 +128,7 @@ public actor FFmpegDecoder: Decoder {
     let isUnboundedRemoteStream: Bool // internal: title emission gates on it (#386)
 
     public var position: TimeInterval {
-        self._position
+        self.positionSeconds
     }
 
     // MARK: - Init
@@ -177,33 +186,12 @@ public actor FFmpegDecoder: Decoder {
 
         buffer.frameLength = AVAudioFrameCount(totalFrames)
         if self.sourceFormat.sampleRate > 0 {
-            self._position += TimeInterval(totalFrames) / self.sourceFormat.sampleRate
+            self.positionSeconds += TimeInterval(totalFrames) / self.sourceFormat.sampleRate
         }
         return buffer.frameLength
     }
 
-    public func seek(to time: TimeInterval) async throws {
-        if self.duration > 0, time > self.duration + 0.001 {
-            throw AudioEngineError.seekOutOfRange(requested: time, duration: self.duration)
-        }
-        let target = max(0, time)
-        guard let fmtCtx = ctx.formatCtx,
-              let stream = fmtCtx.pointee.streams?[Int(ctx.streamIndex)] else { return }
-
-        let tbDen = stream.pointee.time_base.den
-        let tbNum = stream.pointee.time_base.num
-        let ts = (tbDen > 0 && tbNum > 0)
-            ? Int64(target * TimeInterval(tbDen) / TimeInterval(tbNum))
-            : Int64(target * TimeInterval(AV_TIME_BASE))
-
-        let ret = av_seek_frame(ctx.formatCtx, self.ctx.streamIndex, ts, AVSEEK_FLAG_BACKWARD)
-        if ret < 0 {
-            throw AudioEngineError.seekOutOfRange(requested: time, duration: self.duration)
-        }
-        avcodec_flush_buffers(self.ctx.codecCtx)
-        self.residualBuffer.removeAll()
-        self._position = target
-    }
+    // `seek(to:)` is in FFmpegDecoder+Seek.swift.
 
     public func close() async {
         self.titleContinuation.finish()
@@ -262,6 +250,9 @@ private extension FFmpegDecoder {
         ctx.codecCtx = codecCtx
 
         try self.ffCheck(avcodec_parameters_to_context(codecCtx, codecParams))
+        // Lets the decoder move a frame's timestamp when it trims samples
+        // (encoder delay, pre-roll), which the seek trim reads (#705).
+        codecCtx.pointee.pkt_timebase = stream.pointee.time_base
         FFmpegCodecSetup.prepare(codecCtx)
         try self.ffCheck(avcodec_open2(codecCtx, codec, nil))
         // More than two named channels keep their layout, so the engine's one
@@ -310,7 +301,9 @@ extension FFmpegDecoder {
 
 // MARK: - Decode helpers
 
-private extension FFmpegDecoder {
+/// Internal, not private: the seek trim in FFmpegDecoder+Seek.swift calls
+/// `convertFrame`.
+extension FFmpegDecoder {
     func readNextFrames() throws -> [Float] {
         guard let fmtCtx = ctx.formatCtx,
               let codecCtx = ctx.codecCtx,
@@ -338,25 +331,42 @@ private extension FFmpegDecoder {
             if sendRet < 0, sendRet != averrorPosix(eagainCode) {
                 continue
             }
+            switch try self.receiveConverted(codecCtx, swrCtx: swrCtx, frame: frm) {
+            case let .samples(converted):
+                return converted
 
-            inner: while true {
-                let recvRet = avcodec_receive_frame(codecCtx, frm)
-                if recvRet == averrorPosix(eagainCode) {
-                    continue outer
-                }
-                if recvRet == avErrorEof {
-                    break outer
-                }
-                if recvRet < 0 {
-                    break inner
-                }
-                let converted = try convertFrame(frm, swrCtx: swrCtx)
-                av_frame_unref(frm)
-                result.append(contentsOf: converted)
+            case .needPacket:
+                continue outer
+
+            case .ended:
                 break outer
             }
         }
         return result
+    }
+
+    /// Receives frames until one has samples to keep. A frame wholly before
+    /// a seek target converts to nothing and is skipped (#705); a decode
+    /// error drops that frame and asks for the next packet, as before.
+    func receiveConverted(
+        _ codecCtx: UnsafeMutablePointer<AVCodecContext>,
+        swrCtx: OpaquePointer,
+        frame: UnsafeMutablePointer<AVFrame>
+    ) throws -> ReceiveOutcome {
+        while true {
+            let recvRet = avcodec_receive_frame(codecCtx, frame)
+            if recvRet == avErrorEof {
+                return .ended
+            }
+            if recvRet < 0 {
+                return .needPacket
+            }
+            let converted = try self.convertTrimmingToSeekTarget(frame, swrCtx: swrCtx)
+            av_frame_unref(frame)
+            if !converted.isEmpty {
+                return .samples(converted)
+            }
+        }
     }
 
     /// Drains buffered frames at a finite source's real end; throws instead
@@ -389,7 +399,7 @@ private extension FFmpegDecoder {
             if ret < 0 {
                 break
             }
-            let converted = try convertFrame(frame, swrCtx: swrCtx)
+            let converted = try self.convertTrimmingToSeekTarget(frame, swrCtx: swrCtx)
             av_frame_unref(frame)
             result.append(contentsOf: converted)
         }

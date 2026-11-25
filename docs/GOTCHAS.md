@@ -427,6 +427,16 @@ Reading defaults reads the release app's preferences only.
 
 **Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinClientProtocol.swift`
 
+### A cancelled monitor loop must return before it touches state after any `await`
+
+**Problem:** the CI test "stopMonitoring ends the loop and forgets the status" failed now and then: a server's status came back after it had been stopped. Rarer: after a Jellyfin recheck or a wake, a polling loop kept running that nothing could stop, and the next start added a second one.
+
+**Rule:** in `SubsonicConnectionMonitor` and `JellyfinConnectionMonitor`, `runLoop` checks `Task.isCancelled` at its start, after the ping returns and when the ping throws, before it emits a status or edits `tasks`. A new loop of the same kind (a monitor, a refresher, anything an actor restarts) needs the same guards.
+
+**Why:** both monitors are actors. While a loop waits for its ping, `stopMonitoring`, `recheck` or `wakeAll` runs, cancels that loop and may store a new one under the same server. A ping does not always throw `CancellationError` when cancelled: it can return or fail normally. The old loop then wrote a status for a server that was gone, or, on a 401, removed the entry that now held the new loop. The tests hold a ping open to force the order (`stopDuringPing`, `recheckDuringRefusedPing`, `wakeDuringRefusedPing`).
+
+**Canonical file:** `Modules/Jellyfin/Sources/Jellyfin/JellyfinConnectionMonitor.swift` (`runLoop`), with the same guards in `Modules/Subsonic/Sources/Subsonic/SubsonicConnectionMonitor.swift`
+
 ## Testing
 
 ### The XCUITest runner is sandboxed no matter what the project says
@@ -599,6 +609,16 @@ Never gate on a piped grep, whose status is grep's. And in a test file that uses
 The same applies to cyclomatic complexity, which is capped at 10. The graph builder in `App/BocanApp.swift` sits at that limit, so adding any branching there means extracting a method, not suppressing the rule.
 
 **Canonical file:** `.swiftlint.yml` and `Scripts/pre-commit`
+
+### A PR title takes one scope, never a comma list
+
+**Problem:** the "Conventional Commit title" check fails on a PR whose commits all passed the hook, for example `fix(subsonic,jellyfin): ...` (#722).
+
+**Rule:** a PR title has at most one scope, made of `[a-z0-9._-]`. For a change that spans two modules, either drop the scope and name both modules in the subject (`fix: stop a cancelled Subsonic or Jellyfin monitor loop ...`), or split the change into one PR per module.
+
+**Why:** the squash merge uses the PR title as the commit subject on main, so the title is what the workflow checks, and its pattern is `^(feat|fix|...)(\([a-z0-9._-]+\))?!?: [^ ].*$`. Nothing checks commit subjects locally, so a comma scope in a branch commit passes until the PR is opened.
+
+**Canonical file:** `.github/workflows/pr-metadata.yml`
 
 ### A file split can break a test or an audit that names the file
 
