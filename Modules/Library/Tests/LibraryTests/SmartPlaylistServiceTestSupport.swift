@@ -25,14 +25,16 @@ extension SmartPlaylistServiceFixtures {
         playCount: Int = 0,
         loved: Bool = false,
         genre: String? = nil,
-        lastPlayedAt: Int64? = nil
+        lastPlayedAt: Int64? = nil,
+        extendedTags: String? = nil,
+        fileFormat: String = "mp3"
     ) async throws -> Int64 {
         let now = Int64(Date().timeIntervalSince1970)
         var track = Track(
             fileURL: fileURL,
             fileSize: 1024,
             fileMtime: now,
-            fileFormat: "mp3",
+            fileFormat: fileFormat,
             duration: 180,
             title: title,
             addedAt: now,
@@ -43,6 +45,7 @@ extension SmartPlaylistServiceFixtures {
         track.loved = loved
         track.genre = genre
         track.lastPlayedAt = lastPlayedAt
+        track.extendedTags = extendedTags
         let repo = TrackRepository(database: db)
         return try await repo.insert(track)
     }
