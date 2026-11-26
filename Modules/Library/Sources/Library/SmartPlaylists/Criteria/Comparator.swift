@@ -75,6 +75,13 @@ public enum Comparator: Sendable, Codable, Hashable, CaseIterable {
     case inLastMonths
     /// Track's date is within the last N years.
     case inLastYears
+    /// Track's date is not within the last N days. A track with no date
+    /// (never played, never rated) matches.
+    case notInLastDays
+    /// Track's date is not within the last N months. A missing date matches.
+    case notInLastMonths
+    /// Track's date is not within the last N years. A missing date matches.
+    case notInLastYears
     case beforeDate
     case afterDate
     case onDate
@@ -177,6 +184,15 @@ public extension Comparator {
         case "inLastYears":
             self = .inLastYears
 
+        case "notInLastDays":
+            self = .notInLastDays
+
+        case "notInLastMonths":
+            self = .notInLastMonths
+
+        case "notInLastYears":
+            self = .notInLastYears
+
         case "beforeDate":
             self = .beforeDate
 
@@ -273,6 +289,15 @@ public extension Comparator {
         case .inLastYears:
             "inLastYears"
 
+        case .notInLastDays:
+            "notInLastDays"
+
+        case .notInLastMonths:
+            "notInLastMonths"
+
+        case .notInLastYears:
+            "notInLastYears"
+
         case .beforeDate:
             "beforeDate"
 
@@ -350,6 +375,9 @@ public extension Comparator {
             .inLastDays,
             .inLastMonths,
             .inLastYears,
+            .notInLastDays,
+            .notInLastMonths,
+            .notInLastYears,
             .beforeDate,
             .afterDate,
             .onDate,

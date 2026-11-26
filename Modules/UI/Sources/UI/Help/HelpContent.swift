@@ -87,6 +87,8 @@ enum HelpContent {
             title: "Playlists",
             body: "Create standard playlists with File → New Playlist… (⌘⇧N)"
                 + " or rules-based Smart Playlists with File → New Smart Playlist… (⌘⌥N)."
+                + " A date rule such as Last Played can use “not in last” days, months or years"
+                + " to find songs you have not heard lately, and songs you never played."
                 + " Import M3U, PLS, and XSPF playlists via File → Import Playlist…"
         ),
         HelpTopic(

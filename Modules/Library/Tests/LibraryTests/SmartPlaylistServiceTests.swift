@@ -139,6 +139,28 @@ struct SmartPlaylistServiceTests: SmartPlaylistServiceFixtures {
         #expect(!ids.contains(unplayed))
     }
 
+    /// #728: "not played in the last N days" keeps songs played before the
+    /// cutoff and songs never played, and drops songs played since.
+    @Test func tracksForLastPlayedNotInLastDays() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let now = Int64(Date().timeIntervalSince1970)
+        let day: Int64 = 86400
+        let recent = try await insertTrack(in: db, fileURL: "file:///recent.mp3", lastPlayedAt: now - 2 * day)
+        let old = try await insertTrack(in: db, fileURL: "file:///old.mp3", lastPlayedAt: now - 60 * day)
+        let never = try await insertTrack(in: db, fileURL: "file:///never.mp3")
+
+        let criteria = SmartCriterion.rule(.init(field: .lastPlayedAt, comparator: .notInLastDays, value: .int(30)))
+        let playlist = try await svc.create(name: "Not Lately", criteria: criteria)
+        guard let pid = playlist.id else { Issue.record("no id")
+            return
+        }
+
+        let ids = try await Set(svc.tracks(for: pid).compactMap(\.id))
+        #expect(ids == [old, never])
+        #expect(!ids.contains(recent))
+    }
+
     @Test func tracksForTitleContainsFilter() async throws {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)

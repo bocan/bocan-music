@@ -7955,13 +7955,13 @@
         }
       }
     },
-    "Create standard playlists with File → New Playlist… (⌘⇧N) or rules-based Smart Playlists with File → New Smart Playlist… (⌘⌥N). Import M3U, PLS, and XSPF playlists via File → Import Playlist…" : {
+    "Create standard playlists with File → New Playlist… (⌘⇧N) or rules-based Smart Playlists with File → New Smart Playlist… (⌘⌥N). A date rule such as Last Played can use “not in last” days, months or years to find songs you have not heard lately, and songs you never played. Import M3U, PLS, and XSPF playlists via File → Import Playlist…" : {
       "extractionState" : "manual",
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Çŕéáţé šţáñđáŕđ ƥĺáýĺíšţš ŵíţĥ Ƒíĺé → Ñéŵ Ƥĺáýĺíšţ… (⌘⇧Ñ) óŕ ŕúĺéš-ƀášéđ Šḿáŕţ Ƥĺáýĺíšţš ŵíţĥ Ƒíĺé → Ñéŵ Šḿáŕţ Ƥĺáýĺíšţ… (⌘⌥Ñ). Íḿƥóŕţ Ḿ3Ú, ƤĹŠ, áñđ XŠƤƑ ƥĺáýĺíšţš víá Ƒíĺé → Íḿƥóŕţ Ƥĺáýĺíšţ… one two three four five six seven eight nine ten one two three"
+            "value" : "Çŕéáţé šţáñđáŕđ ƥĺáýĺíšţš ŵíţĥ Ƒíĺé → Ñéŵ Ƥĺáýĺíšţ… (⌘⇧Ñ) óŕ ŕúĺéš-ƀášéđ Šḿáŕţ Ƥĺáýĺíšţš ŵíţĥ Ƒíĺé → Ñéŵ Šḿáŕţ Ƥĺáýĺíšţ… (⌘⌥Ñ). Á đáţé ŕúĺé šúçĥ áš Ĺášţ Ƥĺáýéđ çáñ úšé “ñóţ íñ ĺášţ” đáýš, ḿóñţĥš óŕ ýéáŕš ţó ƒíñđ šóñĝš ýóú ĥávé ñóţ ĥéáŕđ ĺáţéĺý, áñđ šóñĝš ýóú ñévéŕ ƥĺáýéđ. Íḿƥóŕţ Ḿ3Ú, ƤĹŠ, áñđ XŠƤƑ ƥĺáýĺíšţš víá Ƒíĺé → Íḿƥóŕţ Ƥĺáýĺíšţ… one two three four five six seven eight nine ten one two three four five six seven eight nine ten one"
           }
         }
       }
@@ -28678,6 +28678,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ḿíñúţéš one"
+          }
+        }
+      }
+    },
+    "not in last (days)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not in last (days)"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ñóţ íñ ĺášţ (đáýš) one two"
+          }
+        }
+      }
+    },
+    "not in last (months)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not in last (months)"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ñóţ íñ ĺášţ (ḿóñţĥš) one two"
+          }
+        }
+      }
+    },
+    "not in last (years)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not in last (years)"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ñóţ íñ ĺášţ (ýéáŕš) one two"
           }
         }
       }

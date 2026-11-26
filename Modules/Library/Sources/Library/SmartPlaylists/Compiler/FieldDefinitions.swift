@@ -189,7 +189,10 @@ private extension [Comparator] {
     static let duration: [Comparator] = numeric
 
     static let date: [Comparator] = [
-        .beforeDate, .afterDate, .onDate, .between, .inLastDays, .inLastMonths, .inLastYears, .isNull, .isNotNull,
+        .beforeDate, .afterDate, .onDate, .between,
+        .inLastDays, .inLastMonths, .inLastYears,
+        .notInLastDays, .notInLastMonths, .notInLastYears,
+        .isNull, .isNotNull,
     ]
 
     static let bool: [Comparator] = [.isTrue, .isFalse]

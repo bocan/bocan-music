@@ -225,6 +225,23 @@ public enum SQLBuilder {
             args.append(n)
             return "\(col) >= unixepoch('now', '-' || ? || ' years')"
 
+        // The negated forms match a missing date too (#728): a song never
+        // played was not played in the last N days.
+        case .notInLastDays:
+            guard case let .int(n) = rule.value else { throw Self.valueError(rule) }
+            args.append(n)
+            return "(\(col) IS NULL OR \(col) < unixepoch('now', '-' || ? || ' days'))"
+
+        case .notInLastMonths:
+            guard case let .int(n) = rule.value else { throw Self.valueError(rule) }
+            args.append(n)
+            return "(\(col) IS NULL OR \(col) < unixepoch('now', '-' || ? || ' months'))"
+
+        case .notInLastYears:
+            guard case let .int(n) = rule.value else { throw Self.valueError(rule) }
+            args.append(n)
+            return "(\(col) IS NULL OR \(col) < unixepoch('now', '-' || ? || ' years'))"
+
         // ── Boolean ──────────────────────────────────────────────────────────
         case .isTrue:
             if rule.field == .hasLyrics {

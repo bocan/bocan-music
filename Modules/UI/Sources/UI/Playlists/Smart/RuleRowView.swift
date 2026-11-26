@@ -77,13 +77,13 @@ struct RuleRowView: View {
             }
             self.rule.value = .range(.int(0), .int(100))
 
-        case .inLastDays:
+        case .inLastDays, .notInLastDays:
             self.rule.value = .int(30)
 
-        case .inLastMonths:
+        case .inLastMonths, .notInLastMonths:
             self.rule.value = .int(12)
 
-        case .inLastYears:
+        case .inLastYears, .notInLastYears:
             self.rule.value = .int(1)
 
         case .memberOf, .notMemberOf:
@@ -280,13 +280,14 @@ private struct ValueControl: View {
 
     @ViewBuilder
     private var typedControl: some View {
-        // inLastDays / inLastMonths / inLastYears use an integer count, even for date fields.
-        let isLastN = self.rule.comparator == .inLastDays
-            || self.rule.comparator == .inLastMonths
-            || self.rule.comparator == .inLastYears
-        if isLastN {
+        // The "in last N" comparators and their negations use an integer
+        // count, even for date fields.
+        switch self.rule.comparator {
+        case .inLastDays, .inLastMonths, .inLastYears,
+             .notInLastDays, .notInLastMonths, .notInLastYears:
             self.intControl
-        } else {
+
+        default:
             self.typedControlByDataType
         }
     }
@@ -377,7 +378,8 @@ private struct ValueControl: View {
 
     @ViewBuilder private var intControl: some View {
         switch self.rule.comparator {
-        case .inLastDays, .inLastMonths, .inLastYears:
+        case .inLastDays, .inLastMonths, .inLastYears,
+             .notInLastDays, .notInLastMonths, .notInLastYears:
             Stepper(
                 value: Binding(
                     get: {
@@ -749,6 +751,15 @@ extension Library.Comparator {
 
         case .inLastYears:
             L10n.string("in last (years)")
+
+        case .notInLastDays:
+            L10n.string("not in last (days)")
+
+        case .notInLastMonths:
+            L10n.string("not in last (months)")
+
+        case .notInLastYears:
+            L10n.string("not in last (years)")
 
         case .beforeDate:
             L10n.string("before")

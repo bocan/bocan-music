@@ -204,6 +204,33 @@ struct SmartCriteriaCompilerTests: SmartCriteriaCompilerFixtures {
         self.assertNoLiteral(c.selectSQL, "2")
     }
 
+    @Test(arguments: [
+        (Comparator.notInLastDays, "days"),
+        (Comparator.notInLastMonths, "months"),
+        (Comparator.notInLastYears, "years"),
+    ])
+    func lastPlayedAtNotInLast(comparator: Library.Comparator, unit: String) throws {
+        let c = try compile(.lastPlayedAt, comparator, .int(45))
+        // A never-played track (NULL) matches, and the cutoff is exclusive.
+        #expect(c.selectSQL.contains("(tracks.last_played_at IS NULL OR tracks.last_played_at < unixepoch('now'"))
+        #expect(c.selectSQL.contains(unit))
+        self.assertNoLiteral(c.selectSQL, "45")
+    }
+
+    @Test func notInLastRejectsNonIntValue() {
+        #expect(throws: (any Error).self) {
+            try compile(.lastPlayedAt, .notInLastDays, .date(Date()))
+        }
+    }
+
+    /// Every comparator survives the trip through its stored name, so a
+    /// saved rule never reloads as `.unknown`.
+    @Test func everyComparatorRoundTripsThroughRawValue() {
+        for comparator in Comparator.allCases {
+            #expect(Comparator(rawValue: comparator.rawValue) == comparator)
+        }
+    }
+
     @Test func addedAtBefore() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let c = try compile(.addedAt, .beforeDate, .date(date))
