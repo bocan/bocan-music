@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.26.0](https://github.com/bocan/bocan-music/compare/v2.25.0...v2.26.0) (2026-11-26)
+
 A happy Thanksgiving to all who celebrate!
 
 - Recently Added can now show albums instead of songs: switch it from Songs to Albums in the toolbar and you get one cover per album you added to in the last 30 days, newest first, whatever year the record came out. Album grids can also sort by date added. Thanks for the idea @v0ntr0l.
@@ -17,6 +19,28 @@ A happy Thanksgiving to all who celebrate!
 - You can now drag songs up and down a playlist to change their order, and the new order stays after a restart. Before, the drag did not move them and added copies of them to the end of the playlist instead. Songs dragged onto an open playlist now land where you drop them. Thanks for reporting this one @v0ntr0l.
 - When you drag the progress bar to a new spot and let go, it now stays there. Before, it jumped back to the old spot for a moment and then forward again, and while paused it stayed on the old spot until you pressed play. The bar also no longer slides sideways halfway through a song, when the pending scrobbles icon appears beside it. Thanks for reporting this one @v0ntr0l.
 - Moving to a new spot in an Ogg, Opus, DSD, WavPack, APE or similar file now starts playback exactly where you asked. Before, it could start up to half a second early, and Opus and DSD files could begin with a short burst of noise.
+
+### For developers
+
+**Added**
+- ui: browse Recently Added by album ([#715](https://github.com/bocan/bocan-music/pull/715))
+- library: smart playlist "not in last" date rules, and working Comment and File Format rules ([#734](https://github.com/bocan/bocan-music/pull/734))
+
+**Fixed**
+- ui: publish Subsonic status only when it changes ([#701](https://github.com/bocan/bocan-music/pull/701))
+- ui: speak row status through a table cell for VoiceOver ([#711](https://github.com/bocan/bocan-music/pull/711))
+- ui: let a playlist reorder by drag instead of adding copies ([#719](https://github.com/bocan/bocan-music/pull/719))
+- ui: stop the progress bar jumping around during a seek ([#721](https://github.com/bocan/bocan-music/pull/721))
+- stop a cancelled Subsonic or Jellyfin monitor loop from touching state after its ping ([#722](https://github.com/bocan/bocan-music/pull/722))
+- audio: land FFmpeg seeks on the exact sample and honour pre-roll ([#724](https://github.com/bocan/bocan-music/pull/724))
+- ui: say when a song is already in the playlist instead of doing nothing ([#725](https://github.com/bocan/bocan-music/pull/725))
+- ui: say an empty smart folder has nothing in its window, not to add music ([#726](https://github.com/bocan/bocan-music/pull/726))
+- app: run quit work without blocking the main thread ([#730](https://github.com/bocan/bocan-music/pull/730))
+
+**Changed**
+- ui: share the text and cover art table cells across the song tables ([#714](https://github.com/bocan/bocan-music/pull/714))
+- audio: move DSD to FFmpeg's raw sample format before FFmpeg 10 ([#717](https://github.com/bocan/bocan-music/pull/717))
+- ui: one shared progress-bar view for the six scrubbers ([#732](https://github.com/bocan/bocan-music/pull/732))
 
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 
