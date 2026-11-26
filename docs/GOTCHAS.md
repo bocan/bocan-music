@@ -674,6 +674,16 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Canonical file:** `project.yml`
 
+### Xcode can miss a new file in a module package that `make build` compiles
+
+**Problem:** after #732 added `Modules/UI/Sources/UI/Transport/PlaybackPositionSlider.swift`, the Xcode run failed with "cannot find `PlaybackPositionSlider` in scope" in six views, while `make build` and `make test-coverage` built the same commit cleanly. Xcode's build log showed it compiled every other file in `Transport/` and skipped the new one.
+
+**Rule:** when Xcode reports a missing type that the command line builds, check the newest `.xcactivitylog` under `~/Library/Developer/Xcode/DerivedData/Bocan-*/Logs/Build/` for whether the file was compiled at all. If not, do File > Packages > Reset Package Caches in Xcode and build again; if that fails, quit Xcode and reopen with `make open`. Do not change code or `project.yml` for it.
+
+**Why:** the module packages are local SPM packages, and a running Xcode keeps its own package file list, which can miss a file that arrived through a pull or branch switch while it was open. `xcodebuild` reads each package again on every run, so the command-line gates do not see the problem.
+
+**Canonical file:** `Modules/UI/Package.swift`
+
 ### Snapshot references follow the macOS version that recorded them
 
 **Problem:** after a macOS upgrade, a full local `make test-ui` fails a group of snapshot tests with "does not match reference", although no view changed. On macOS 27 these were the 13 views built on `ContentUnavailableView` (Phone Sync pane, Identify Track no-match and error, Radio empty), because the system draws its title smaller and moves the layout. CI does not catch it: the whole `UISnapshotTests` suite is disabled there.
