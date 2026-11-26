@@ -106,12 +106,12 @@ public enum SQLBuilder {
         switch rule.comparator {
         // ── Text ─────────────────────────────────────────────────────────────
         case .is:
-            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            guard let text = Self.exactMatchOperand(rule.value) else { throw Self.valueError(rule) }
             args.append(text.lowercased())
             return "LOWER(\(col)) = LOWER(?)"
 
         case .isNot:
-            guard case let .text(text) = rule.value else { throw Self.valueError(rule) }
+            guard let text = Self.exactMatchOperand(rule.value) else { throw Self.valueError(rule) }
             args.append(text.lowercased())
             return "(\(col) IS NULL OR LOWER(\(col)) != LOWER(?))"
 
@@ -404,6 +404,19 @@ public enum SQLBuilder {
         s.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "%", with: "\\%")
             .replacingOccurrences(of: "_", with: "\\_")
+    }
+
+    /// The string an `is` / `isNot` rule compares against: free text, or the
+    /// option an enumeration field's picker stores (File Format), which
+    /// these two comparators rejected until the field sweep found it.
+    private static func exactMatchOperand(_ value: Value) -> String? {
+        switch value {
+        case let .text(text), let .enumeration(text):
+            text
+
+        default:
+            nil
+        }
     }
 
     private static func valueError(_ rule: SmartCriterion.Rule) -> SmartPlaylistError {
