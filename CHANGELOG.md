@@ -7,17 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+A happy Thanksgiving to all who celebrate!
+
 - Recently Added can now show albums instead of songs: switch it from Songs to Albums in the toolbar and you get one cover per album you added to in the last 30 days, newest first, whatever year the record came out. Album grids can also sort by date added. Thanks for the idea @v0ntr0l.
-- With a Subsonic server added, the main window no longer redraws itself once a minute when the server's status has not changed.
 - A Subsonic or Jellyfin server you stop using no longer gets its connection status back a moment later. In rare cases after your Mac woke, or after Bòcan checked a Jellyfin sign-in again, an extra connection check could keep running in the background, and it no longer does.
-- VoiceOver now tells you which song in the list is playing, and which songs in your play history have a missing file.
 - You can now drag songs up and down a playlist to change their order, and the new order stays after a restart. Before, the drag did not move them and added copies of them to the end of the playlist instead. Songs dragged onto an open playlist now land where you drop them. Thanks for reporting this one @v0ntr0l.
 - When you drag the progress bar to a new spot and let go, it now stays there. Before, it jumped back to the old spot for a moment and then forward again, and while paused it stayed on the old spot until you pressed play. The bar also no longer slides sideways halfway through a song, when the pending scrobbles icon appears beside it. Thanks for reporting this one @v0ntr0l.
 - Moving to a new spot in an Ogg, Opus, DSD, WavPack, APE or similar file now starts playback exactly where you asked. Before, it could start up to half a second early, and Opus and DSD files could begin with a short burst of noise.
-- A playlist holds each song once, and adding a song it already has now tells you so instead of doing nothing. When you add several songs, the new ones are added and a message says how many were already there. Adding a song that was already in the playlist could also fail with an error, and no longer does.
-- An empty Recently Added, Recently Played or Most Played now says that nothing was added or played in that time, instead of asking you to add a music folder when your library already has music.
-- Quitting no longer freezes Bòcan while it saves your place in the song, and with Phone Sync on it quits sooner.
-- VoiceOver now reads the playing position on the progress bar in the mini player, Immersive mode and the menu bar, and you can step it forward and back there, as you already could in the main window.
 
 ## [2.25.0](https://github.com/bocan/bocan-music/compare/v2.24.0...v2.25.0) (2026-11-17)
 
