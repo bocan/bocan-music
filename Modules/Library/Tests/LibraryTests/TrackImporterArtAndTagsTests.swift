@@ -181,8 +181,10 @@ struct TrackImporterArtAndTagsTests: TrackImporterFixtures {
         #expect(json == #"{"ARTIST":["Run-DMC","Aerosmith"],"GENRE":["Hip-Hop"]}"#)
     }
 
-    @Test("empty extendedTags leaves the column NULL")
-    func emptyExtendedTagsIsNull() async throws {
+    /// NULL means "never read", which the quick scan backfills (#735); a
+    /// tagless file stores `{}` so it is not read again on every launch.
+    @Test("empty extendedTags stores an empty JSON object, not NULL")
+    func emptyExtendedTagsIsEmptyObject() async throws {
         let db = try await makeDB()
         let importer = TrackImporter(
             artistRepo: ArtistRepository(database: db),
@@ -202,6 +204,6 @@ struct TrackImporterArtAndTagsTests: TrackImporterFixtures {
         )
 
         let track = try await TrackRepository(database: db).fetch(id: id)
-        #expect(track.extendedTags == nil)
+        #expect(track.extendedTags == "{}")
     }
 }

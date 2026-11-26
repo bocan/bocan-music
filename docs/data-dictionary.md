@@ -84,7 +84,7 @@ Record: `ImportedListen.swift`
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `album` | TEXT | n/a (common identifier, see notes) | n/a | M004 |  |
 | `track_mbid` | TEXT | LastFMExportParser.swift, ListenImportRepository.swift |  | M035 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 
 ## `jellyfin_metadata_cache`
 
@@ -136,7 +136,7 @@ Record: `Lyrics.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `lyrics_text` | TEXT | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | FieldDefinitions.swift, LyricsService+Parsing.swift, MetadataEditService.swift | M001 |  |
 | `is_synced` | BOOLEAN | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | EditTransaction+PatchApplication.swift, LyricsPane.swift, TrackTagPatch.swift | M001 |  |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
@@ -157,7 +157,7 @@ Record: `PendingMaintenance.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+8) | HistoryTable.swift, HistoryTableCoordinator.swift, JellyfinPlayContext.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift (+3) | M001 |  |
 | `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository+Jellyfin.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift | JellyfinPlayContext.swift | ADR-094 | Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song. |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | ADR-094 | Always 'queue' today: radio, podcasts and Subsonic plays never reach the recorder's local write. Not shown on the History page for that reason; reserved for a second local source. |
@@ -169,7 +169,7 @@ Record: `PlaylistTrack.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `playlist_id` (pk) | INTEGER | ContentPane.swift, JellyfinDestinationView.swift, JellyfinPlaylistsView.swift, JellyfinSDKClient+Browse.swift, LibraryViewModel+PlaylistDrop.swift (+22) | PlaylistImportSheet.swift, TracksView+Actions.swift | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `position` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 
 ## `playlists`
@@ -331,7 +331,7 @@ Record: `ScrobbleQueueItem.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+8) | HistoryTable.swift, HistoryTableCoordinator.swift, JellyfinPlayContext.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift (+3) | M001 |  |
 | `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository+Jellyfin.swift, ScrobbleQueueRepository+Rows.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift | JellyfinPlayContext.swift | M001 |  |
 | `submitted` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
@@ -425,7 +425,7 @@ Record: `SyncTranscode.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | ADR-088 | Track the artifact belongs to; cascades away with the track. |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | ADR-088 | Track the artifact belongs to; cascades away with the track. |
 | `preset` (pk) | TEXT | n/a (common identifier, see notes) | n/a | ADR-088 | Transcode preset raw value (e.g. mp3_320); opaque to Persistence, vocabulary owned by AudioEngine. Composite key with track_id. |
 | `source_content_hash` | TEXT | FileServing.swift, SyncTranscodeRepository.swift, TranscodeCoordinator.swift, TranscodeStore.swift |  | ADR-088 | The track's content_hash the artifact was derived from; the row is valid only while it still matches, so a retag invalidates the artifact. |
 | `sha256` | TEXT | n/a (common identifier, see notes) | n/a | ADR-088 | SHA-256 of the artifact bytes, advertised as the manifest sha256 and used as the file endpoint's ETag. Hashed once at encode time; the ledger outlives the bytes. |
@@ -438,7 +438,7 @@ Record: `SyncTranscode.swift`
 
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
-| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` (pk) | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `eq_preset_id` | TEXT | DSPAssignmentRepository.swift, DSPState.swift, DSPViewModel.swift, EQView.swift | DSPChain.swift | ADR-013, #418 | Per-track EQ preset override (EQPreset.id or NULL = global). The effect columns M010 sketched next to it were dropped in M049; per-track effects were never built. |
 
 ## `track_markers`
@@ -448,7 +448,7 @@ Record: `TrackMarker.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+71) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
+| `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+73) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+12) | M001 |  |
 | `position_ms` | INTEGER | CueMarkerService.swift | MarkerNavigation.swift, NowPlayingStrip.swift, NowPlayingViewModel.swift, TagEditorSheet+InfoTabs.swift | M038 |  |
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `performer` | TEXT | n/a (common identifier, see notes) | n/a | M038 |  |
@@ -460,7 +460,7 @@ Record: `Track.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `file_url` | TEXT | BackupRing.swift, CoverArtCache.swift, CueMarkerService.swift, EditTransaction+TrackPhase.swift, EditTransaction.swift (+23) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, DeepDiveCache.swift, DownloadStore.swift (+31) | M001 |  |
+| `file_url` | TEXT | BackupRing.swift, CoverArtCache.swift, CueMarkerService.swift, EditTransaction+TrackPhase.swift, EditTransaction.swift (+24) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, DeepDiveCache.swift, DownloadStore.swift (+31) | M001 |  |
 | `file_bookmark` | BLOB | MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift, TrackRepository+Relink.swift | ContentHashService.swift, EditTransaction+TrackPhase.swift, FileServing.swift, FingerprintService.swift, LibraryViewModel+Provenance.swift (+6) | M001 |  |
 | `file_size` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator+Import.swift, ScanCoordinator.swift, TrackImporter.swift (+4) | ChangeDetector.swift, CoverArtCache.swift, DownloadStore.swift, DuplicateReviewSheet.swift, FileServing.swift (+9) | M001 |  |
 | `file_mtime` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator+Import.swift, ScanCoordinator.swift, TrackImporter.swift (+4) | LibraryScanner.swift, TagEditorSheet+InfoTabs.swift, TrackRepository+Provenance.swift, TrackTable+ColSpecs.swift | M001 |  |
@@ -513,7 +513,7 @@ Record: `Track.swift`
 | `year_text` | TEXT | TrackImporter.swift, TrackRow.swift, TrackTagPatch.swift | SQL.swift, TrackTable+ColSpecs.swift, TrackTable+Helpers.swift, TracksView+Actions.swift | M005 |  |
 | `acoustid_fingerprint` | TEXT | FingerprintStore.swift, TrackImporter.swift |  | ADR-011, #423 | See acoustid_id. |
 | `acoustid_id` | TEXT | FingerprintService.swift, FingerprintStore.swift, TrackImporter.swift | DeepDiveService.swift | ADR-011, #423 | Identify result; preserved across rescans since #423 (a retag or re-encode does not change the recording). |
-| `extended_tags` | TEXT | EditTransaction+TrackPhase.swift, TagReader.swift, TrackImporter.swift, TrackTags.swift | ExtendedTagsJSON.swift, FieldDefinitions.swift | M015, #727 | The file's full TagLib property map as sorted-key JSON, {"KEY":[values]}, encoded by ExtendedTagsJSON. Written by TrackImporter on every scan and by the tag editor's EditTransaction from the read-back after a file write (the edit stamps the new mtime, so no scan refreshes it). Read by the smart playlist Comment field (FieldDefinitions), which joins the COMMENT values with json_each: there is no comment column. |
+| `extended_tags` | TEXT | EditTransaction+TrackPhase.swift, ScanCoordinator+TagMap.swift, TagReader.swift, TrackImporter.swift, TrackRepository+ExtendedTags.swift (+1) | ChangeDetector.swift, ExtendedTagsJSON.swift, FieldDefinitions.swift, ScanCoordinator.swift | M015, #727, #735 | The file's full TagLib property map as sorted-key JSON, {"KEY":[values]}, encoded by ExtendedTagsJSON. It describes the file, not the user's edit, so it is refreshed for user-edited rows too. NULL means never read; a file with no tags stores {}. Written by TrackImporter on every import (including the user-edited path), by ScanCoordinator's user-edit conflict path, by the quick scan's one-time backfill of a NULL map on an unchanged file (TrackRepository.setExtendedTags), and by the tag editor's EditTransaction from the read-back after a file write. Read by the smart playlist Comment field (FieldDefinitions), which joins the COMMENT values with json_each: there is no comment column. |
 | `needs_conflict_review` | BOOLEAN | MetadataEditService.swift, ScanCoordinator.swift | ConflictDiffSheet.swift, ScanCoordinator+Import.swift, TagEditorSheet.swift, TagEditorViewModel+Conflict.swift, TagEditorViewModel.swift | M018 |  |
 | `provenance_suspected` | BOOLEAN | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |
 | `provenance_confidence` | DOUBLE | TrackRepository+Provenance.swift | LibraryStatsRepository+AudioQuality.swift | M034 |  |

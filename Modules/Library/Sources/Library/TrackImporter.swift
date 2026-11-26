@@ -262,6 +262,12 @@ actor TrackImporter {
         updated.bitDepth = file.tags.bitDepth
         updated.bitrate = file.tags.bitrate
         updated.channelCount = file.tags.channels
+        // The tag map describes the file, not the user's edit: there is no
+        // edited column for it to clobber, and Comment lives only there
+        // (#735). A failed encode keeps the old map.
+        if let json = self.encodeExtendedTags(file.tags.extendedTags) {
+            updated.extendedTags = json
+        }
         updated.updatedAt = now
         updated.disabled = false
         if !audioUnchanged {

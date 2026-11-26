@@ -282,6 +282,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Metadata/Sources/TagLibBridge/BocanTagLib.mm` (line 188 at time of writing)
 
+### `tracks.extended_tags` is the file's tag map, and the only place a comment lives
+
+**Problem:** a smart playlist rule on a tag with no column of its own (Comment) failed with an SQLite error (#727), and once fixed, missed every track edited in Get Info before the fix (#735).
+
+**Rule:** there is no `comment` column; the Comment field reads `COMMENT` from `tracks.extended_tags` with `json_each`. That column mirrors the file, not the user's edit, so every path that reads a file's tags refreshes it, user-edited rows included: the importer, the scan's user-edit conflict branch, the tag editor's read-back, and the quick scan's one-time backfill. Encode through `ExtendedTagsJSON` only. NULL means "never read" and a tagless file stores `{}`; keep that split, or the quick scan reads tagless files on every launch. A new smart playlist field must be run against a migrated database (`SmartPlaylistFieldSweepTests`), not only checked as SQL text.
+
+**Why:** a quick scan never opens a file whose size and mtime match its row, and a Get Info save stamps the new mtime, so before the backfill a NULL map on an edited row stayed NULL for good.
+
+**Canonical file:** `Modules/Library/Sources/Library/ScanCoordinator+TagMap.swift`
+
 ### We read only two Podcasting 2.0 tags from FeedKit
 
 **Problem:** FeedKit before 10.8 left `podcast:funding`, `podcast:chapters`, `podcast:person` and `podcast:podroll` out of a parsed feed. From 10.8 it models the whole namespace, but it decodes typed attributes strictly: one unparseable value (`fee="True"`, `split="0.5"`, a non-numeric `podcast:season`) throws out of `Feed(data:)` and fails the whole feed, not only that tag. Dates behave the same on every 10.x version: one `pubDate` FeedKit cannot read (`2024-01-01`, `01 Sept 2024`) throws out of `Feed(data:)`. `FeedDateRepair` catches that case: after a failed parse it rewrites the few shapes it knows, removes the other unreadable date elements, and the parser retries, so the episode loses its date and the feed still refreshes (#597). 10.9.4 reads more spellings than 10.9.0 (zone names such as BST or CEST, no zone, two-digit years), and the parser tests pin that floor.

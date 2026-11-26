@@ -12,8 +12,9 @@ import Persistence
 actor ScanCoordinator {
     // MARK: - Dependencies
 
-    // `ScanCoordinator+Import.swift` and `ScanCoordinator+CueMarkers.swift`
-    // use some of these, so those are internal rather than private.
+    // `ScanCoordinator+Import.swift`, `ScanCoordinator+CueMarkers.swift` and
+    // `ScanCoordinator+TagMap.swift` use some of these, so those are internal
+    // rather than private.
     let database: Database
     let trackRepo: TrackRepository
     let artistRepo: ArtistRepository
@@ -22,7 +23,7 @@ actor ScanCoordinator {
     let coverArtCache: CoverArtCache
     private let libraryRootRepo: LibraryRootRepository
     private let changeDetector: ChangeDetector
-    private let tagReader: TagReader
+    let tagReader: TagReader
     private let settingsRepo: SettingsRepository
     private let relinker: TrackRelinker
     let log = AppLogger.make(.library)
@@ -157,7 +158,12 @@ actor ScanCoordinator {
             return rootPaths.contains { $0 == trackPath || LibraryRoot.directory($0, contains: trackPath) }
         }
         await self.changeDetector.seed(scopedEnabledTracks.map {
-            ChangeDetector.KnownFile(url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
+            ChangeDetector.KnownFile(
+                url: $0.fileURL,
+                mtime: $0.fileMtime,
+                size: $0.fileSize,
+                hasTagMap: $0.extendedTags != nil
+            )
         })
         return true
     }
@@ -316,7 +322,10 @@ actor ScanCoordinator {
         // removed (ADR-081 invocation pass). Only the skip-unchanged
         // shortcut is quick-mode behaviour.
         let status = await changeDetector.check(url: url, mtime: mtime, size: size)
-        if mode == .quick, status == .unchanged {
+        if mode == .quick, status == .unchanged || status == .unchangedWithoutTagMap {
+            if status == .unchangedWithoutTagMap {
+                await self.backfillTagMap(url: url)
+            }
             emit(.processed(url: url, outcome: .skippedUnchanged))
             return .skipped
         }
@@ -393,6 +402,7 @@ actor ScanCoordinator {
             if ex.disabled {
                 updated.disabled = false
             }
+            self.refreshTagMap(on: &updated, from: tags)
             // A re-linked row (#647) has no bookmark for its new place yet.
             if ex.fileBookmark == nil {
                 updated.fileBookmark = self.bookmark(for: url, existingTrack: nil)
