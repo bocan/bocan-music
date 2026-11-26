@@ -8,6 +8,10 @@ public enum ChangeStatus: Sendable {
     case modified
     /// File is identical to the stored record.
     case unchanged
+    /// File is identical to the stored record, but the row has never stored
+    /// the file's tag map (`tracks.extended_tags` is NULL). A quick scan reads
+    /// the tags once to fill it and changes nothing else (#735).
+    case unchangedWithoutTagMap
 }
 
 /// Detects whether a file is new, modified, or unchanged based on
@@ -18,8 +22,8 @@ public enum ChangeStatus: Sendable {
 public actor ChangeDetector {
     // MARK: - State
 
-    /// Known-file snapshot: URL string → (mtime, size)
-    private var known: [String: (mtime: Int64, size: Int64)] = [:]
+    /// Known-file snapshot, keyed by the NFC-normalised URL string.
+    private var known: [String: KnownFile] = [:]
 
     /// URLs seen during the current scan pass.
     private var visited: Set<String> = []
@@ -38,11 +42,14 @@ public actor ChangeDetector {
         public let mtime: Int64
         /// The stored size in bytes.
         public let size: Int64
+        /// Whether the row holds the file's tag map (`extended_tags` is not NULL).
+        public let hasTagMap: Bool
 
-        public init(url: String, mtime: Int64, size: Int64) {
+        public init(url: String, mtime: Int64, size: Int64, hasTagMap: Bool = true) {
             self.url = url
             self.mtime = mtime
             self.size = size
+            self.hasTagMap = hasTagMap
         }
     }
 
@@ -52,14 +59,15 @@ public actor ChangeDetector {
         // for the same on-disk file, so without this two scans of a path with
         // accented characters could disagree.
         self.known = Dictionary(uniqueKeysWithValues: entries.map {
-            ($0.url.precomposedStringWithCanonicalMapping, ($0.mtime, $0.size))
+            ($0.url.precomposedStringWithCanonicalMapping, $0)
         })
         self.visited = []
     }
 
     /// Checks `url` against the seed and marks it visited.
     ///
-    /// - Returns: `.new`, `.modified`, or `.unchanged`.
+    /// - Returns: `.new`, `.modified`, `.unchanged`, or
+    ///   `.unchangedWithoutTagMap` for an unchanged file whose row has no tag map.
     public func check(url: URL, mtime: Int64, size: Int64) -> ChangeStatus {
         let key = url.absoluteString.precomposedStringWithCanonicalMapping
         self.visited.insert(key)
@@ -67,7 +75,7 @@ public actor ChangeDetector {
         if record.mtime != mtime || record.size != size {
             return .modified
         }
-        return .unchanged
+        return record.hasTagMap ? .unchanged : .unchangedWithoutTagMap
     }
 
     /// Returns URLs from the seed that were never visited — i.e., removed files.

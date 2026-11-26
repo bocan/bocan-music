@@ -52,7 +52,12 @@ extension EditTransaction {
             _ = rootScope // keep alive until end of function
         }
 
-        try await self.rewriteFileTags(at: fileURL, track: track, patch: patch, embedCoverArt: embedCoverArt)
+        let writtenTags = try await self.rewriteFileTags(
+            at: fileURL,
+            track: track,
+            patch: patch,
+            embedCoverArt: embedCoverArt
+        )
 
         // 7. Handle cover art
         let coverArtHash = try await self.patchedCoverArtHash(for: track, patch: patch)
@@ -62,6 +67,7 @@ extension EditTransaction {
         updated.userEdited = true
 
         self.stampFileFacts(on: &updated, fileURL: fileURL)
+        self.refreshExtendedTags(on: &updated, from: writtenTags)
 
         if patch.artist != nil || patch.albumArtist != nil || patch.album != nil {
             updated = try await self.relinkArtistAndAlbum(updated, track: track, patch: patch)
@@ -71,14 +77,14 @@ extension EditTransaction {
     }
 
     /// Steps 2 to 6 of the file phase: read the tags, back them up, apply the
-    /// patch, write the file and read it back. The caller holds the security
-    /// scope for the whole call.
+    /// patch, write the file and read it back. Returns the tags read back from
+    /// the written file. The caller holds the security scope for the whole call.
     private func rewriteFileTags(
         at fileURL: URL,
         track: Track,
         patch: TrackTagPatch,
         embedCoverArt: Bool
-    ) async throws {
+    ) async throws -> TrackTags {
         // 2. Read current tags from file
         let currentTags = try await Task.detached(priority: .userInitiated) {
             try TagReader().read(from: fileURL)
@@ -115,11 +121,27 @@ extension EditTransaction {
             try TagWriter().write(newTags, to: fileURL)
         }.value
 
-        // 6. Re-read to confirm persistence
-        let verified = try await Task.detached(priority: .userInitiated) {
+        // 6. Re-read to confirm persistence. The row's flat columns come from
+        //    the patch; the read-back feeds `extended_tags` (#727).
+        return try await Task.detached(priority: .userInitiated) {
             try TagReader().read(from: fileURL)
         }.value
-        _ = verified // read confirmed; we use the patch-applied track for the DB update
+    }
+
+    /// 8b. Replace the row's `extended_tags` with the property map read back
+    ///     from the written file. The edit stamps the new mtime, so no scan
+    ///     re-reads the file, and without this a smart playlist rule on a
+    ///     field held only there (Comment) would see the old value (#727).
+    ///     On an encode failure the row keeps its old map and the edit goes on.
+    private func refreshExtendedTags(on updated: inout Track, from tags: TrackTags) {
+        do {
+            updated.extendedTags = try ExtendedTagsJSON.encode(tags.extendedTags)
+        } catch {
+            self.log.warning("edit.extendedTags.encodeFailed", [
+                "track": updated.id ?? -1,
+                "error": String(reflecting: error),
+            ])
+        }
     }
 
     /// The cover art hash the track row must carry after the edit: the cached

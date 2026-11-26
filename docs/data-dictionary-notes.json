@@ -40,6 +40,10 @@
     "traces": "ADR-088",
     "note": "Unix seconds when a file response last delivered the artifact through EOF; NULL until then. The prepare-and-release sweep deletes bytes for stamped rows unless the keep toggle is on."
   },
+  "tracks.extended_tags": {
+    "traces": "M015, #727, #735",
+    "note": "The file's full TagLib property map as sorted-key JSON, {\"KEY\":[values]}, encoded by ExtendedTagsJSON. It describes the file, not the user's edit, so it is refreshed for user-edited rows too. NULL means never read; a file with no tags stores {}. Written by TrackImporter on every import (including the user-edited path), by ScanCoordinator's user-edit conflict path, by the quick scan's one-time backfill of a NULL map on an unchanged file (TrackRepository.setExtendedTags), and by the tag editor's EditTransaction from the read-back after a file write. Read by the smart playlist Comment field (FieldDefinitions), which joins the COMMENT values with json_each: there is no comment column."
+  },
   "tracks.channel_count": {
     "traces": "ADR-091, #513",
     "note": "Channel count from the tag reader: TagLib, or AVFoundation for a raw Dolby file TagLib cannot parse. Read by TrackInfoPanel.swift and TagEditorSheet+InfoTabs.swift, which show it as a layout name (Mono, Stereo, 5.1, 7.1, else a count) with hover text saying a surround mix plays folded to stereo. Playback folds every source channel into stereo, so the value describes the file, not what is heard."

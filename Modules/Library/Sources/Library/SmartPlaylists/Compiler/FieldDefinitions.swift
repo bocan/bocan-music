@@ -88,7 +88,18 @@ public enum FieldDefinitions {
         )
         t[.genre] = .init(dataType: .text, allowedComparators: .text, columnRef: .init(expression: "tracks.genre"))
         t[.composer] = .init(dataType: .text, allowedComparators: .text, columnRef: .init(expression: "tracks.composer"))
-        t[.comment] = .init(dataType: .text, allowedComparators: .text, columnRef: .init(expression: "tracks.comment"))
+        // There is no comment column: the comment lives in the tag map JSON in
+        // tracks.extended_tags under "COMMENT" (#727). Every value is joined so
+        // "contains" sees them all, and TRIM makes a blank comment "empty".
+        // json_valid keeps one bad row from failing the whole playlist.
+        t[.comment] = .init(
+            dataType: .text,
+            allowedComparators: .text,
+            columnRef: .init(expression: """
+            (SELECT TRIM(group_concat(value, ' ')) FROM json_each(\
+            CASE WHEN json_valid(tracks.extended_tags) THEN tracks.extended_tags END, '$.COMMENT'))
+            """)
+        )
 
         // ── Numeric ──────────────────────────────────────────────────────────
         t[.year] = .init(dataType: .numeric, allowedComparators: .numeric, columnRef: .init(expression: "tracks.year"))
@@ -189,7 +200,10 @@ private extension [Comparator] {
     static let duration: [Comparator] = numeric
 
     static let date: [Comparator] = [
-        .beforeDate, .afterDate, .onDate, .between, .inLastDays, .inLastMonths, .inLastYears, .isNull, .isNotNull,
+        .beforeDate, .afterDate, .onDate, .between,
+        .inLastDays, .inLastMonths, .inLastYears,
+        .notInLastDays, .notInLastMonths, .notInLastYears,
+        .isNull, .isNotNull,
     ]
 
     static let bool: [Comparator] = [.isTrue, .isFalse]

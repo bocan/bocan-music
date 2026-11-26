@@ -21,6 +21,22 @@ struct ChangeDetectorTests {
         #expect(status == .unchanged)
     }
 
+    @Test("unchanged file whose row has no tag map is .unchangedWithoutTagMap (#735)")
+    func detectsUnchangedWithoutTagMap() async {
+        let detector = ChangeDetector()
+        let url = URL(fileURLWithPath: "/tmp/no-map.mp3")
+        await detector.seed([.init(url: url.absoluteString, mtime: 1000, size: 500, hasTagMap: false)])
+        #expect(await detector.check(url: url, mtime: 1000, size: 500) == .unchangedWithoutTagMap)
+    }
+
+    @Test("a changed file is .modified even when its row has no tag map")
+    func modifiedWinsOverMissingTagMap() async {
+        let detector = ChangeDetector()
+        let url = URL(fileURLWithPath: "/tmp/no-map-changed.mp3")
+        await detector.seed([.init(url: url.absoluteString, mtime: 1000, size: 500, hasTagMap: false)])
+        #expect(await detector.check(url: url, mtime: 2000, size: 500) == .modified)
+    }
+
     @Test("changed mtime is .modified")
     func detectsMtimeChange() async {
         let detector = ChangeDetector()

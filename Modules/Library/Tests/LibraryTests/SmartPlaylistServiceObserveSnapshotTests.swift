@@ -38,6 +38,41 @@ struct SmartPlaylistServiceObserveSnapshotTests: SmartPlaylistServiceFixtures {
         #expect(ids.contains(loved))
     }
 
+    /// #727: a Comment rule reads `tracks.extended_tags` inside `json_each`.
+    /// The live region GRDB derives from that SQL must still include the
+    /// column, or a changed comment would never re-run the playlist.
+    @Test func observeReRunsWhenACommentChanges() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let trackID = try await insertTrack(in: db, fileURL: "file:///comment.mp3")
+        let criteria = SmartCriterion.rule(.init(field: .comment, comparator: .contains, value: .text("bbc")))
+        let playlist = try await svc.create(name: "BBC", criteria: criteria)
+        let pid = try #require(playlist.id)
+        let stream = await svc.observe(pid)
+
+        let watcher = Task { () throws -> [Int64]? in
+            var iterator = stream.makeAsyncIterator()
+            let initial = try await iterator.next()
+            #expect(initial?.isEmpty == true)
+            try await db.write { db in
+                try db.execute(
+                    sql: "UPDATE tracks SET extended_tags = ? WHERE id = ?",
+                    arguments: [#"{"COMMENT":["Live at the BBC"]}"#, trackID]
+                )
+            }
+            return try await iterator.next()?.compactMap(\.id)
+        }
+        // Bounded: a region without the column never emits again, and the
+        // cancelled stream then ends with nil instead of hanging the run.
+        let deadline = Task {
+            try await Task.sleep(for: .seconds(10))
+            watcher.cancel()
+        }
+        defer { deadline.cancel() }
+
+        #expect(try await watcher.value == [trackID])
+    }
+
     @Test func observeCoalescesPlayCountBurst() async throws {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)

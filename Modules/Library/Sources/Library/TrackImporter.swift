@@ -262,6 +262,12 @@ actor TrackImporter {
         updated.bitDepth = file.tags.bitDepth
         updated.bitrate = file.tags.bitrate
         updated.channelCount = file.tags.channels
+        // The tag map describes the file, not the user's edit: there is no
+        // edited column for it to clobber, and Comment lives only there
+        // (#735). A failed encode keeps the old map.
+        if let json = self.encodeExtendedTags(file.tags.extendedTags) {
+            updated.extendedTags = json
+        }
         updated.updatedAt = now
         updated.disabled = false
         if !audioUnchanged {
@@ -441,16 +447,11 @@ actor TrackImporter {
         ["flac", "wav", "aiff", "aif", "alac", "wv", "ape", "dsf", "dff"].contains(format)
     }
 
-    /// Encodes the multi-valued tag dictionary as a deterministic JSON string.
-    /// Keys are sorted so the column stays diff-stable across rescans of the
-    /// same file. Returns `nil` for an empty map (column stays NULL).
+    /// Encodes the multi-valued tag dictionary through `ExtendedTagsJSON`,
+    /// logging and returning `nil` (column stays NULL) if that fails.
     private func encodeExtendedTags(_ map: [String: [String]]) -> String? {
-        guard !map.isEmpty else { return nil }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
         do {
-            let data = try encoder.encode(map)
-            return String(data: data, encoding: .utf8)
+            return try ExtendedTagsJSON.encode(map)
         } catch {
             self.log.warning("track.extended_tags.encode_failed", [
                 "error": String(reflecting: error),

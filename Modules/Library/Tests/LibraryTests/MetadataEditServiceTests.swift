@@ -63,6 +63,34 @@ struct MetadataEditServiceTests: MetadataEditServiceFixtures {
         #expect(updated.userEdited == true)
     }
 
+    /// #727: an edited comment reaches `extended_tags`, the only place the
+    /// database keeps it, so a smart playlist Comment rule finds it at once.
+    @Test func editedCommentReachesExtendedTagsAndSmartPlaylists() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        var patch = TrackTagPatch()
+        patch.comment = "Live at the BBC"
+        try await svc.edit(trackID: trackID, patch: patch)
+
+        let row = try await TrackRepository(database: db).fetch(id: trackID)
+        let json = try #require(row.extendedTags)
+        let map = try JSONDecoder().decode([String: [String]].self, from: Data(json.utf8))
+        #expect(map["COMMENT"] == ["Live at the BBC"])
+
+        let smart = SmartPlaylistService(database: db)
+        let playlist = try await smart.create(
+            name: "BBC",
+            criteria: .rule(.init(field: .comment, comparator: .contains, value: .text("bbc")))
+        )
+        let pid = try #require(playlist.id)
+        #expect(try await smart.tracks(for: pid).compactMap(\.id) == [trackID])
+    }
+
     @Test func editSetsUserEditedFlag() async throws {
         let db = try await makeDatabase()
         let tmp = try tempMP3()
